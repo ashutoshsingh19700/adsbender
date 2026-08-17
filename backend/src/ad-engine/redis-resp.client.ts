@@ -1,4 +1,5 @@
 import { Socket } from 'net';
+import { connect as tlsConnect, TLSSocket } from 'tls';
 
 type RedisValue = string | number | null | RedisValue[];
 
@@ -7,6 +8,7 @@ type RedisClientOptions = {
   port: number;
   password?: string;
   timeoutMs?: number;
+  tls?: boolean;
 };
 
 type ParsedResp = {
@@ -15,7 +17,7 @@ type ParsedResp = {
 };
 
 export class RedisRespClient {
-  private readonly sockets = new Set<Socket>();
+  private readonly sockets = new Set<Socket | TLSSocket>();
 
   constructor(private readonly options: RedisClientOptions) {}
 
@@ -41,7 +43,13 @@ export class RedisRespClient {
 
   private send(args: Array<string | number>) {
     return new Promise<RedisValue>((resolve, reject) => {
-      const socket = new Socket();
+      const socket: Socket | TLSSocket = this.options.tls
+        ? tlsConnect({
+            host: this.options.host,
+            port: this.options.port,
+            servername: this.options.host,
+          })
+        : new Socket();
       const timeout = setTimeout(() => {
         socket.destroy();
         reject(new Error('Redis command timed out'));
@@ -80,9 +88,15 @@ export class RedisRespClient {
         }
       });
 
-      socket.connect(this.options.port, this.options.host, () => {
+      const onReady = () => {
         socket.write(this.encode(args));
-      });
+      };
+
+      if (this.options.tls) {
+        (socket as TLSSocket).once('secureConnect', onReady);
+      } else {
+        socket.connect(this.options.port, this.options.host, onReady);
+      }
     });
   }
 

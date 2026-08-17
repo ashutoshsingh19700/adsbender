@@ -17,6 +17,7 @@ export class RedisStreamMessageBrokerConsumer
     host: process.env.REDIS_HOST ?? '127.0.0.1',
     port: Number(process.env.REDIS_PORT ?? 6379),
     password: process.env.REDIS_PASSWORD,
+    tls: process.env.REDIS_TLS === 'true',
     timeoutMs: Number(process.env.REDIS_STREAM_READ_TIMEOUT_MS ?? 7000),
   });
 
