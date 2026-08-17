@@ -30,9 +30,9 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    void this.syncActiveCampaigns();
+    void this.runSyncSafely();
     this.interval = setInterval(
-      () => void this.syncActiveCampaigns(),
+      () => void this.runSyncSafely(),
       CAMPAIGN_CACHE_SYNC_INTERVAL_MS,
     );
     this.interval.unref?.();
@@ -41,6 +41,17 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     if (this.interval) {
       clearInterval(this.interval);
+    }
+  }
+
+  private async runSyncSafely() {
+    try {
+      await this.syncActiveCampaigns();
+    } catch (error) {
+      // Never let a cache-sync failure (e.g. Redis unreachable/misconfigured)
+      // crash the process via an unhandled rejection — the API should keep
+      // serving everything that doesn't depend on the campaign cache.
+      this.logger.error('Campaign cache sync failed', error);
     }
   }
 
