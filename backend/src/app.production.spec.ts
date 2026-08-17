@@ -1,16 +1,15 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+import { AppController } from './app.controller';
+
 describe('production readiness surface', () => {
-  const frontendDir = join(process.cwd(), '..', 'frontend');
+  it('points the platform entry point at the Next.js web app', () => {
+    const platform = new AppController().getPlatform();
 
-  it('serves a product console entry point from the frontend directory', () => {
-    const html = readFileSync(join(frontendDir, 'index.html'), 'utf8');
-
-    expect(html).toContain('Ad Network Console');
-    expect(html).toContain('/assets/publisher-portal.html');
-    expect(html).toContain('/assets/advertiser-studio.html');
-    expect(html).toContain('/assets/analytics-dashboard.html');
+    expect(platform.dashboard).toContain('/analytics');
+    expect(platform.publisherPortal).toContain('/publisher');
+    expect(platform.advertiserStudio).toContain('/advertiser');
   });
 
   it('documents required production environment variables', () => {
@@ -20,7 +19,8 @@ describe('production readiness surface', () => {
     );
 
     expect(envExample).toContain('DATABASE_URL=');
-    expect(envExample).toContain('JWT_SECRET=');
+    expect(envExample).toContain('SUPABASE_URL=');
+    expect(envExample).toContain('SUPABASE_SERVICE_ROLE_KEY=');
     expect(envExample).toContain('CLICKHOUSE_URL=');
     expect(envExample).toContain('CAMPAIGN_CACHE_SYNC_ENABLED=');
   });

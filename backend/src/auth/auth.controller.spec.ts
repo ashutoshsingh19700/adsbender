@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles/roles.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -10,6 +12,10 @@ describe('AuthController', () => {
   };
 
   beforeEach(async () => {
+    // Tests call controller methods directly rather than through HTTP, so
+    // the guards never actually run - these stubs exist only so Nest can
+    // resolve @UseGuards(JwtAuthGuard, RolesGuard) at module-compile time
+    // without needing a real SupabaseService/UsersService/DB connection.
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -18,7 +24,12 @@ describe('AuthController', () => {
           useValue: authService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });

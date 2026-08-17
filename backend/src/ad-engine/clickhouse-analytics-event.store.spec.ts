@@ -26,15 +26,19 @@ describe('ClickHouseAnalyticsEventStore', () => {
   it('creates the impressions and clicks tables when the worker starts', async () => {
     await store.ensureSchema();
 
-    const firstQuery = new URL(fetchSpy.mock.calls[0][0] as string).searchParams.get(
-      'query',
-    );
-    const secondQuery = new URL(fetchSpy.mock.calls[1][0] as string).searchParams.get(
-      'query',
-    );
+    const firstQuery = new URL(
+      fetchSpy.mock.calls[0][0] as string,
+    ).searchParams.get('query');
+    const secondQuery = new URL(
+      fetchSpy.mock.calls[1][0] as string,
+    ).searchParams.get('query');
 
-    expect(firstQuery).toContain('CREATE TABLE IF NOT EXISTS analytics.impressions');
-    expect(secondQuery).toContain('CREATE TABLE IF NOT EXISTS analytics.clicks');
+    expect(firstQuery).toContain(
+      'CREATE TABLE IF NOT EXISTS analytics.impressions',
+    );
+    expect(secondQuery).toContain(
+      'CREATE TABLE IF NOT EXISTS analytics.clicks',
+    );
   });
 
   it('bulk inserts impression events using JSONEachRow', async () => {

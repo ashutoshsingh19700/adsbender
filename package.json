@@ -1,0 +1,15 @@
+{
+  "name": "ad-network",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root scripts to run frontend (web) and backend together",
+  "scripts": {
+    "dev": "concurrently -n web,backend -c blue,green \"npm run dev --prefix web\" \"npm run start:dev --prefix backend\"",
+    "dev:web": "npm run dev --prefix web",
+    "dev:backend": "npm run start:dev --prefix backend",
+    "install:all": "npm install --prefix web && npm install --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

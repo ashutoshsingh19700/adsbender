@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import type { AnalyticsQueryStore, MetricsRow } from './analytics-query.types';
+import type {
+  AnalyticsQueryStore,
+  DailyMetricsParams,
+  MetricsRow,
+} from './analytics-query.types';
 
 export const ANALYTICS_QUERY_STORE = Symbol('ANALYTICS_QUERY_STORE');
 
@@ -11,10 +15,15 @@ export class AnalyticsService {
     private readonly analyticsQueryStore: AnalyticsQueryStore,
   ) {}
 
-  async getDailyMetrics(startDate: string, endDate: string) {
+  async getDailyMetrics(
+    startDate: string,
+    endDate: string,
+    filter?: Pick<DailyMetricsParams, 'campaignId' | 'zoneId'>,
+  ) {
     const rows = await this.analyticsQueryStore.getDailyMetrics({
       startDate,
       endDate,
+      ...filter,
     });
 
     return {

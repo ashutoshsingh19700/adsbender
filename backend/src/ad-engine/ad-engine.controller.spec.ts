@@ -85,7 +85,8 @@ describe('AdEngineController', () => {
         viewportHeight: 768,
         devicePixelRatio: 1,
         referrer: 'https://referrer.test',
-        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile',
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile',
         ipAddress: '127.0.0.1',
         country: 'US',
         device: 'mobile',
@@ -257,9 +258,7 @@ describe('AdEngineController', () => {
       ipAddress: '127.0.0.1',
     });
 
-    await expect(
-      controller.trap('BadBot/1.0', '127.0.0.1'),
-    ).resolves.toEqual({
+    await expect(controller.trap('BadBot/1.0', '127.0.0.1')).resolves.toEqual({
       blocked: true,
     });
     expect(fraudDetectionService.recordHoneypotHit).toHaveBeenCalledWith(

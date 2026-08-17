@@ -24,8 +24,10 @@ export class RedisCampaignCacheStore
 
   async replaceActiveCampaigns(campaigns: CacheableCampaign[]) {
     const existingCampaignIds =
-      (await this.redis.command<string[]>(['SMEMBERS', ACTIVE_CAMPAIGNS_SET_KEY])) ??
-      [];
+      (await this.redis.command<string[]>([
+        'SMEMBERS',
+        ACTIVE_CAMPAIGNS_SET_KEY,
+      ])) ?? [];
     const nextCampaignIds = new Set(campaigns.map((campaign) => campaign.id));
 
     for (const campaignId of existingCampaignIds) {
@@ -43,15 +45,21 @@ export class RedisCampaignCacheStore
         value,
       ]);
 
-      await this.redis.command(['HSET', campaignCacheKey(campaign.id), ...entries]);
+      await this.redis.command([
+        'HSET',
+        campaignCacheKey(campaign.id),
+        ...entries,
+      ]);
       await this.redis.command(['SADD', ACTIVE_CAMPAIGNS_SET_KEY, campaign.id]);
     }
   }
 
   async getActiveCampaigns(): Promise<ParsedCampaignCacheRecord[]> {
     const campaignIds =
-      (await this.redis.command<string[]>(['SMEMBERS', ACTIVE_CAMPAIGNS_SET_KEY])) ??
-      [];
+      (await this.redis.command<string[]>([
+        'SMEMBERS',
+        ACTIVE_CAMPAIGNS_SET_KEY,
+      ])) ?? [];
     const campaigns: ParsedCampaignCacheRecord[] = [];
 
     for (const campaignId of campaignIds) {

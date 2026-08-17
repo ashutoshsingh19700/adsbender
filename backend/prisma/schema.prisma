@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -19,24 +20,147 @@ enum CampaignStatus {
   ACTIVE
   PAUSED
   COMPLETED
+  ARCHIVED
 }
 
+enum AdZoneStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum SiteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TransactionType {
+  DEPOSIT
+  CAMPAIGN_RESERVATION
+  AD_SPEND
+  REFUND
+  PUBLISHER_EARNING
+  PAYOUT_REQUEST
+  PAYOUT_COMPLETED
+  PAYOUT_FAILED
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// id is NOT auto-generated here - it's always set explicitly to the
+// corresponding Supabase auth.users.id (see SupabaseService /
+// AuthService.register), so this table and Supabase's user store share one
+// id space. Credentials (password, email verification) live in Supabase
+// Auth exclusively; this table only holds app-level profile/role data.
 model User {
-  id          String   @id @default(uuid())
+  id          String   @id
   name        String
   email       String   @unique
-  password    String
   role        UserRole
   balance_usd Decimal @default(0) @db.Decimal(12,2)
 
   campaigns Campaign[]
   adZones   AdZone[]
   publisherSites PublisherSite[]
+  wallet    Wallet?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([role])
+}
+
+// One wallet per user. `balance_usd` on User remains the single
+// spendable/withdrawable "available" balance (it's the row the existing
+// WalletManager.deduct/credit already lock and mutate atomically) - this
+// table only tracks the money that ISN'T freely available yet (reserved for
+// campaigns, pending publisher earnings) plus lifetime counters for the
+// summary endpoints. Splitting it this way means we never have two sources
+// of truth for the number that actually gates spending.
+model Wallet {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reservedBalance Decimal @default(0) @db.Decimal(12, 2)
+  pendingEarnings Decimal @default(0) @db.Decimal(12, 2)
+  totalDeposited  Decimal @default(0) @db.Decimal(12, 2)
+  totalSpent      Decimal @default(0) @db.Decimal(12, 2)
+  totalEarned     Decimal @default(0) @db.Decimal(12, 2)
+  totalWithdrawn  Decimal @default(0) @db.Decimal(12, 2)
+  currency        String  @default("USD")
+
+  transactions WalletTransaction[]
+  payouts      Payout[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Immutable, append-only ledger. Every financial event on a wallet writes
+// exactly one row here and rows are never updated - state changes (e.g. a
+// payout moving from REQUESTED to COMPLETED) get their own new row/type
+// instead of mutating history.
+model WalletTransaction {
+  id       String @id @default(uuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId   String
+
+  type        TransactionType
+  amount      Decimal            @db.Decimal(12, 2)
+  currency    String             @default("USD")
+  status      TransactionStatus  @default(COMPLETED)
+  referenceId String?
+  description String?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  // Prevents the same source event (e.g. one ad-spend click, one payout)
+  // from ever being ledgered twice for a given wallet+type.
+  @@unique([walletId, type, referenceId])
+  @@index([walletId])
+  @@index([userId])
+  @@index([type])
+}
+
+model Payout {
+  id       String @id @default(uuid())
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId   String
+
+  amount        Decimal      @db.Decimal(12, 2)
+  currency      String       @default("USD")
+  status        PayoutStatus @default(REQUESTED)
+  provider      String?
+  providerRef   String?
+  failureReason String?
+  metadata      Json?
+
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([status])
 }
 
 model PublisherSite {
@@ -49,6 +173,7 @@ model PublisherSite {
   expectedText String
   verified     Boolean  @default(false)
   verifiedAt   DateTime?
+  status       SiteStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,6 +181,7 @@ model PublisherSite {
   @@unique([publisherId, domain])
   @@index([publisherId])
   @@index([verified])
+  @@index([status])
 }
 
 model Campaign {
@@ -70,12 +196,19 @@ model Campaign {
   dailyBudget Decimal @db.Decimal(12, 2)
   maxCpc      Decimal @db.Decimal(10, 2)
 
+  // Funds held out of the advertiser's available balance for this campaign
+  // (via WalletManager.reserveCampaignBudget) and the portion of that hold
+  // already converted into ledgered ad spend.
+  reservedAmount Decimal @default(0) @db.Decimal(12, 2)
+  spentAmount    Decimal @default(0) @db.Decimal(12, 2)
+
   targetCountries String[]
   targetDevices   String[]
 
   creativeType String?
   creativeUrl  String?
   creativeHtml String?
+  notes        String?
 
   status CampaignStatus @default(DRAFT)
 
@@ -99,11 +232,13 @@ model AdZone {
   height Int
 
   layoutType String
+  status     AdZoneStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([publisherId])
+  @@index([status])
 }
 
 model BlacklistedIp {

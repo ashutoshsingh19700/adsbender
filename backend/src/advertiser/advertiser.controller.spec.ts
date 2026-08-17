@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { AdvertiserController } from './advertiser.controller';
 import { AdvertiserService } from './advertiser.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles/roles.guard';
 
 describe('AdvertiserController', () => {
   let controller: AdvertiserController;
@@ -12,6 +14,10 @@ describe('AdvertiserController', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
+    // Tests call controller methods directly rather than through HTTP, so
+    // the guards never actually run - these stubs exist only so Nest can
+    // resolve @UseGuards(JwtAuthGuard, RolesGuard) at module-compile time
+    // without needing a real SupabaseService/UsersService/DB connection.
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdvertiserController],
       providers: [
@@ -20,7 +26,12 @@ describe('AdvertiserController', () => {
           useValue: advertiserService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(AdvertiserController);
   });
@@ -41,10 +52,7 @@ describe('AdvertiserController', () => {
       campaign: { id: 'campaign-1' },
     });
 
-    await controller.createCampaign(
-      { user: { id: 'advertiser-1' } },
-      dto,
-    );
+    await controller.createCampaign({ user: { id: 'advertiser-1' } }, dto);
 
     expect(advertiserService.createCampaign).toHaveBeenCalledWith(
       'advertiser-1',

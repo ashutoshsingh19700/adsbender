@@ -16,7 +16,7 @@ describe('RedisVelocityCounterStore', () => {
   });
 
   it('increments a rolling counter and sets TTL when the key is new', async () => {
-    commandSpy.mockResolvedValueOnce(1 as any).mockResolvedValueOnce(1 as any);
+    commandSpy.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
 
     await expect(store.increment('rate:imp:127.0.0.1', 30)).resolves.toEqual({
       key: 'rate:imp:127.0.0.1',
@@ -32,7 +32,7 @@ describe('RedisVelocityCounterStore', () => {
   });
 
   it('does not reset TTL for an existing rolling counter', async () => {
-    commandSpy.mockResolvedValueOnce(3 as any);
+    commandSpy.mockResolvedValueOnce(3);
 
     await store.increment('rate:imp:127.0.0.1', 30);
 

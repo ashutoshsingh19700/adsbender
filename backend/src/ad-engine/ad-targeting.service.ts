@@ -22,9 +22,11 @@ export class AdTargetingService {
   async selectCampaign(request: TargetingRequest) {
     const campaigns = await this.campaignCacheStore.getActiveCampaigns();
 
-    return campaigns
-      .filter((campaign) => this.isEligible(campaign, request))
-      .sort((left, right) => right.maxCpc - left.maxCpc)[0] ?? null;
+    return (
+      campaigns
+        .filter((campaign) => this.isEligible(campaign, request))
+        .sort((left, right) => right.maxCpc - left.maxCpc)[0] ?? null
+    );
   }
 
   private isEligible(

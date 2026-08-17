@@ -6,9 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 
-import {
-  IMPRESSION_EVENTS_CHANNEL,
-} from './ad-event-producer.service';
+import { IMPRESSION_EVENTS_CHANNEL } from './ad-event-producer.service';
 import type {
   AnalyticsEventStore,
   ImpressionEvent,

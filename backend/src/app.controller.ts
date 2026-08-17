@@ -1,15 +1,18 @@
 import { Controller, Get } from '@nestjs/common';
 
+import { webAppUrl } from './config/env';
+
 @Controller()
 export class AppController {
   @Get()
   getPlatform() {
+    const baseUrl = webAppUrl();
     return {
       name: 'Ad Network',
       status: 'online',
-      dashboard: '/assets/analytics-dashboard.html',
-      publisherPortal: '/assets/publisher-portal.html',
-      advertiserStudio: '/assets/advertiser-studio.html',
+      dashboard: `${baseUrl}/analytics`,
+      publisherPortal: `${baseUrl}/publisher`,
+      advertiserStudio: `${baseUrl}/advertiser`,
     };
   }
 

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PublisherController } from './publisher.controller';
 import { PublisherService } from './publisher.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles/roles.guard';
 
 describe('PublisherController', () => {
   let controller: PublisherController;
@@ -13,6 +15,10 @@ describe('PublisherController', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
+    // Tests call controller methods directly rather than through HTTP, so
+    // the guards never actually run - these stubs exist only so Nest can
+    // resolve @UseGuards(JwtAuthGuard, RolesGuard) at module-compile time
+    // without needing a real SupabaseService/UsersService/DB connection.
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PublisherController],
       providers: [
@@ -21,7 +27,12 @@ describe('PublisherController', () => {
           useValue: publisherService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(PublisherController);
   });
@@ -58,14 +69,11 @@ describe('PublisherController', () => {
       },
     );
 
-    expect(publisherService.createAdZone).toHaveBeenCalledWith(
-      'publisher-1',
-      {
-        zoneName: 'Homepage',
-        width: 300,
-        height: 250,
-        layoutType: 'rectangle',
-      },
-    );
+    expect(publisherService.createAdZone).toHaveBeenCalledWith('publisher-1', {
+      zoneName: 'Homepage',
+      width: 300,
+      height: 250,
+      layoutType: 'rectangle',
+    });
   });
 });

@@ -15,9 +15,7 @@ export const CAMPAIGN_CACHE_STORE = Symbol('CAMPAIGN_CACHE_STORE');
 export const CAMPAIGN_CACHE_SYNC_INTERVAL_MS = 30_000;
 
 @Injectable()
-export class CampaignCacheSyncService
-  implements OnModuleInit, OnModuleDestroy
-{
+export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CampaignCacheSyncService.name);
   private interval?: NodeJS.Timeout;
 

@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - ./data/redis:/data
     healthcheck:
@@ -41,8 +41,8 @@ services:
     container_name: adnetwork-clickhouse
     restart: unless-stopped
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "8124:8123"
+      - "9001:9000"
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}

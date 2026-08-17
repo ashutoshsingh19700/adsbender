@@ -16,10 +16,10 @@ describe('RedisCampaignCacheStore', () => {
       .spyOn(RedisRespClient.prototype, 'command')
       .mockImplementation(async (args) => {
         if (args[0] === 'SMEMBERS') {
-          return ['campaign-1', 'paused-campaign'] as any;
+          return ['campaign-1', 'paused-campaign'];
         }
 
-        return 1 as any;
+        return 1;
       });
     store = new RedisCampaignCacheStore();
   });
@@ -53,10 +53,7 @@ describe('RedisCampaignCacheStore', () => {
       'DEL',
       campaignCacheKey('paused-campaign'),
     ]);
-    expect(commandSpy).toHaveBeenCalledWith([
-      'DEL',
-      ACTIVE_CAMPAIGNS_SET_KEY,
-    ]);
+    expect(commandSpy).toHaveBeenCalledWith(['DEL', ACTIVE_CAMPAIGNS_SET_KEY]);
     expect(commandSpy).toHaveBeenCalledWith(
       expect.arrayContaining([
         'HSET',
@@ -89,16 +86,13 @@ describe('RedisCampaignCacheStore', () => {
       'DEL',
       campaignCacheKey('paused-campaign'),
     ]);
-    expect(commandSpy).toHaveBeenCalledWith([
-      'DEL',
-      ACTIVE_CAMPAIGNS_SET_KEY,
-    ]);
+    expect(commandSpy).toHaveBeenCalledWith(['DEL', ACTIVE_CAMPAIGNS_SET_KEY]);
   });
 
   it('reads active campaign hashes back from Redis for serve-time targeting', async () => {
     commandSpy.mockImplementation(async (args) => {
       if (args[0] === 'SMEMBERS') {
-        return ['campaign-1'] as any;
+        return ['campaign-1'];
       }
 
       if (args[0] === 'HGETALL') {
@@ -123,10 +117,10 @@ describe('RedisCampaignCacheStore', () => {
           'ACTIVE',
           'advertiserBalanceUsd',
           '25',
-        ] as any;
+        ];
       }
 
-      return 1 as any;
+      return 1;
     });
 
     await expect(store.getActiveCampaigns()).resolves.toEqual([

@@ -1,18 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   const usersService = {
     findByEmail: jest.fn(),
+    findById: jest.fn(),
     create: jest.fn(),
   };
-  const jwtService = {
-    signAsync: jest.fn(),
+  const supabaseService = {
+    admin: {
+      auth: {
+        admin: {
+          createUser: jest.fn(),
+          deleteUser: jest.fn(),
+        },
+      },
+    },
+    anon: {
+      auth: {
+        signInWithPassword: jest.fn(),
+      },
+    },
   };
 
   beforeEach(async () => {
@@ -26,8 +39,8 @@ describe('AuthService', () => {
           useValue: usersService,
         },
         {
-          provide: JwtService,
-          useValue: jwtService,
+          provide: SupabaseService,
+          useValue: supabaseService,
         },
       ],
     }).compile();
@@ -39,63 +52,131 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  it('hashes passwords with 12 bcrypt rounds and does not return the hash', async () => {
-    usersService.findByEmail.mockResolvedValue(null);
-    usersService.create.mockImplementation(async (data) => ({
-      id: 'user-1',
-      ...data,
-      balance_usd: 0,
-    }));
+  describe('register', () => {
+    it('creates a Supabase auth user then a matching profile row, keyed by the Supabase user id', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+      supabaseService.admin.auth.admin.createUser.mockResolvedValue({
+        data: { user: { id: 'supabase-user-1' } },
+        error: null,
+      });
+      usersService.create.mockImplementation(async (data) => ({
+        ...data,
+        balance_usd: 0,
+      }));
 
-    const result = await service.register({
-      name: 'Ada',
-      email: 'ada@example.com',
-      password: 'secret12',
-      role: 'ADVERTISER' as any,
-    });
-
-    expect(usersService.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        password: expect.stringMatching(/^\$2[aby]\$12\$/),
-      }),
-    );
-    expect(result.user).not.toHaveProperty('password');
-  });
-
-  it('sets the JWT in an httpOnly sameSite=lax cookie during login', async () => {
-    usersService.findByEmail.mockResolvedValue({
-      id: 'user-1',
-      name: 'Ada',
-      email: 'ada@example.com',
-      password: await bcrypt.hash('secret12', 12),
-      role: 'ADVERTISER',
-    });
-    jwtService.signAsync.mockResolvedValue('jwt-token');
-
-    const response = {
-      cookie: jest.fn(),
-    } as any;
-
-    await service.login(
-      {
+      const result = await service.register({
+        name: 'Ada',
         email: 'ada@example.com',
         password: 'secret12',
-      },
-      response,
-    );
+        role: 'ADVERTISER' as any,
+      });
 
-    expect(jwtService.signAsync).toHaveBeenCalledWith({
-      sub: 'user-1',
-      email: 'ada@example.com',
-      role: 'ADVERTISER',
+      expect(supabaseService.admin.auth.admin.createUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'ada@example.com',
+          password: 'secret12',
+        }),
+      );
+      expect(usersService.create).toHaveBeenCalledWith({
+        id: 'supabase-user-1',
+        name: 'Ada',
+        email: 'ada@example.com',
+        role: 'ADVERTISER',
+      });
+      expect(result.user).not.toHaveProperty('password');
     });
-    expect(response.cookie).toHaveBeenCalledWith(
-      'token',
-      'jwt-token',
-      expect.objectContaining({
-        httpOnly: true,
-        sameSite: 'lax',
-      }),
-    );
+
+    it('rejects registration when the email already exists locally', async () => {
+      usersService.findByEmail.mockResolvedValue({ id: 'existing' });
+
+      await expect(
+        service.register({
+          name: 'Ada',
+          email: 'ada@example.com',
+          password: 'secret12',
+          role: 'ADVERTISER' as any,
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
+
+      expect(supabaseService.admin.auth.admin.createUser).not.toHaveBeenCalled();
+    });
+
+    it('rolls back the Supabase auth user if the local profile row fails to create', async () => {
+      usersService.findByEmail.mockResolvedValue(null);
+      supabaseService.admin.auth.admin.createUser.mockResolvedValue({
+        data: { user: { id: 'supabase-user-1' } },
+        error: null,
+      });
+      usersService.create.mockRejectedValue(new Error('db down'));
+
+      await expect(
+        service.register({
+          name: 'Ada',
+          email: 'ada@example.com',
+          password: 'secret12',
+          role: 'ADVERTISER' as any,
+        }),
+      ).rejects.toThrow('db down');
+
+      expect(supabaseService.admin.auth.admin.deleteUser).toHaveBeenCalledWith(
+        'supabase-user-1',
+      );
+    });
+  });
+
+  describe('login', () => {
+    it('sets the Supabase session token in an httpOnly sameSite=lax cookie', async () => {
+      supabaseService.anon.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: { id: 'user-1' },
+          session: { access_token: 'supabase-jwt', expires_in: 3600 },
+        },
+        error: null,
+      });
+      usersService.findById.mockResolvedValue({
+        id: 'user-1',
+        name: 'Ada',
+        email: 'ada@example.com',
+        role: 'ADVERTISER',
+      });
+
+      const response = {
+        cookie: jest.fn(),
+      } as any;
+
+      await service.login(
+        {
+          email: 'ada@example.com',
+          password: 'secret12',
+        },
+        response,
+      );
+
+      expect(response.cookie).toHaveBeenCalledWith(
+        'token',
+        'supabase-jwt',
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+        }),
+      );
+    });
+
+    it('rejects invalid credentials', async () => {
+      supabaseService.anon.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: 'Invalid login credentials' },
+      });
+
+      const response = { cookie: jest.fn() } as any;
+
+      await expect(
+        service.login(
+          { email: 'ada@example.com', password: 'wrong' },
+          response,
+        ),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(response.cookie).not.toHaveBeenCalled();
+    });
   });
 });

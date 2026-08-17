@@ -39,11 +39,10 @@ export class AdEngineController {
     @Headers('x-geo-country') countryHeader: string,
     @Ip() ipAddress: string,
   ) {
-    const fraudDecision =
-      await this.fraudDetectionService.evaluateServeRequest(
-        ipAddress,
-        userAgent,
-      );
+    const fraudDecision = await this.fraudDetectionService.evaluateServeRequest(
+      ipAddress,
+      userAgent,
+    );
 
     if (fraudDecision.blocked) {
       throw new ForbiddenException(fraudDecision.reason);
@@ -166,10 +165,7 @@ export class AdEngineController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
   ) {
-    await this.fraudDetectionService.recordHoneypotHit(
-      ipAddress,
-      userAgent,
-    );
+    await this.fraudDetectionService.recordHoneypotHit(ipAddress, userAgent);
 
     return {
       blocked: true,

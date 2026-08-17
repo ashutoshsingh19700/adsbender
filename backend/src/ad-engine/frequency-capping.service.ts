@@ -34,9 +34,7 @@ export class FrequencyCappingService {
     private readonly velocityCounterStore: VelocityCounterStore,
   ) {}
 
-  async evaluateImpression(
-    ipAddress: string,
-  ): Promise<FrequencyCapDecision> {
+  async evaluateImpression(ipAddress: string): Promise<FrequencyCapDecision> {
     const normalizedIp = this.normalizeIp(ipAddress);
     const key = `rate:imp:${normalizedIp}`;
     const counter = await this.velocityCounterStore.increment(

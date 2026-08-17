@@ -39,7 +39,7 @@ describe('RedisStreamMessageBrokerConsumer', () => {
         IMPRESSION_EVENTS_CHANNEL,
         [['1719274200-0', ['payload', JSON.stringify(payload)]]],
       ],
-    ] as any);
+    ]);
 
     await expect(
       consumer.readBatch(IMPRESSION_EVENTS_CHANNEL, '0-0', 2000, 1000),
@@ -62,7 +62,7 @@ describe('RedisStreamMessageBrokerConsumer', () => {
   });
 
   it('acknowledges processed stream entries by deleting them from the stream', async () => {
-    commandSpy.mockResolvedValue(2 as any);
+    commandSpy.mockResolvedValue(2);
 
     await consumer.acknowledge(IMPRESSION_EVENTS_CHANNEL, [
       '1719274200-0',

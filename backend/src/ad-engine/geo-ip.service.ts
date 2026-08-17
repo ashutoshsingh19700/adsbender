@@ -56,7 +56,9 @@ export class GeoIpService implements OnModuleInit {
       const record = this.reader.get(normalizedIp);
 
       return (
-        record?.country?.iso_code ?? record?.registered_country?.iso_code ?? null
+        record?.country?.iso_code ??
+        record?.registered_country?.iso_code ??
+        null
       );
     } catch {
       return null;

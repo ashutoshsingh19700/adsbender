@@ -17,9 +17,9 @@ describe('AppController', () => {
       expect(appController.getPlatform()).toEqual({
         name: 'Ad Network',
         status: 'online',
-        dashboard: '/assets/analytics-dashboard.html',
-        publisherPortal: '/assets/publisher-portal.html',
-        advertiserStudio: '/assets/advertiser-studio.html',
+        dashboard: 'http://localhost:3001/analytics',
+        publisherPortal: 'http://localhost:3001/publisher',
+        advertiserStudio: 'http://localhost:3001/advertiser',
       });
     });
 

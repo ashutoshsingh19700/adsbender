@@ -4,13 +4,21 @@ node_modules/
 # Environment
 .env
 backend/.env
+web/.env*
+!web/.env.example
 
 # Build
 dist/
 coverage/
+web/.next/
+web/out/
+web/*.tsbuildinfo
 
 # Database
 data/
+
+# Local-only compose overrides
+docker-compose.override.yml
 
 # Prisma generated
 backend/generated/

@@ -12,17 +12,25 @@ export class UsersService {
     });
   }
 
+  async findById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
+  // `id` must be the corresponding Supabase auth.users.id - credentials
+  // live in Supabase, this table only stores app-level profile/role data.
   async create(data: {
+    id: string;
     name: string;
     email: string;
-    password: string;
     role: UserRole;
   }) {
     return this.prisma.user.create({
-       data: {
-    ...data,
-    balance_usd: 0,
-  },
+      data: {
+        ...data,
+        balance_usd: 0,
+      },
     });
   }
 }

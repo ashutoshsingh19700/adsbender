@@ -1,7 +1,10 @@
 import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
 
-export enum UserRole {
-  ADMIN = 'ADMIN',
+// NOTE: ADMIN is intentionally left out here. Anyone hitting the public
+// /auth/register endpoint could otherwise sign themselves up as an admin.
+// Admin accounts should be created directly in the database (or by a
+// future admin-only invite flow), never through public self-registration.
+export enum PublicRegisterRole {
   ADVERTISER = 'ADVERTISER',
   PUBLISHER = 'PUBLISHER',
 }
@@ -16,6 +19,6 @@ export class RegisterDto {
   @MinLength(6)
   password: string;
 
-  @IsEnum(UserRole)
-  role: UserRole;
+  @IsEnum(PublicRegisterRole)
+  role: PublicRegisterRole;
 }

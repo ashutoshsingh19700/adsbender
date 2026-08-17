@@ -5,8 +5,5 @@ export type VelocityCounterResult = {
 };
 
 export interface VelocityCounterStore {
-  increment(
-    key: string,
-    ttlSeconds: number,
-  ): Promise<VelocityCounterResult>;
+  increment(key: string, ttlSeconds: number): Promise<VelocityCounterResult>;
 }

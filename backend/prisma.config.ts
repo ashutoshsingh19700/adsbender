@@ -9,6 +9,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"]!,
+    // CLI operations (migrate, studio) use the direct (non-pooled)
+    // connection - Supabase's pooler runs in pgbouncer transaction mode,
+    // which doesn't support the prepared statements Prisma's migration
+    // engine needs. The generated client at runtime still uses
+    // DATABASE_URL (pooled) per schema.prisma, unaffected by this file.
+    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"]!,
   },
 });

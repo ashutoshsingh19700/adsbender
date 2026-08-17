@@ -8,7 +8,7 @@ describe('RedisStreamMessageBrokerPublisher', () => {
   beforeEach(() => {
     commandSpy = jest
       .spyOn(RedisRespClient.prototype, 'command')
-      .mockResolvedValue('1719274200-0' as any);
+      .mockResolvedValue('1719274200-0');
     publisher = new RedisStreamMessageBrokerPublisher();
   });
 

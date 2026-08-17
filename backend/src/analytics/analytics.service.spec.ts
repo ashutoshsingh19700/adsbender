@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import {
-  ANALYTICS_QUERY_STORE,
-  AnalyticsService,
-} from './analytics.service';
+import { ANALYTICS_QUERY_STORE, AnalyticsService } from './analytics.service';
 import type { AnalyticsQueryStore } from './analytics-query.types';
 
 describe('AnalyticsService', () => {

@@ -10,3 +10,6 @@ export const requiredEnv = (key: string, fallback?: string) => {
 
 export const frontendAssetPath = () =>
   process.env.FRONTEND_DIR ?? '../frontend';
+
+export const webAppUrl = () =>
+  process.env.WEB_APP_URL ?? 'http://localhost:3001';

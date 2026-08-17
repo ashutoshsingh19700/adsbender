@@ -55,9 +55,7 @@ describe('FrequencyCappingService', () => {
       ttlSeconds: 30,
     });
 
-    await expect(
-      service.evaluateImpression('127.0.0.1'),
-    ).resolves.toEqual({
+    await expect(service.evaluateImpression('127.0.0.1')).resolves.toEqual({
       allowed: false,
       key: 'rate:imp:127.0.0.1',
       count: 3,
@@ -92,9 +90,7 @@ describe('FrequencyCappingService', () => {
       ttlSeconds: 60,
     });
 
-    await expect(
-      service.evaluateClick('::ffff:127.0.0.1'),
-    ).resolves.toEqual({
+    await expect(service.evaluateClick('::ffff:127.0.0.1')).resolves.toEqual({
       allowed: false,
       key: 'rate:click:127.0.0.1',
       count: 4,

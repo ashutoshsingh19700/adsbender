@@ -18,9 +18,7 @@ import { Roles } from './decorators/roles.decorator';
 
 @Controller('api/v1/auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   register(@Body() registerDto: RegisterDto) {

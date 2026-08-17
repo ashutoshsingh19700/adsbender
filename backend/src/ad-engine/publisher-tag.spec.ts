@@ -4,17 +4,13 @@ import vm from 'vm';
 
 describe('publisher_tag.js', () => {
   const publicDir = join(process.cwd(), '..', 'frontend');
-  const tagSource = readFileSync(
-    join(publicDir, 'publisher_tag.js'),
-    'utf8',
-  );
-  const sampleHtml = readFileSync(
-    join(publicDir, 'sample-index.html'),
-    'utf8',
-  );
+  const tagSource = readFileSync(join(publicDir, 'publisher_tag.js'), 'utf8');
+  const sampleHtml = readFileSync(join(publicDir, 'sample-index.html'), 'utf8');
 
   it('is loaded asynchronously by the local verification page', () => {
-    expect(sampleHtml).toContain('<script async src="/assets/publisher_tag.js"></script>');
+    expect(sampleHtml).toContain(
+      '<script async src="/assets/publisher_tag.js"></script>',
+    );
     expect(sampleHtml).toContain('data-zone-id="42"');
   });
 
@@ -72,7 +68,9 @@ describe('publisher_tag.js', () => {
     await Promise.resolve();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(documentMock.querySelectorAll).toHaveBeenCalledWith('[data-zone-id]');
+    expect(documentMock.querySelectorAll).toHaveBeenCalledWith(
+      '[data-zone-id]',
+    );
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       method: 'GET',
@@ -88,12 +86,16 @@ describe('publisher_tag.js', () => {
 
     expect(requestUrl.pathname).toBe('/api/v1/serve');
     expect(requestUrl.searchParams.get('zoneId')).toBe('42');
-    expect(requestUrl.searchParams.get('origin')).toBe('https://publisher.test');
+    expect(requestUrl.searchParams.get('origin')).toBe(
+      'https://publisher.test',
+    );
     expect(requestUrl.searchParams.get('path')).toBe('/article');
     expect(requestUrl.searchParams.get('viewportWidth')).toBe('1366');
     expect(requestUrl.searchParams.get('viewportHeight')).toBe('768');
     expect(requestUrl.searchParams.get('devicePixelRatio')).toBe('2');
-    expect(requestUrl.searchParams.get('referrer')).toBe('https://referrer.test');
+    expect(requestUrl.searchParams.get('referrer')).toBe(
+      'https://referrer.test',
+    );
     expect(requestUrl.searchParams.get('language')).toBe('en-US');
     expect(zone.setAttribute).toHaveBeenCalledWith(
       'data-ad-network-loaded',
