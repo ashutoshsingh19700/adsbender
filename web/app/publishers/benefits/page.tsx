@@ -266,7 +266,7 @@ export default function PublisherBenefitsPage() {
           aria-hidden
           className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
         />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
           <div>
             <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
               Website Monetization Platform for Publishers
@@ -336,7 +336,7 @@ export default function PublisherBenefitsPage() {
       </section>
 
       {/* Ad formats — hover/click tabs */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           <span className="text-orange-500">High-value ads</span> publishers
           profit from
@@ -346,10 +346,10 @@ export default function PublisherBenefitsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Why AdsBender */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           Why publishers monetize with AdsBender
         </h2>
@@ -368,10 +368,10 @@ export default function PublisherBenefitsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* FAQ */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           Questions about ads for publishers
         </h2>
@@ -382,7 +382,7 @@ export default function PublisherBenefitsPage() {
 
       {/* CTA band */}
       <section className="border-t bg-orange-50/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <Wallet className="size-8 text-orange-500" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to start monetizing?

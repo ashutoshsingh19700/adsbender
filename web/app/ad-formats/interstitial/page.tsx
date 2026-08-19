@@ -199,7 +199,7 @@ export default function InterstitialAdsPage() {
           aria-hidden
           className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
         />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
           <div>
             <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
               Interstitial Ads
@@ -249,7 +249,7 @@ export default function InterstitialAdsPage() {
       </section>
 
       {/* How it behaves */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div className="order-2 lg:order-1">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -274,10 +274,10 @@ export default function InterstitialAdsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Why Interstitial — tabbed */}
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Why run Interstitial with AdsBender
         </h2>
@@ -289,10 +289,10 @@ export default function InterstitialAdsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Verticals */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           Verticals that perform well with Interstitial
         </h2>
@@ -325,10 +325,10 @@ export default function InterstitialAdsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Toolkit — tabbed */}
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           The Interstitial toolkit for advertisers &amp; publishers
         </h2>
@@ -343,7 +343,7 @@ export default function InterstitialAdsPage() {
 
       {/* CTA band */}
       <section className="border-t bg-orange-50/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <Globe2 className="size-8 text-orange-500" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try Interstitial?

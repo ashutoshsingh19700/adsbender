@@ -72,7 +72,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t bg-muted/30">
-      <div className="mx-auto max-w-6xl px-4 py-14">
+      <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid gap-10 sm:grid-cols-3 lg:grid-cols-6">
           {COLUMNS.map((col) => (
             <div key={col.heading}>

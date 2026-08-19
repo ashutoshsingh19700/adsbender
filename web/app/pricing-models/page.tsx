@@ -65,7 +65,7 @@ export default function PricingModelsPage() {
           aria-hidden
           className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
         />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
           <div>
             <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
               AdsBender Pricing
@@ -107,7 +107,7 @@ export default function PricingModelsPage() {
       </section>
 
       {/* Section heading */}
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center">
+      <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Which <span className="text-orange-500">AdsBender pricing model</span>{" "}
           fits your vertical best?
@@ -121,7 +121,7 @@ export default function PricingModelsPage() {
             key={model.id}
             className={model.tone === "muted" ? "bg-muted/50" : "bg-background"}
           >
-            <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] gap-8 px-4 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div>
                 <p className="text-2xl font-bold text-orange-500">{model.name}</p>
                 <p className="mt-1 text-sm font-medium text-muted-foreground">
@@ -175,11 +175,11 @@ export default function PricingModelsPage() {
         ))}
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* CTA band */}
       <section className="border-t bg-orange-50/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to launch a campaign?
           </h2>

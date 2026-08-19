@@ -124,7 +124,7 @@ export default function Home() {
 
   if (loading || user) {
     return (
-      <div className="mx-auto max-w-6xl space-y-4 px-4 py-16">
+      <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] space-y-4 px-4 sm:px-6 lg:px-8 py-16">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -136,7 +136,7 @@ export default function Home() {
     <div>
       {/* Promo bar */}
       <div className="bg-neutral-950 px-4 py-3 text-sm text-neutral-50">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-center">
           <span className="flex size-6 items-center justify-center rounded-full border border-neutral-700">
             <Gift className="size-3.5 text-orange-400" />
           </span>
@@ -170,7 +170,7 @@ export default function Home() {
           aria-hidden
           className="pointer-events-none absolute top-40 left-0 -z-10 size-72 rounded-full bg-orange-100/60 blur-3xl"
         />
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             {/* Left: copy */}
             <div>
@@ -380,7 +380,7 @@ export default function Home() {
       </section>
 
       {/* Highlights */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid gap-8 sm:grid-cols-3">
           {HIGHLIGHTS.map((item) => (
             <div key={item.title} className="text-center sm:text-left">
@@ -396,10 +396,10 @@ export default function Home() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Features */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Everything the platform runs on
@@ -435,10 +435,10 @@ export default function Home() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* How it works */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Live in three steps
@@ -461,7 +461,7 @@ export default function Home() {
 
       {/* CTA band */}
       <section className="border-t bg-orange-50/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <BarChart3 className="size-8 text-orange-500" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to see it running?

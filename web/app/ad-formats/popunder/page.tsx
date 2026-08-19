@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -197,7 +198,7 @@ export default function PopunderAdsPage() {
           aria-hidden
           className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
         />
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 lg:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
           <div>
             <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
               Popunder Ads
@@ -230,61 +231,34 @@ export default function PopunderAdsPage() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-sm">
-            <div className="rotate-3 rounded-xl border border-neutral-800 bg-neutral-900 p-2 shadow-2xl shadow-orange-900/10">
-              <div className="overflow-hidden rounded-lg bg-card">
-                <div className="flex items-center gap-1.5 border-b p-2.5">
-                  <span className="size-2.5 rounded-full bg-red-400" />
-                  <span className="size-2.5 rounded-full bg-amber-400" />
-                  <span className="size-2.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="space-y-2 p-3">
-                  <div className="h-16 rounded-md bg-orange-100" />
-                  <div className="h-2.5 w-3/4 rounded bg-muted" />
-                  <div className="h-2.5 w-full rounded bg-muted" />
-                  <div className="h-2.5 w-5/6 rounded bg-muted" />
-                </div>
-              </div>
-            </div>
-            <div className="absolute -bottom-4 -left-4 -rotate-3 rounded-xl border bg-card p-2 shadow-xl">
-              <div className="w-32 space-y-1.5 p-1">
-                <div className="h-2 w-full rounded bg-muted" />
-                <div className="h-2 w-2/3 rounded bg-muted" />
-                <div className="mt-2 h-10 rounded-md bg-orange-500/90" />
-              </div>
-            </div>
+          <div className="relative mx-auto w-full max-w-xl">
+            <Image
+              src="/ad-formats/popunder-hero.png"
+              alt="A browser tab showing a website, with a Popunder ad from AdsBender opening quietly behind it"
+              width={1528}
+              height={1029}
+              className="h-auto w-full"
+              priority
+            />
           </div>
         </div>
       </section>
 
       {/* How it behaves */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <div className="order-2 lg:order-1">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Built for desktop and mobile alike
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              A Popunder opens quietly in a new tab behind the active window,
-              so it never interrupts whatever the visitor came to do.
-            </p>
-            <p className="mt-3 text-muted-foreground">
-              It&apos;s a gentler alternative to classic pop-ups — especially on
-              mobile, where intrusive formats hurt retention fast.
-            </p>
-          </div>
-          <div className="order-1 flex justify-center lg:order-2">
-            <div className="flex size-48 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl sm:size-56">
-              <MonitorSmartphone className="size-20 text-white/90" />
-            </div>
-          </div>
-        </div>
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
+        <Image
+          src="/ad-formats/popunder-how-it-works.png"
+          alt="How Popunder ads look for your visitors: 1. Visitor clicks on your site, 2. Popunder opens in the background, 3. Visitor discovers the ad later. High Visibility, Better Performance, Non-Intrusive, Consistent Payouts."
+          width={1774}
+          height={887}
+          className="h-auto w-full"
+        />
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Why Popunder — tabbed */}
-      <section id="why-popunder" className="mx-auto max-w-6xl px-4 py-16 text-center">
+      <section id="why-popunder" className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Why run Popunder with AdsBender
         </h2>
@@ -296,10 +270,10 @@ export default function PopunderAdsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Verticals */}
-      <section className="mx-auto max-w-6xl px-4 py-16">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
         <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           Verticals that perform well with Popunder
         </h2>
@@ -332,10 +306,10 @@ export default function PopunderAdsPage() {
         </div>
       </section>
 
-      <Separator className="mx-auto max-w-6xl" />
+      <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* Toolkit — tabbed */}
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           The Popunder toolkit for advertisers &amp; publishers
         </h2>
@@ -350,7 +324,7 @@ export default function PopunderAdsPage() {
 
       {/* CTA band */}
       <section className="border-t bg-orange-50/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center">
+        <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <Clock className="size-8 text-orange-500" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try Popunder?

@@ -32,7 +32,7 @@ export function RequireRole({
 
   if (loading || !user || !roles.includes(user.role)) {
     return (
-      <div className="mx-auto max-w-6xl space-y-4 px-4 py-10">
+      <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] space-y-4 px-4 sm:px-6 lg:px-8 py-10">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-40 w-full" />
