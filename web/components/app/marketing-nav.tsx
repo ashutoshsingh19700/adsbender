@@ -102,13 +102,13 @@ export function MarketingNav() {
         >
           <button
             type="button"
-            className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-orange-50 hover:text-orange-600"
+            className="flex items-center gap-1 rounded-md px-3.5 py-2.5 text-base font-medium text-foreground transition-colors hover:bg-orange-50 hover:text-orange-600"
             aria-expanded={openLabel === group.label}
           >
             {group.label}
             <ChevronDown
               className={cn(
-                "size-3.5 transition-transform",
+                "size-4 transition-transform",
                 openLabel === group.label && "rotate-180"
               )}
             />

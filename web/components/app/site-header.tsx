@@ -38,14 +38,41 @@ export function SiteHeader() {
     ? NAV_LINKS.filter((link) => link.roles.includes(user.role))
     : []
 
+  // The auth page (login/register, either role) uses its own minimal bar —
+  // just the logo and a contact link, no nav or auth CTAs since the user is
+  // already there.
+  if (pathname === "/login") {
+    return (
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
+          >
+            <span className="flex size-8 items-center justify-center rounded-md bg-orange-500 text-sm font-bold text-white">
+              A
+            </span>
+            AdsBender
+          </Link>
+          <a
+            href="mailto:support@adsbender.example"
+            className="text-sm font-medium tracking-wide text-muted-foreground hover:text-orange-600"
+          >
+            CONTACT US
+          </a>
+        </div>
+      </header>
+    )
+  }
+
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
+      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         <Link
           href={user ? ROLE_HOME[user.role] : "/"}
-          className="flex items-center gap-2 font-semibold tracking-tight"
+          className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
         >
-          <span className="flex size-6 items-center justify-center rounded-md bg-orange-500 text-xs font-bold text-white">
+          <span className="flex size-8 items-center justify-center rounded-md bg-orange-500 text-sm font-bold text-white">
             A
           </span>
           AdsBender
@@ -81,10 +108,19 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Log in</Link>
-              </Button>
-              <SignUpDialog />
+              <span className="btn-halo">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="btn-shine rounded-full border-orange-300 px-6 text-orange-600 hover:bg-white hover:text-orange-600"
+                >
+                  <Link href="/login">Log in</Link>
+                </Button>
+              </span>
+              <span className="btn-halo">
+                <SignUpDialog />
+              </span>
             </>
           )}
         </div>

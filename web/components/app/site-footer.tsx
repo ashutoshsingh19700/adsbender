@@ -1,9 +1,14 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { AtSign, Mail, MessageCircle, Rss, Send } from "lucide-react"
 
 import { useAuth } from "@/app/providers/auth-provider"
+
+// Auth pages (login/register, for either role) use their own minimal
+// chrome — the full marketing footer doesn't belong there.
+const NO_FOOTER_ROUTES = ["/login"]
 
 type FooterLink = { label: string; href: string }
 
@@ -65,10 +70,12 @@ const SOCIALS = [
 // registered company, so nothing here should read as a real legal entity.
 export function SiteFooter() {
   const { user, loading } = useAuth()
+  const pathname = usePathname()
 
   // Same rule as the marketing header: signed-in users are on their
   // dashboard, not the public site, so the marketing footer stays hidden.
   if (loading || user) return null
+  if (NO_FOOTER_ROUTES.includes(pathname)) return null
 
   return (
     <footer className="border-t bg-muted/30">

@@ -70,7 +70,10 @@ export function SignUpDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
+        <Button
+          size="lg"
+          className="btn-shine rounded-full bg-orange-500 px-6 text-white hover:bg-orange-600"
+        >
           Sign up
         </Button>
       </DialogTrigger>

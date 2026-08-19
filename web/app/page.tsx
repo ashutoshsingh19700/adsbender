@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -13,7 +14,6 @@ import {
   Megaphone,
   PlayCircle,
   ShieldCheck,
-  Sparkles,
   Wallet,
   Zap,
 } from "lucide-react"
@@ -21,7 +21,6 @@ import {
 import { useAuth } from "@/app/providers/auth-provider"
 import { ROLE_HOME } from "@/lib/roles"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -68,24 +67,6 @@ const HIGHLIGHTS = [
     icon: Wallet,
     title: "Built-in payouts",
     description: "Wallet balances, spend tracking, and payouts live alongside your campaigns and ad units.",
-  },
-]
-
-const PERKS = [
-  {
-    icon: BarChart3,
-    title: "Higher Ad Revenue",
-    description: "Boost earnings with smarter monetization",
-  },
-  {
-    icon: Sparkles,
-    title: "AI Optimization",
-    description: "AI that works 24/7 to maximize your revenue",
-  },
-  {
-    icon: ShieldCheck,
-    title: "You're in Control",
-    description: "Full transparency and complete control",
   },
 ]
 
@@ -161,201 +142,62 @@ export default function Home() {
       </div>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 via-orange-50/40 to-background">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-40 left-0 -z-10 size-72 rounded-full bg-orange-100/60 blur-3xl"
-        />
-        <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+      <section className="relative overflow-hidden bg-background">
+        <div className="mx-auto max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1760px] px-4 sm:px-6 lg:px-8 pt-6 pb-16 sm:pt-8 sm:pb-20">
+          <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-6 xl:gap-10">
             {/* Left: copy */}
             <div>
-              <Badge className="gap-1.5 border-orange-200 bg-orange-100 text-orange-700 hover:bg-orange-100">
-                <Sparkles className="size-3" />
-                Built for Marketers. Designed for Performance.
-              </Badge>
-              <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
-                You create content.
+              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+                One platform.
                 <br />
-                We help you
+                All your campaigns.
                 <br />
-                <span className="text-orange-500">earn more.</span>
+                <span className="text-orange-500">Better results.</span>
               </h1>
-              <p className="mt-5 max-w-md text-lg text-muted-foreground">
-                Whether you&apos;re a creator, publisher or a global brand,
-                AdsBender makes monetization simple, powerful and 100% in
-                your control.
+              <p className="mt-6 max-w-md text-lg text-foreground/80 sm:text-xl">
+                Launch, manage and optimize high-performing ad campaigns
+                across multiple platforms — from one powerful dashboard.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-orange-500 text-white hover:bg-orange-600"
-                >
-                  <Link href="/login">
-                    Get Started Now
-                    <ArrowRight />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/analytics">
-                    See How It Works
-                    <PlayCircle />
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
-                {PERKS.map((perk) => (
-                  <div key={perk.title} className="flex items-start gap-2.5">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                      <perk.icon className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{perk.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {perk.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                <span className="btn-halo">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="btn-shine rounded-full bg-orange-500 px-6 text-white hover:bg-orange-600"
+                  >
+                    <Link href="/login">
+                      Get Started Now
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </span>
+                <span className="btn-halo">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="btn-shine btn-shine-tint rounded-full border-orange-300 px-6 text-orange-600 hover:bg-white hover:text-orange-600"
+                  >
+                    <Link href="/analytics">
+                      See How It Works
+                      <PlayCircle />
+                    </Link>
+                  </Button>
+                </span>
               </div>
             </div>
 
-            {/* Right: dashboard mockup */}
-            <div className="relative">
-              <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-2 shadow-2xl shadow-orange-900/10">
-                <div className="overflow-hidden rounded-lg bg-card">
-                  <div className="flex border-b">
-                    <div className="hidden w-32 shrink-0 border-r p-3 sm:block">
-                      <div className="flex items-center gap-1.5 px-1 font-semibold text-xs">
-                        <span className="flex size-4 items-center justify-center rounded bg-orange-500 text-[9px] font-bold text-white">
-                          A
-                        </span>
-                        AdsBender
-                      </div>
-                      <ul className="mt-4 space-y-1 text-[11px] text-muted-foreground">
-                        {["Overview", "Campaigns", "Ad Units", "Reports", "Audience", "Payments", "Settings"].map(
-                          (item, i) => (
-                            <li
-                              key={item}
-                              className={
-                                i === 0
-                                  ? "rounded bg-orange-100 px-2 py-1 font-medium text-orange-700"
-                                  : "px-2 py-1"
-                              }
-                            >
-                              {item}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                    <div className="flex-1 p-3">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">Overview</p>
-                        <span className="rounded-md border px-2 py-0.5 text-[10px] text-muted-foreground">
-                          This Month
-                        </span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {[
-                          { label: "Estimated Revenue", value: "$12,540", delta: "+32.6%" },
-                          { label: "Impressions", value: "7.6M", delta: "+18.7%" },
-                          { label: "Clicks", value: "432K", delta: "+21.4%" },
-                          { label: "RPM", value: "$3.25", delta: "+15.6%" },
-                        ].map((stat) => (
-                          <div key={stat.label} className="rounded-lg border p-2">
-                            <p className="text-[10px] text-muted-foreground">
-                              {stat.label}
-                            </p>
-                            <p className="mt-0.5 text-sm font-semibold">
-                              {stat.value}
-                            </p>
-                            <p className="text-[10px] font-medium text-emerald-600">
-                              {stat.delta}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid gap-2 p-3 sm:grid-cols-3">
-                    <div className="rounded-lg border p-3 sm:col-span-2">
-                      <p className="text-[10px] text-muted-foreground">
-                        Revenue Overview
-                      </p>
-                      <svg viewBox="0 0 300 70" className="mt-2 h-16 w-full">
-                        <polyline
-                          fill="none"
-                          stroke="var(--color-orange-500)"
-                          strokeOpacity="0.85"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          points="0,55 40,50 80,53 120,35 160,40 200,15 240,24 300,8"
-                        />
-                      </svg>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-[10px] text-muted-foreground">
-                        Top Ad Platforms
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <div
-                          className="size-12 shrink-0 rounded-full"
-                          style={{
-                            background:
-                              "conic-gradient(var(--color-orange-500) 0 45%, var(--color-neutral-800) 45% 70%, var(--color-neutral-400) 70% 85%, var(--color-neutral-200) 85% 100%)",
-                          }}
-                        />
-                        <ul className="space-y-0.5 text-[9px] text-muted-foreground">
-                          <li>Google AdX 45%</li>
-                          <li>Media.net 25%</li>
-                          <li>Amazon Ads 15%</li>
-                          <li>Others 15%</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating AI optimization card */}
-              <div className="absolute -bottom-8 -left-6 hidden w-52 rounded-xl border bg-card p-3 shadow-xl ring-1 ring-foreground/10 sm:block">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium">AI Optimization</p>
-                  <Badge className="border-emerald-200 bg-emerald-100 text-[10px] text-emerald-700 hover:bg-emerald-100">
-                    Active
-                  </Badge>
-                </div>
-                <p className="mt-2 text-[10px] text-muted-foreground">
-                  Potential Revenue Increase
-                </p>
-                <p className="text-base font-semibold text-orange-500">
-                  + $2,450{" "}
-                  <span className="text-xs font-medium text-emerald-600">
-                    (+28%)
-                  </span>
-                </p>
-                <svg viewBox="0 0 200 40" className="mt-1 h-8 w-full">
-                  <polyline
-                    fill="none"
-                    stroke="var(--color-orange-500)"
-                    strokeOpacity="0.85"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points="0,32 40,28 80,25 120,15 160,10 200,4"
-                  />
-                </svg>
-                <Button size="sm" variant="outline" className="mt-2 w-full text-[10px]">
-                  Apply All Recommendations
-                </Button>
+            {/* Right: product screenshot */}
+            <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+              <div className="overflow-hidden rounded-2xl">
+                <Image
+                  src="/hero/hero-dashboard.png"
+                  alt="AdsBender analytics dashboard showing spend, impressions, clicks and campaign performance"
+                  width={1536}
+                  height={1017}
+                  priority
+                  className="h-auto w-full [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
+                />
               </div>
             </div>
           </div>
@@ -365,15 +207,17 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">
               Trusted by 15,000+ creators, publishers &amp; brands worldwide
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70 grayscale">
-              {TRUSTED_BY.map((name) => (
-                <span
-                  key={name}
-                  className="text-lg font-semibold tracking-tight text-muted-foreground"
-                >
-                  {name}
-                </span>
-              ))}
+            <div className="mt-6 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] overflow-hidden">
+              <div className="animate-marquee flex w-max items-center gap-x-16">
+                {[...TRUSTED_BY, ...TRUSTED_BY].map((name, i) => (
+                  <span
+                    key={`${name}-${i}`}
+                    className="shrink-0 text-lg font-semibold tracking-tight text-muted-foreground opacity-70 grayscale"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
