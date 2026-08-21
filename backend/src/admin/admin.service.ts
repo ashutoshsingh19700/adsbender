@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CampaignStatus, SiteStatus, UserRole } from '@prisma/client';
+import { CampaignStatus, Prisma, SiteStatus, UserRole } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
@@ -205,7 +205,80 @@ export class AdminService {
     });
   }
 
+  // --- Revenue (platform-wide financial rollup) ---
+  // Lifetime totals pulled straight from the Postgres ledger (source of
+  // truth for money), not ClickHouse - ClickHouse's spend/payout columns
+  // are the same 70% publisher / 30% platform split (see
+  // ClickHouseAnalyticsQueryStore.getDailyMetrics) but only cover the
+  // event-stream window, so this endpoint is the one place that reports
+  // the network's all-time position.
+  async getRevenueSummary() {
+    const [campaignSpend, walletTotals, completedPayouts, pendingPayouts] =
+      await Promise.all([
+        this.prisma.campaign.aggregate({ _sum: { spentAmount: true } }),
+        this.prisma.wallet.aggregate({
+          _sum: { totalEarned: true, totalWithdrawn: true, totalDeposited: true },
+        }),
+        this.prisma.payout.aggregate({
+          where: { status: 'COMPLETED' },
+          _sum: { amount: true },
+        }),
+        this.prisma.payout.aggregate({
+          where: { status: { in: ['REQUESTED', 'PROCESSING'] } },
+          _count: true,
+          _sum: { amount: true },
+        }),
+      ]);
+
+    // Aggregates come back null (not zero) when there are no matching rows -
+    // normalize to Decimal(0) so every field below is consistently a Decimal,
+    // same as every other money field this API returns.
+    const totalAdSpend = new Prisma.Decimal(campaignSpend._sum.spentAmount ?? 0);
+    const totalPublisherEarned = new Prisma.Decimal(
+      walletTotals._sum.totalEarned ?? 0,
+    );
+    const totalWithdrawn = new Prisma.Decimal(
+      walletTotals._sum.totalWithdrawn ?? 0,
+    );
+    const totalDeposited = new Prisma.Decimal(
+      walletTotals._sum.totalDeposited ?? 0,
+    );
+    const totalPayoutsCompleted = new Prisma.Decimal(
+      completedPayouts._sum.amount ?? 0,
+    );
+    const pendingPayoutAmount = new Prisma.Decimal(
+      pendingPayouts._sum.amount ?? 0,
+    );
+
+    // Gross platform revenue = money billed to advertisers minus the share
+    // credited to publishers for delivering it (the 70% cut).
+    const platformRevenue = this.subtract(totalAdSpend, totalPublisherEarned);
+    // What's still owed to publishers but hasn't been paid out yet.
+    const outstandingPublisherLiability = this.subtract(
+      totalPublisherEarned,
+      totalWithdrawn,
+    );
+
+    return {
+      totalAdSpend,
+      totalPublisherEarned,
+      platformRevenue,
+      totalDeposited,
+      totalPayoutsCompleted,
+      outstandingPublisherLiability,
+      pendingPayoutCount: pendingPayouts._count,
+      pendingPayoutAmount,
+    };
+  }
+
   // --- Helpers ---
+
+  private subtract(
+    a: Prisma.Decimal | number,
+    b: Prisma.Decimal | number,
+  ) {
+    return new Prisma.Decimal(a).minus(new Prisma.Decimal(b));
+  }
 
   private async requireCampaign(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
