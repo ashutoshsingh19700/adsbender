@@ -7,7 +7,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { Check, CheckCircle2, Clock, Code2, Copy, Globe2, LayoutGrid } from "lucide-react"
 
-import { ApiError, createAdZone, validateDomain } from "@/lib/api"
+import { ApiError, createAdZone, getPublisherProfile, validateDomain } from "@/lib/api"
 import type { AdZone, PublisherSite } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
@@ -120,8 +120,36 @@ export function PublisherDashboard() {
     snippet: string
   } | null>(null)
   const [copied, setCopied] = React.useState(false)
+  const [tokenCopied, setTokenCopied] = React.useState(false)
+  const [publisherId, setPublisherId] = React.useState<string | null>(null)
   // Bumped after a zone is created so <AdZoneManager> re-fetches its list.
   const [zoneListVersion, setZoneListVersion] = React.useState(0)
+
+  // Needed so we can show the publisher their default ads.txt token below —
+  // otherwise there's no way to know what to put in ads.txt without reading
+  // backend source.
+  React.useEffect(() => {
+    let cancelled = false
+    getPublisherProfile()
+      .then((profile) => {
+        if (!cancelled) setPublisherId(profile.id)
+      })
+      .catch(() => {
+        // Non-critical: the form still works without this, just don't block on it.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const defaultToken = publisherId ? `adnetwork-verify=${publisherId}` : null
+
+  async function copyToken() {
+    if (!defaultToken) return
+    await navigator.clipboard.writeText(defaultToken)
+    setTokenCopied(true)
+    setTimeout(() => setTokenCopied(false), 2000)
+  }
 
   const domainForm = useForm<z.infer<typeof domainSchema>>({
     resolver: zodResolver(domainSchema),
@@ -243,6 +271,31 @@ export function PublisherDashboard() {
                   </FormItem>
                 )}
               />
+              {defaultToken ? (
+                <div className="flex items-center gap-2.5 rounded-md border bg-muted/30 p-3 text-sm">
+                  <span className="text-muted-foreground">Your default token:</span>
+                  <code className="flex-1 truncate rounded bg-muted px-1.5 py-0.5 text-xs">
+                    {defaultToken}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={copyToken}
+                  >
+                    {tokenCopied ? (
+                      <>
+                        <Check className="size-3.5" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-3.5" /> Copy
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : null}
               {site ? (
                 <div
                   className={
