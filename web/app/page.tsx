@@ -119,10 +119,10 @@ export default function Home() {
       <div className="bg-neutral-950 px-4 py-3 text-sm text-neutral-50">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-center">
           <span className="flex size-6 items-center justify-center rounded-full border border-neutral-700">
-            <Gift className="size-3.5 text-orange-400" />
+            <Gift className="size-3.5 text-violet-400" />
           </span>
           <span>Spend $500 on Ads in the next 60 days and get</span>
-          <span className="rounded-md bg-orange-500 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="rounded-md bg-gradient-to-r from-violet-600 to-blue-500 px-2.5 py-1 text-xs font-semibold text-white">
             $150 FREE Ad Credit
           </span>
           <span>to boost your campaigns!</span>
@@ -133,7 +133,7 @@ export default function Home() {
           </span>
           <Link
             href="/login"
-            className="inline-flex items-center gap-1 font-medium text-orange-400 hover:text-orange-300"
+            className="inline-flex items-center gap-1 font-medium text-violet-400 hover:text-violet-300"
           >
             View Details
             <ArrowRight className="size-3.5" />
@@ -152,7 +152,9 @@ export default function Home() {
                 <br />
                 All your campaigns.
                 <br />
-                <span className="text-orange-500">Better results.</span>
+                <span className="bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
+                  Better results.
+                </span>
               </h1>
               <p className="mt-6 max-w-md text-lg text-foreground/80 sm:text-xl">
                 Launch, manage and optimize high-performing ad campaigns
@@ -163,7 +165,7 @@ export default function Home() {
                   <Button
                     asChild
                     size="lg"
-                    className="btn-shine rounded-full bg-orange-500 px-6 text-white hover:bg-orange-600"
+                    className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
                   >
                     <Link href="/login">
                       Get Started Now
@@ -176,7 +178,7 @@ export default function Home() {
                     asChild
                     variant="outline"
                     size="lg"
-                    className="btn-shine btn-shine-tint rounded-full border-orange-300 px-6 text-orange-600 hover:bg-white hover:text-orange-600"
+                    className="btn-shine btn-shine-tint rounded-full border-violet-300 px-6 text-violet-600 hover:bg-white hover:text-violet-600"
                   >
                     <Link href="/analytics">
                       See How It Works
@@ -228,7 +230,7 @@ export default function Home() {
         <div className="grid gap-8 sm:grid-cols-3">
           {HIGHLIGHTS.map((item) => (
             <div key={item.title} className="text-center sm:text-left">
-              <div className="mx-auto flex size-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 sm:mx-0">
+              <div className="mx-auto flex size-10 items-center justify-center rounded-lg bg-violet-100 text-violet-600 sm:mx-0">
                 <item.icon className="size-5" />
               </div>
               <h3 className="mt-4 font-medium">{item.title}</h3>
@@ -258,7 +260,7 @@ export default function Home() {
           {FEATURES.map((feature) => (
             <Card key={feature.href} className="justify-between">
               <CardHeader>
-                <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
                   <feature.icon className="size-4.5" />
                 </div>
                 <CardTitle>{feature.title}</CardTitle>
@@ -291,7 +293,7 @@ export default function Home() {
         <div className="mt-10 grid gap-8 sm:grid-cols-3">
           {STEPS.map((item) => (
             <div key={item.step}>
-              <span className="text-sm font-medium text-orange-500">
+              <span className="text-sm font-medium text-violet-600">
                 {item.step}
               </span>
               <h3 className="mt-2 font-medium">{item.title}</h3>
@@ -304,9 +306,9 @@ export default function Home() {
       </section>
 
       {/* CTA band */}
-      <section className="border-t bg-orange-50/60">
+      <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <BarChart3 className="size-8 text-orange-500" />
+          <BarChart3 className="size-8 text-violet-600" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to see it running?
           </h2>
@@ -317,7 +319,7 @@ export default function Home() {
           <Button
             asChild
             size="lg"
-            className="bg-orange-500 text-white hover:bg-orange-600"
+            className="bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
           >
             <Link href="/login">
               Get started
