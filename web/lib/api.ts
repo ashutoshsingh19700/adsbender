@@ -18,6 +18,7 @@ import type {
   PayoutStatus,
   Profile,
   PublisherSite,
+  RevenueSummary,
   SiteStatus,
   TransactionType,
   UserRole,
@@ -429,6 +430,12 @@ export function adminFailPayout(payoutId: string, reason?: string) {
     method: "PATCH",
     body: JSON.stringify({ reason }),
   })
+}
+
+// --- Admin: revenue ---
+
+export function adminGetRevenueSummary() {
+  return apiFetch<RevenueSummary>("/api/v1/admin/revenue/summary")
 }
 
 // --- Admin: campaign review, users, publisher sites ---

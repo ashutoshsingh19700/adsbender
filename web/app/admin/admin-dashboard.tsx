@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdminOverview } from "./admin-overview"
 import { CampaignReviewPanel } from "./campaign-review-panel"
 import { PayoutsPanel } from "./payouts-panel"
+import { RevenuePanel } from "./revenue-panel"
 import { SitesPanel } from "./sites-panel"
 import { UsersPanel } from "./users-panel"
 
@@ -31,6 +32,7 @@ export function AdminDashboard() {
       <Tabs defaultValue="campaigns">
         <TabsList>
           <TabsTrigger value="campaigns">Campaign Review</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="sites">Sites</TabsTrigger>
@@ -40,6 +42,9 @@ export function AdminDashboard() {
           <CampaignReviewPanel
             onCampaignReviewed={() => setOverviewToken((v) => v + 1)}
           />
+        </TabsContent>
+        <TabsContent value="revenue" className="pt-4">
+          <RevenuePanel />
         </TabsContent>
         <TabsContent value="payouts" className="pt-4">
           <PayoutsPanel />

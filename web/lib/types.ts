@@ -245,3 +245,16 @@ export type AdminSite = PublisherSite & { publisher: UserSummary }
 
 // GET /wallet/admin/payouts
 export type AdminPayout = Payout & { wallet: { user: UserSummary } }
+
+// GET /admin/revenue/summary - lifetime, platform-wide financial rollup.
+// All amounts are decimal strings, same convention as the rest of the API.
+export type RevenueSummary = {
+  totalAdSpend: string
+  totalPublisherEarned: string
+  platformRevenue: string
+  totalDeposited: string
+  totalPayoutsCompleted: string
+  outstandingPublisherLiability: string
+  pendingPayoutCount: number
+  pendingPayoutAmount: string
+}
