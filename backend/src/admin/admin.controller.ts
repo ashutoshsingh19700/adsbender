@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
+  HttpException,
   Param,
   Patch,
   Post,
@@ -37,13 +39,36 @@ export class AdminController {
   }
 
   @Post('campaigns/:id/approve')
-  approveCampaign(@Param('id') id: string) {
-    return this.adminService.approveCampaign(id);
+  async approveCampaign(@Param('id') id: string) {
+    // TEMP DIAGNOSTIC (Claude, 2026-08-21): this route 500s with no detail
+    // in production; surfacing the real error message/stack to trace it,
+    // since there's no Render log access from here. Revert once fixed.
+    try {
+      return await this.adminService.approveCampaign(id);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new BadRequestException({
+        diagnosticMessage:
+          error instanceof Error ? error.message : String(error),
+        diagnosticName: error instanceof Error ? error.name : undefined,
+        diagnosticStack: error instanceof Error ? error.stack : undefined,
+      });
+    }
   }
 
   @Post('campaigns/:id/reject')
   rejectCampaign(@Param('id') id: string, @Body() dto: RejectCampaignDto) {
     return this.adminService.rejectCampaign(id, dto);
+  }
+
+  // --- Revenue ---
+
+  @Get('revenue/summary')
+  getRevenueSummary() {
+    return this.adminService.getRevenueSummary();
   }
 
   // --- Users ---
