@@ -33,6 +33,12 @@ export const campaignSchema = z
     creativeType: z.enum(["image", "html"]),
     creativeUrl: z.string().optional(),
     creativeHtml: z.string().optional(),
+    // Required + auto-wrapped for creativeType "image" (AdEngineController
+    // wraps the rendered <img> in a click-tracked link to this address).
+    // Optional for "html" - stored for reference but never auto-wrapped,
+    // since raw HTML often has its own <a>/<button>/<form> elements that an
+    // outer anchor would break.
+    destinationUrl: z.string().optional(),
     notes: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -63,7 +69,39 @@ export const campaignSchema = z
         message: "Creative HTML is required (min 8 characters)",
       })
     }
+    if (data.creativeType === "image") {
+      if (!data.destinationUrl) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["destinationUrl"],
+          message: "Destination URL is required so the ad is clickable",
+        })
+      } else if (!isValidHttpUrl(data.destinationUrl)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["destinationUrl"],
+          message: "Enter a valid URL, starting with https:// or http://",
+        })
+      }
+      // "html" creatives leave destinationUrl optional (embed their own
+      // links in the raw markup) but it's still format-checked if given.
+    } else if (data.destinationUrl && !isValidHttpUrl(data.destinationUrl)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["destinationUrl"],
+        message: "Enter a valid URL, starting with https:// or http://",
+      })
+    }
   })
+
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" || url.protocol === "http:"
+  } catch {
+    return false
+  }
+}
 
 export type CampaignFormInput = z.input<typeof campaignSchema>
 export type CampaignFormOutput = z.output<typeof campaignSchema>

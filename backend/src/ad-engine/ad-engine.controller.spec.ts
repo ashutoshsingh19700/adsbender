@@ -165,6 +165,50 @@ describe('AdEngineController', () => {
     );
   });
 
+  it('wraps an image creative in a click-tracked link when destinationUrl is set', async () => {
+    // Pinned explicitly rather than relying on the ambient environment -
+    // adServerPublicOrigin() derives from PUBLIC_TAG_URL, which other
+    // suites sharing this process may have already populated from .env.
+    const previousTagUrl = process.env.PUBLIC_TAG_URL;
+    process.env.PUBLIC_TAG_URL = 'http://localhost:3000/assets/publisher_tag.js';
+
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-image-2',
+      advertiserId: 'advertiser-2',
+      campaignName: 'Image Campaign With Destination',
+      maxCpc: 1.25,
+      creativeType: 'image',
+      creativeUrl: 'https://cdn.example.com/creative.png',
+      creativeHtml: null,
+      destinationUrl: 'https://advertiser.example/landing?ref=ad',
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.creative?.html).toBe(
+      '<a href="http://localhost:3000/api/v1/click?zoneId=42&amp;campaignId=campaign-image-2&amp;advertiserId=advertiser-2&amp;cost=1.25&amp;origin=https%3A%2F%2Fpublisher.test&amp;path=%2Farticle&amp;target=https%3A%2F%2Fadvertiser.example%2Flanding%3Fref%3Dad" target="_blank" rel="noopener noreferrer"><img src="https://cdn.example.com/creative.png" alt="" style="display:block;max-width:100%;height:auto;" /></a>',
+    );
+
+    if (previousTagUrl === undefined) {
+      delete process.env.PUBLIC_TAG_URL;
+    } else {
+      process.env.PUBLIC_TAG_URL = previousTagUrl;
+    }
+  });
+
   it('falls back to the fraud honeypot link when a campaign has no usable creative content', async () => {
     adTargetingService.selectCampaign.mockResolvedValue({
       id: 'campaign-empty',

@@ -92,6 +92,36 @@ describe('RedisCampaignCacheStore', () => {
     expect(commandSpy).toHaveBeenCalledWith(['DEL', ACTIVE_CAMPAIGNS_SET_KEY]);
   });
 
+  it('round-trips destinationUrl for a click-tracked image creative', async () => {
+    await store.replaceActiveCampaigns([
+      {
+        id: 'campaign-2',
+        advertiserId: 'advertiser-1',
+        campaignName: 'Image With Destination',
+        totalBudget: new Prisma.Decimal('100.00'),
+        dailyBudget: new Prisma.Decimal('10.00'),
+        maxCpc: new Prisma.Decimal('1.00'),
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        status: 'ACTIVE',
+        advertiserBalanceUsd: new Prisma.Decimal('5.00'),
+        creativeType: 'image',
+        creativeUrl: 'https://cdn.example.com/ad.png',
+        creativeHtml: null,
+        destinationUrl: 'https://advertiser.example/landing',
+      },
+    ]);
+
+    expect(commandSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'HSET',
+        campaignCacheKey('campaign-2'),
+        'destinationUrl',
+        'https://advertiser.example/landing',
+      ]),
+    );
+  });
+
   it('reads active campaign hashes back from Redis for serve-time targeting', async () => {
     commandSpy.mockImplementation(async (args) => {
       if (args[0] === 'SMEMBERS') {
@@ -147,6 +177,7 @@ describe('RedisCampaignCacheStore', () => {
         creativeType: 'html',
         creativeUrl: null,
         creativeHtml: '<div>ad</div>',
+        destinationUrl: null,
       },
     ]);
   });

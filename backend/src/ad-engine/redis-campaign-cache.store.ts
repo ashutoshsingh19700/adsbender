@@ -98,6 +98,7 @@ export class RedisCampaignCacheStore
       creativeType: campaign.creativeType,
       creativeUrl: campaign.creativeUrl ?? '',
       creativeHtml: campaign.creativeHtml ?? '',
+      destinationUrl: campaign.destinationUrl ?? '',
     };
   }
 
@@ -130,6 +131,7 @@ export class RedisCampaignCacheStore
       creativeType: record.creativeType ?? '',
       creativeUrl: record.creativeUrl || null,
       creativeHtml: record.creativeHtml || null,
+      destinationUrl: record.destinationUrl || null,
     };
   }
 

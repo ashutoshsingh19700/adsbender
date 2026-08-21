@@ -67,6 +67,10 @@ export class AdvertiserService {
       throw new BadRequestException('CREATIVE_HTML_REQUIRED');
     }
 
+    if (dto.creativeType === 'image' && !dto.destinationUrl) {
+      throw new BadRequestException('DESTINATION_URL_REQUIRED');
+    }
+
     const campaign = await this.prisma.campaign.create({
       data: {
         advertiserId,
@@ -81,6 +85,7 @@ export class AdvertiserService {
         creativeType: dto.creativeType,
         creativeUrl: dto.creativeUrl,
         creativeHtml: dto.creativeHtml,
+        destinationUrl: dto.destinationUrl,
         notes: dto.notes,
         status: CampaignStatus.PENDING_REVIEW,
       },
@@ -265,6 +270,7 @@ export class AdvertiserService {
           creativeType: campaign.creativeType,
           creativeUrl: campaign.creativeUrl,
           creativeHtml: campaign.creativeHtml,
+          destinationUrl: campaign.destinationUrl,
         },
       ],
     };

@@ -223,7 +223,12 @@ model Campaign {
   creativeType String?
   creativeUrl  String?
   creativeHtml String?
-  notes        String?
+  // Click-through destination for image creatives - AdEngineController
+  // wraps the rendered <img> in an anchor through /api/v1/click when this
+  // is set, so clicks get recorded before redirecting. HTML creatives
+  // supply their own links inline and ignore this field.
+  destinationUrl String?
+  notes          String?
 
   status CampaignStatus @default(DRAFT)
 

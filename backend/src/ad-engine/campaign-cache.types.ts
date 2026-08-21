@@ -14,6 +14,10 @@ export type CacheableCampaign = {
   creativeType: string;
   creativeUrl: string | null;
   creativeHtml: string | null;
+  // Optional (rather than string | null like the fields above) purely so
+  // existing call sites/fixtures built before this field existed don't need
+  // updating - every real row from CampaignCacheSyncService's query has it.
+  destinationUrl?: string | null;
 };
 
 export type CampaignCacheRecord = {
@@ -30,6 +34,7 @@ export type CampaignCacheRecord = {
   creativeType: string;
   creativeUrl: string;
   creativeHtml: string;
+  destinationUrl?: string;
 };
 
 export type ParsedCampaignCacheRecord = {
@@ -46,6 +51,7 @@ export type ParsedCampaignCacheRecord = {
   creativeType: string;
   creativeUrl: string | null;
   creativeHtml: string | null;
+  destinationUrl?: string | null;
 };
 
 export interface CampaignCacheStore {

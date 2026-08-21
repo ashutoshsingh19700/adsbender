@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { ApiError, createCampaign } from "@/lib/api"
+import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,7 +49,7 @@ const STEPS = ["Budget", "Targeting", "Creative"] as const
 const STEP_FIELDS: Record<number, (keyof CampaignFormInput)[]> = {
   0: ["campaignName", "totalBudget", "dailyBudget", "maxCpc"],
   1: ["targetCountries", "targetDevices"],
-  2: ["creativeType", "creativeUrl", "creativeHtml"],
+  2: ["creativeType", "creativeUrl", "creativeHtml", "destinationUrl"],
 }
 
 export function CampaignWizard({
@@ -59,6 +59,7 @@ export function CampaignWizard({
 } = {}) {
   const [step, setStep] = React.useState(0)
   const [result, setResult] = React.useState<Campaign | null>(null)
+  const [uploading, setUploading] = React.useState(false)
 
   const form = useForm<CampaignFormInput, unknown, CampaignFormOutput>({
     resolver: zodResolver(campaignSchema),
@@ -72,6 +73,7 @@ export function CampaignWizard({
       creativeType: "image",
       creativeUrl: "",
       creativeHtml: "",
+      destinationUrl: "",
       notes: "",
     },
   })
@@ -85,6 +87,38 @@ export function CampaignWizard({
 
   function goBack() {
     setStep((s) => Math.max(s - 1, 0))
+  }
+
+  // Mirrors the backend's ALLOWED_CREATIVE_MIME_TYPES /
+  // MAX_CREATIVE_UPLOAD_BYTES (see creative-upload.service.ts) — checked
+  // here too so the advertiser gets instant feedback instead of waiting on
+  // a round trip for a file the server will reject anyway.
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = "" // allow re-selecting the same file later
+
+    if (!file) return
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error("Image is too large (max 5 MB)")
+      return
+    }
+
+    setUploading(true)
+    try {
+      const { url } = await uploadCreativeFile(file)
+      form.setValue("creativeUrl", url, {
+        shouldValidate: true,
+        shouldDirty: true,
+      })
+      toast.success("Image uploaded")
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Upload failed")
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function onSubmit(values: CampaignFormOutput) {
@@ -358,36 +392,112 @@ export function CampaignWizard({
                   />
 
                   {creativeType === "image" ? (
-                    <FormField
-                      control={form.control}
-                      name="creativeUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Creative URL</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="https://cdn.example.com/creative.png"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <FormLabel>Upload image</FormLabel>
+                        <Input
+                          type="file"
+                          accept="image/png,image/jpeg,image/gif,image/webp"
+                          disabled={uploading}
+                          onChange={handleFileSelected}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          {uploading
+                            ? "Uploading..."
+                            : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                        </p>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="creativeUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Creative URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://cdn.example.com/creative.png"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {form.watch("creativeUrl") ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
+                        <img
+                          src={form.watch("creativeUrl")}
+                          alt="Creative preview"
+                          className="max-h-48 rounded-md border object-contain"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none"
+                          }}
+                          onLoad={(event) => {
+                            event.currentTarget.style.display = "block"
+                          }}
+                        />
+                      ) : null}
+
+                      <FormField
+                        control={form.control}
+                        name="destinationUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Destination URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://fakirefashion.com"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Where people land when they click this ad.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   ) : (
-                    <FormField
-                      control={form.control}
-                      name="creativeHtml"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Creative HTML</FormLabel>
-                          <FormControl>
-                            <Textarea rows={5} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-3">
+                      <FormField
+                        control={form.control}
+                        name="creativeHtml"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Creative HTML</FormLabel>
+                            <FormControl>
+                              <Textarea rows={5} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="destinationUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Destination URL (optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://fakirefashion.com"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              For reference only — your HTML above should
+                              already include its own link(s), since this
+                              won&apos;t be wrapped around it automatically.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   )}
 
                   <FormField

@@ -16,6 +16,7 @@ import { DeviceDetectorService } from './device-detector.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
+import { adServerPublicOrigin } from '../config/env';
 
 @Controller('api/v1')
 export class AdEngineController {
@@ -116,7 +117,11 @@ export class AdEngineController {
             advertiserId: selectedCampaign.advertiserId,
             campaignName: selectedCampaign.campaignName,
             bidUsd: selectedCampaign.maxCpc,
-            html: this.renderCreativeHtml(selectedCampaign),
+            html: this.renderCreativeHtml(selectedCampaign, {
+              zoneId,
+              origin,
+              path,
+            }),
           }
         : null,
     };
@@ -127,20 +132,60 @@ export class AdEngineController {
   // Falls back to the fraud-detection honeypot link (same as an empty zone)
   // if a campaign somehow has no creative content, rather than injecting
   // nothing and leaving the zone silently blank.
-  private renderCreativeHtml(campaign: {
-    creativeType: string;
-    creativeUrl: string | null;
-    creativeHtml: string | null;
-  }): string {
+  private renderCreativeHtml(
+    campaign: {
+      id: string;
+      advertiserId: string;
+      maxCpc: number;
+      creativeType: string;
+      creativeUrl: string | null;
+      creativeHtml: string | null;
+      destinationUrl?: string | null;
+    },
+    context: { zoneId: string; origin: string; path: string },
+  ): string {
     if (campaign.creativeType === 'html' && campaign.creativeHtml) {
       return campaign.creativeHtml;
     }
 
     if (campaign.creativeType === 'image' && campaign.creativeUrl) {
-      return `<img src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" alt="" style="display:block;max-width:100%;height:auto;" />`;
+      const image = `<img src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" alt="" style="display:block;max-width:100%;height:auto;" />`;
+
+      // No destinationUrl (e.g. a campaign created before this field
+      // existed) - keep the old bare-image behavior rather than linking
+      // nowhere useful.
+      if (!campaign.destinationUrl) {
+        return image;
+      }
+
+      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${image}</a>`;
     }
 
     return `<a href="/api/v1/trap" style="display:none !important;"></a>`;
+  }
+
+  // Routes the click through the existing /api/v1/click endpoint (records
+  // the click event, then 302s to the real destination) instead of linking
+  // straight to destinationUrl, so a click on an image creative is tracked
+  // the same way clicks already are for everything else. Must be an
+  // absolute URL back to THIS server, not a relative path - the anchor is
+  // rendered into a zone embedded cross-origin on the publisher's page (see
+  // publisher_tag.js), so a relative href would resolve against the
+  // publisher's own origin instead.
+  private buildClickUrl(
+    campaign: { id: string; advertiserId: string; maxCpc: number; destinationUrl?: string | null },
+    context: { zoneId: string; origin: string; path: string },
+  ): string {
+    const clickUrl = new URL('/api/v1/click', adServerPublicOrigin());
+    clickUrl.searchParams.set('zoneId', context.zoneId);
+    clickUrl.searchParams.set('campaignId', campaign.id);
+    clickUrl.searchParams.set('advertiserId', campaign.advertiserId);
+    clickUrl.searchParams.set('cost', String(campaign.maxCpc));
+    clickUrl.searchParams.set('origin', context.origin);
+    clickUrl.searchParams.set('path', context.path);
+    clickUrl.searchParams.set('target', campaign.destinationUrl as string);
+
+    return clickUrl.toString();
   }
 
   private escapeHtmlAttribute(value: string): string {

@@ -26,6 +26,7 @@ import {
   pauseCampaign,
   resumeCampaign,
   updateCampaign,
+  uploadCreativeFile,
 } from "@/lib/api"
 import type {
   AnalyticsResponse,
@@ -585,6 +586,7 @@ function CampaignEditDialog({
       creativeType: "image",
       creativeUrl: "",
       creativeHtml: "",
+      destinationUrl: "",
       notes: "",
     },
   })
@@ -601,6 +603,7 @@ function CampaignEditDialog({
         creativeType: campaign.creativeType,
         creativeUrl: campaign.creativeUrl ?? "",
         creativeHtml: campaign.creativeHtml ?? "",
+        destinationUrl: campaign.destinationUrl ?? "",
         notes: campaign.notes ?? "",
       })
     }
@@ -608,6 +611,37 @@ function CampaignEditDialog({
   }, [campaign])
 
   const creativeType = form.watch("creativeType")
+  const [uploading, setUploading] = React.useState(false)
+
+  // Mirrors campaign-wizard.tsx's handleFileSelected — see the comment
+  // there for why the size check is duplicated from the backend.
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+
+    if (!file) return
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error("Image is too large (max 5 MB)")
+      return
+    }
+
+    setUploading(true)
+    try {
+      const { url } = await uploadCreativeFile(file)
+      form.setValue("creativeUrl", url, {
+        shouldValidate: true,
+        shouldDirty: true,
+      })
+      toast.success("Image uploaded")
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Upload failed")
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function onSubmit(values: CampaignFormOutput) {
     if (!campaign) return
@@ -812,33 +846,88 @@ function CampaignEditDialog({
             />
 
             {creativeType === "image" ? (
-              <FormField
-                control={form.control}
-                name="creativeUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Creative URL</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <FormLabel>Upload image</FormLabel>
+                  <Input
+                    type="file"
+                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    disabled={uploading}
+                    onChange={handleFileSelected}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {uploading
+                      ? "Uploading..."
+                      : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="creativeUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Creative URL</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="destinationUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Destination URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://fakirefashion.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Where people land when they click this ad.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             ) : (
-              <FormField
-                control={form.control}
-                name="creativeHtml"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Creative HTML</FormLabel>
-                    <FormControl>
-                      <Textarea rows={5} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="creativeHtml"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Creative HTML</FormLabel>
+                      <FormControl>
+                        <Textarea rows={5} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="destinationUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Destination URL (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://fakirefashion.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        For reference only — your HTML above should already
+                        include its own link(s), since this won&apos;t be
+                        wrapped around it automatically.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
 
             <FormField

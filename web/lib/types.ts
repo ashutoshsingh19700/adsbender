@@ -38,6 +38,7 @@ export type Campaign = {
   creativeType: CreativeType
   creativeUrl: string | null
   creativeHtml: string | null
+  destinationUrl: string | null
   status: CampaignStatus
   notes: string | null
   createdAt: string
@@ -49,6 +50,7 @@ export type CampaignCreative = {
   creativeType: CreativeType
   creativeUrl: string | null
   creativeHtml: string | null
+  destinationUrl: string | null
 }
 
 export type CampaignSpend = {

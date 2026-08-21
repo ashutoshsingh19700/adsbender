@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { AdvertiserController } from './advertiser.controller';
 import { AdvertiserService } from './advertiser.service';
+import { CreativeUploadService } from './creative-upload.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 
@@ -9,6 +10,9 @@ describe('AdvertiserController', () => {
   let controller: AdvertiserController;
   const advertiserService = {
     createCampaign: jest.fn(),
+  };
+  const creativeUploadService = {
+    uploadCreative: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -24,6 +28,10 @@ describe('AdvertiserController', () => {
         {
           provide: AdvertiserService,
           useValue: advertiserService,
+        },
+        {
+          provide: CreativeUploadService,
+          useValue: creativeUploadService,
         },
       ],
     })

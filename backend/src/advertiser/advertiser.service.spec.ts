@@ -58,6 +58,7 @@ describe('AdvertiserService', () => {
         targetDevices: ['mobile'],
         creativeType: 'image',
         creativeUrl: 'https://cdn.example.com/ad.png',
+        destinationUrl: 'https://advertiser.example/landing',
       }),
     ).resolves.toEqual({
       message: 'Campaign submitted for review',
@@ -72,9 +73,26 @@ describe('AdvertiserService', () => {
         advertiserId: 'advertiser-1',
         targetCountries: ['US', 'IN'],
         targetDevices: ['mobile'],
+        destinationUrl: 'https://advertiser.example/landing',
         status: CampaignStatus.PENDING_REVIEW,
       }),
     });
+  });
+
+  it('rejects an image campaign with no destination URL', async () => {
+    await expect(
+      service.createCampaign('advertiser-1', {
+        campaignName: 'Missing Destination',
+        totalBudget: 100,
+        dailyBudget: 10,
+        maxCpc: 0.5,
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        creativeType: 'image',
+        creativeUrl: 'https://cdn.example.com/ad.png',
+      } as never),
+    ).rejects.toThrow(BadRequestException);
+    expect(prismaService.campaign.create).not.toHaveBeenCalled();
   });
 
   it('rejects a daily budget above the total budget', async () => {

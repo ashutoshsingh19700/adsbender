@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   Min,
   MinLength,
@@ -63,6 +64,16 @@ export class UpdateCampaignDto {
   @MinLength(8)
   @MaxLength(5000)
   creativeHtml?: string;
+
+  // See CreateCampaignDto.destinationUrl - same rule: required+validated
+  // for 'image', format-checked-if-present but optional for 'html'.
+  @ValidateIf(
+    (dto: UpdateCampaignDto) =>
+      dto.creativeType === 'image' ||
+      (dto.destinationUrl !== undefined && dto.destinationUrl !== ''),
+  )
+  @IsUrl({ require_protocol: true })
+  destinationUrl?: string;
 
   @IsOptional()
   @IsString()

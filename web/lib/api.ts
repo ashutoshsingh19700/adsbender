@@ -49,11 +49,16 @@ async function apiFetch<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
+  // FormData bodies (file uploads) must NOT get a manual Content-Type -
+  // the browser sets one itself with the multipart boundary, and
+  // overriding it here would drop the boundary and break parsing.
+  const isFormData = init?.body instanceof FormData
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...init?.headers,
     },
   })
@@ -256,7 +261,21 @@ export type CreateCampaignInput = {
   creativeType: CreativeType
   creativeUrl?: string
   creativeHtml?: string
+  destinationUrl?: string
   notes?: string
+}
+
+// Uploads the creative file itself and returns a public URL — use the
+// result to fill CreateCampaignInput.creativeUrl instead of requiring the
+// advertiser to host the image elsewhere first.
+export function uploadCreativeFile(file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  return apiFetch<{ url: string }>("/api/v1/advertiser/creatives/upload", {
+    method: "POST",
+    body: formData,
+  })
 }
 
 export function createCampaign(input: CreateCampaignInput) {
