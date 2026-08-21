@@ -42,6 +42,9 @@ describe('RedisCampaignCacheStore', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: new Prisma.Decimal('5.00'),
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
     ]);
 
@@ -117,6 +120,12 @@ describe('RedisCampaignCacheStore', () => {
           'ACTIVE',
           'advertiserBalanceUsd',
           '25',
+          'creativeType',
+          'html',
+          'creativeUrl',
+          '',
+          'creativeHtml',
+          '<div>ad</div>',
         ];
       }
 
@@ -135,6 +144,9 @@ describe('RedisCampaignCacheStore', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 25,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
     ]);
   });

@@ -116,10 +116,35 @@ export class AdEngineController {
             advertiserId: selectedCampaign.advertiserId,
             campaignName: selectedCampaign.campaignName,
             bidUsd: selectedCampaign.maxCpc,
-            html: `<a href="/api/v1/trap" style="display:none !important;"></a>`,
+            html: this.renderCreativeHtml(selectedCampaign),
           }
         : null,
     };
+  }
+
+  // Builds the markup the publisher tag drops straight into the zone's
+  // <section> via zone.innerHTML - see backend/public/publisher_tag.js.
+  // Falls back to the fraud-detection honeypot link (same as an empty zone)
+  // if a campaign somehow has no creative content, rather than injecting
+  // nothing and leaving the zone silently blank.
+  private renderCreativeHtml(campaign: {
+    creativeType: string;
+    creativeUrl: string | null;
+    creativeHtml: string | null;
+  }): string {
+    if (campaign.creativeType === 'html' && campaign.creativeHtml) {
+      return campaign.creativeHtml;
+    }
+
+    if (campaign.creativeType === 'image' && campaign.creativeUrl) {
+      return `<img src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" alt="" style="display:block;max-width:100%;height:auto;" />`;
+    }
+
+    return `<a href="/api/v1/trap" style="display:none !important;"></a>`;
+  }
+
+  private escapeHtmlAttribute(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   }
 
   @Get('click')

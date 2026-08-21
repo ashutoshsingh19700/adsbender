@@ -11,6 +11,9 @@ export type CacheableCampaign = {
   targetDevices: string[];
   status: string;
   advertiserBalanceUsd: Prisma.Decimal | number | string;
+  creativeType: string;
+  creativeUrl: string | null;
+  creativeHtml: string | null;
 };
 
 export type CampaignCacheRecord = {
@@ -24,6 +27,9 @@ export type CampaignCacheRecord = {
   targetDevices: string;
   status: string;
   advertiserBalanceUsd: string;
+  creativeType: string;
+  creativeUrl: string;
+  creativeHtml: string;
 };
 
 export type ParsedCampaignCacheRecord = {
@@ -37,6 +43,9 @@ export type ParsedCampaignCacheRecord = {
   targetDevices: string[];
   status: string;
   advertiserBalanceUsd: number;
+  creativeType: string;
+  creativeUrl: string | null;
+  creativeHtml: string | null;
 };
 
 export interface CampaignCacheStore {

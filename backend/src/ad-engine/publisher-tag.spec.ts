@@ -36,11 +36,18 @@ describe('publisher_tag.js', () => {
     const documentMock = {
       readyState: 'complete',
       referrer: 'https://referrer.test',
+      // Publishers load this script cross-origin - currentScript.src is how
+      // it locates the ad server regardless of what site it's embedded on.
+      // See the AD_SERVER_ORIGIN comment in publisher_tag.js.
+      currentScript: {
+        src: 'https://engine.test/assets/publisher_tag.js',
+      },
       querySelectorAll: jest.fn().mockReturnValue([zone]),
       addEventListener: jest.fn(),
     };
     const context = {
       URLSearchParams,
+      URL,
       Error,
       fetch: fetchMock,
       navigator: {
@@ -103,7 +110,7 @@ describe('publisher_tag.js', () => {
     );
     expect(zone.insertAdjacentHTML).toHaveBeenCalledWith(
       'beforeend',
-      '<a data-ad-network-honeypot="true" href="/api/v1/trap" style="display:none !important;"></a>',
+      '<a data-ad-network-honeypot="true" href="https://engine.test/api/v1/trap" style="display:none !important;"></a>',
     );
   });
 });

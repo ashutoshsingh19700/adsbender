@@ -40,6 +40,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 5,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
       {
         id: 'campaign-desktop',
@@ -52,6 +55,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['desktop'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 20,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
       {
         id: 'campaign-high',
@@ -64,6 +70,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 10,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
     ]);
 
@@ -92,6 +101,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 5,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
       {
         id: 'campaign-paused',
@@ -104,6 +116,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['mobile'],
         status: 'PAUSED',
         advertiserBalanceUsd: 10,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
       {
         id: 'campaign-country-miss',
@@ -116,6 +131,9 @@ describe('AdTargetingService', () => {
         targetDevices: ['mobile'],
         status: 'ACTIVE',
         advertiserBalanceUsd: 10,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
       },
     ]);
 

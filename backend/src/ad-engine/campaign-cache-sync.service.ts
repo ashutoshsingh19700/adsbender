@@ -78,6 +78,9 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
           c."targetCountries",
           c."targetDevices",
           c.status::text AS status,
+          c."creativeType",
+          c."creativeUrl",
+          c."creativeHtml",
           u.balance_usd AS "advertiserBalanceUsd"
         FROM "Campaign" c
         INNER JOIN "User" u ON u.id = c."advertiserId"

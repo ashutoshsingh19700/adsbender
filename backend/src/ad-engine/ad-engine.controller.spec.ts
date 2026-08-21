@@ -68,6 +68,9 @@ describe('AdEngineController', () => {
       advertiserId: 'advertiser-1',
       campaignName: 'US Mobile High Bid',
       maxCpc: 2.5,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>US Mobile High Bid creative</div>',
     });
 
     await expect(
@@ -106,7 +109,7 @@ describe('AdEngineController', () => {
         advertiserId: 'advertiser-1',
         campaignName: 'US Mobile High Bid',
         bidUsd: 2.5,
-        html: '<a href="/api/v1/trap" style="display:none !important;"></a>',
+        html: '<div>US Mobile High Bid creative</div>',
       },
     });
     expect(adTargetingService.selectCampaign).toHaveBeenCalledWith({
@@ -128,6 +131,68 @@ describe('AdEngineController', () => {
           path: '/article',
         }),
       }),
+    );
+  });
+
+  it('renders an image creative as an <img> tag', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-image',
+      advertiserId: 'advertiser-2',
+      campaignName: 'Image Campaign',
+      maxCpc: 1,
+      creativeType: 'image',
+      creativeUrl: 'https://cdn.example.com/creative.png?v=1&who="attacker"',
+      creativeHtml: null,
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.creative?.html).toBe(
+      '<img src="https://cdn.example.com/creative.png?v=1&amp;who=&quot;attacker&quot;" alt="" style="display:block;max-width:100%;height:auto;" />',
+    );
+  });
+
+  it('falls back to the fraud honeypot link when a campaign has no usable creative content', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-empty',
+      advertiserId: 'advertiser-3',
+      campaignName: 'No Creative Yet',
+      maxCpc: 1,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: null,
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.creative?.html).toBe(
+      '<a href="/api/v1/trap" style="display:none !important;"></a>',
     );
   });
 

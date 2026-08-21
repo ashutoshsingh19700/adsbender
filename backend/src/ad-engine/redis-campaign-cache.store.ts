@@ -95,6 +95,9 @@ export class RedisCampaignCacheStore
       targetDevices: JSON.stringify(campaign.targetDevices),
       status: campaign.status,
       advertiserBalanceUsd: campaign.advertiserBalanceUsd.toString(),
+      creativeType: campaign.creativeType,
+      creativeUrl: campaign.creativeUrl ?? '',
+      creativeHtml: campaign.creativeHtml ?? '',
     };
   }
 
@@ -124,6 +127,9 @@ export class RedisCampaignCacheStore
       targetDevices: this.parseJsonArray(record.targetDevices),
       status: record.status ?? '',
       advertiserBalanceUsd: Number(record.advertiserBalanceUsd ?? 0),
+      creativeType: record.creativeType ?? '',
+      creativeUrl: record.creativeUrl || null,
+      creativeHtml: record.creativeHtml || null,
     };
   }
 
