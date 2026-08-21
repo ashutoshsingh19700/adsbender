@@ -26,10 +26,13 @@ import type {
   WalletTransaction,
 } from "@/lib/types"
 
-// NEXT_PUBLIC_API_URL is baked in at build time - set it in Vercel's
-// Environment Variables (Production) to the deployed backend's public URL.
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"
+// Left empty by default so requests go to this app's own origin
+// (/api/v1/...) and get rewritten server-side to BACKEND_ORIGIN - see
+// next.config.ts. That keeps the backend's session cookie first-party to
+// this app's domain. Only set NEXT_PUBLIC_API_URL to call the backend
+// directly from the browser (cross-origin), which breaks cookie auth
+// unless the backend and frontend share a domain.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
 export class ApiError extends Error {
   status: number
