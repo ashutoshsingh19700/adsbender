@@ -86,10 +86,19 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // In production the frontend (Vercel) and this API (Railway/Render) are
+    // on different domains, so the cookie must be sameSite: 'none' to be
+    // sent on cross-site fetch/XHR requests - 'lax' only rides along on
+    // top-level navigations and silently drops on API calls, which looks
+    // like "login succeeds but the app never sees you as logged in".
+    // sameSite: 'none' requires secure: true (already the case here), so
+    // both are tied to the same NODE_ENV check.
+    const isProduction = process.env.NODE_ENV === 'production';
+
     response.cookie('token', data.session.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: data.session.expires_in * 1000,
     });
 
