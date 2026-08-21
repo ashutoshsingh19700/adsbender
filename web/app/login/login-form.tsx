@@ -91,16 +91,26 @@ export function LoginForm() {
   async function onRegister(values: z.infer<typeof registerSchema>) {
     try {
       await register({ ...values, role })
-      toast.success("Account created — signing you in...")
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Registration failed"
+      )
+      return
+    }
+
+    toast.success("Account created — signing you in...")
+
+    try {
       const { user } = await login({
         email: values.email,
         password: values.password,
       })
       await afterAuth(user.role)
-    } catch (error) {
+    } catch {
       toast.error(
-        error instanceof ApiError ? error.message : "Registration failed"
+        "Account created, but automatic sign-in failed — please log in below."
       )
+      setMode("login")
     }
   }
 
