@@ -26,6 +26,8 @@ import type {
   WalletTransaction,
 } from "@/lib/types"
 
+// NEXT_PUBLIC_API_URL is baked in at build time - set it in Vercel's
+// Environment Variables (Production) to the deployed backend's public URL.
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"
 

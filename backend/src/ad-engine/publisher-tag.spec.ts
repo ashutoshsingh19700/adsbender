@@ -3,7 +3,7 @@ import { join } from 'path';
 import vm from 'vm';
 
 describe('publisher_tag.js', () => {
-  const publicDir = join(process.cwd(), '..', 'frontend');
+  const publicDir = join(process.cwd(), 'public');
   const tagSource = readFileSync(join(publicDir, 'publisher_tag.js'), 'utf8');
   const sampleHtml = readFileSync(join(publicDir, 'sample-index.html'), 'utf8');
 
