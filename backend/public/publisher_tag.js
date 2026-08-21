@@ -1,9 +1,30 @@
 (function () {
   'use strict';
 
-  var API_PATH = '/api/v1/serve';
+  // Publishers embed this script cross-origin (on their own site), so every
+  // API call must be an absolute URL pointing back at the ad server - a
+  // relative path like '/api/v1/serve' would resolve against the EMBEDDING
+  // page's origin instead and always 404. document.currentScript.src is
+  // only reliable during this synchronous top-level execution, so capture
+  // it now rather than inside the async fetch handlers below.
+  var AD_SERVER_ORIGIN = (function () {
+    var thisScript = document.currentScript;
+
+    if (thisScript && thisScript.src) {
+      try {
+        return new URL(thisScript.src).origin;
+      } catch (error) {
+        // fall through to same-origin default below
+      }
+    }
+
+    return window.location.origin;
+  })();
+
+  var API_PATH = AD_SERVER_ORIGIN + '/api/v1/serve';
   var ZONE_SELECTOR = '[data-zone-id]';
-  var HONEYPOT_HTML = '<a href="/api/v1/trap" style="display:none !important;"></a>';
+  var TRAP_PATH = AD_SERVER_ORIGIN + '/api/v1/trap';
+  var HONEYPOT_HTML = '<a href="' + TRAP_PATH + '" style="display:none !important;"></a>';
 
   function buildQuery(zone) {
     var params = new URLSearchParams();
@@ -25,7 +46,7 @@
     if (zone.querySelector('[data-ad-network-honeypot]') === null) {
       zone.insertAdjacentHTML(
         'beforeend',
-        '<a data-ad-network-honeypot="true" href="/api/v1/trap" style="display:none !important;"></a>'
+        '<a data-ad-network-honeypot="true" href="' + TRAP_PATH + '" style="display:none !important;"></a>'
       );
     }
     zone.setAttribute('data-ad-network-status', 'empty');
