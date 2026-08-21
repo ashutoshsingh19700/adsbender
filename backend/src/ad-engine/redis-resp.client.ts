@@ -22,16 +22,17 @@ export class RedisRespClient {
   constructor(private readonly options: RedisClientOptions) {}
 
   async command<T = RedisValue>(args: Array<string | number>): Promise<T> {
-    const authArgs = this.options.password
+    // AUTH and the real command must go down the SAME connection - Redis
+    // (and managed providers like Upstash) authenticate per-connection, not
+    // per-command. Sending them as separate send() calls would open a fresh,
+    // unauthenticated socket for the real command and get NOAUTH back.
+    const commands = this.options.password
       ? [['AUTH', this.options.password], args]
       : [args];
-    let result: RedisValue = null;
 
-    for (const commandArgs of authArgs) {
-      result = await this.send(commandArgs);
-    }
+    const results = await this.sendSequence(commands);
 
-    return result as T;
+    return results[results.length - 1] as T;
   }
 
   destroy() {
@@ -41,8 +42,11 @@ export class RedisRespClient {
     this.sockets.clear();
   }
 
-  private send(args: Array<string | number>) {
-    return new Promise<RedisValue>((resolve, reject) => {
+  // Opens a single connection, writes each command in order, and waits for
+  // each command's reply before writing the next one (required for AUTH to
+  // apply to the commands that follow it on the same socket).
+  private sendSequence(commandsList: Array<Array<string | number>>) {
+    return new Promise<RedisValue[]>((resolve, reject) => {
       const socket: Socket | TLSSocket = this.options.tls
         ? tlsConnect({
             host: this.options.host,
@@ -55,12 +59,19 @@ export class RedisRespClient {
         reject(new Error('Redis command timed out'));
       }, this.options.timeoutMs ?? 3000);
       let buffer = Buffer.alloc(0);
+      let parseOffset = 0;
+      let commandIndex = 0;
+      const results: RedisValue[] = [];
 
       this.sockets.add(socket);
 
       const cleanup = () => {
         clearTimeout(timeout);
         this.sockets.delete(socket);
+      };
+
+      const writeCommand = (index: number) => {
+        socket.write(this.encode(commandsList[index]));
       };
 
       socket.once('error', (error) => {
@@ -72,15 +83,25 @@ export class RedisRespClient {
         buffer = Buffer.concat([buffer, chunk]);
 
         try {
-          const parsed = this.parse(buffer, 0);
+          while (commandIndex < commandsList.length) {
+            const parsed = this.parse(buffer, parseOffset);
 
-          if (!parsed) {
-            return;
+            if (!parsed) {
+              return;
+            }
+
+            results.push(parsed.value);
+            parseOffset = parsed.nextOffset;
+            commandIndex += 1;
+
+            if (commandIndex < commandsList.length) {
+              writeCommand(commandIndex);
+            }
           }
 
           cleanup();
           socket.destroy();
-          resolve(parsed.value);
+          resolve(results);
         } catch (error) {
           cleanup();
           socket.destroy();
@@ -89,7 +110,7 @@ export class RedisRespClient {
       });
 
       const onReady = () => {
-        socket.write(this.encode(args));
+        writeCommand(0);
       };
 
       if (this.options.tls) {
