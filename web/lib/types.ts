@@ -73,11 +73,14 @@ export type CampaignBudgetStatus = {
 
 export type SiteStatus = "ACTIVE" | "INACTIVE"
 
+export type SiteVerificationMethod = "ADS_TXT" | "AD_SNIPPET"
+
 export type PublisherSite = {
   id: string
   domain: string
-  adsTxtUrl: string
-  expectedText: string
+  adsTxtUrl: string | null
+  expectedText: string | null
+  verificationMethod: SiteVerificationMethod
   verified: boolean
   verifiedAt: string | null
   status: SiteStatus

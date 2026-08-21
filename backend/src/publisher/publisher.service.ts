@@ -15,6 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { assertTransition } from '../common/status-transition.util';
 import { parsePagination } from '../common/pagination.util';
+import { normalizeDomain } from '../common/domain.util';
 
 @Injectable()
 export class PublisherService {
@@ -48,7 +49,7 @@ export class PublisherService {
   // --- Domain validation (unchanged) ---
 
   async validateDomain(publisherId: string, dto: ValidateDomainDto) {
-    const domain = this.normalizeDomain(dto.domain);
+    const domain = normalizeDomain(dto.domain);
     const adsTxtUrl = `https://${domain}/ads.txt`;
     const expectedText =
       dto.expectedText?.trim() || `adnetwork-verify=${publisherId}`;
@@ -83,6 +84,7 @@ export class PublisherService {
         expectedText,
         verified: true,
         verifiedAt: new Date(),
+        verificationMethod: 'ADS_TXT',
       },
       create: {
         publisherId,
@@ -91,6 +93,7 @@ export class PublisherService {
         expectedText,
         verified: true,
         verifiedAt: new Date(),
+        verificationMethod: 'ADS_TXT',
       },
     });
   }
@@ -289,13 +292,5 @@ export class PublisherService {
     }
 
     return status as AdZoneStatus;
-  }
-
-  private normalizeDomain(domain: string) {
-    return domain
-      .trim()
-      .replace(/^https?:\/\//i, '')
-      .replace(/\/.*$/, '')
-      .toLowerCase();
   }
 }

@@ -6,6 +6,7 @@ import { AdTargetingService } from './ad-targeting.service';
 import { DeviceDetectorService } from './device-detector.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
+import { SiteAutoVerificationService } from './site-auto-verification.service';
 
 describe('AdEngineController', () => {
   let controller: AdEngineController;
@@ -20,6 +21,9 @@ describe('AdEngineController', () => {
     evaluateServeRequest: jest.fn(),
     evaluateClickRequest: jest.fn(),
     recordHoneypotHit: jest.fn(),
+  };
+  const siteAutoVerificationService = {
+    verifyFromRequestHeader: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -45,6 +49,10 @@ describe('AdEngineController', () => {
         {
           provide: FraudDetectionService,
           useValue: fraudDetectionService,
+        },
+        {
+          provide: SiteAutoVerificationService,
+          useValue: siteAutoVerificationService,
         },
         DeviceDetectorService,
         GeoIpService,
@@ -73,6 +81,8 @@ describe('AdEngineController', () => {
         'https://referrer.test',
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile',
         'US',
+        'https://publisher.test/article',
+        'https://publisher.test',
         '127.0.0.1',
       ),
     ).resolves.toEqual({
@@ -134,6 +144,8 @@ describe('AdEngineController', () => {
       '',
       'Mozilla/5.0',
       'IN',
+      'https://publisher.test/article',
+      'https://publisher.test',
       '127.0.0.1',
     );
 
@@ -158,6 +170,8 @@ describe('AdEngineController', () => {
         '',
         'curl/8.0',
         'US',
+        'https://publisher.test/article',
+        'https://publisher.test',
         '127.0.0.1',
       ),
     ).rejects.toThrow('SUSPICIOUS_USER_AGENT');

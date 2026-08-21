@@ -37,9 +37,68 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdZoneManager } from "@/app/publisher/ad-zone-manager"
 import { PublisherOverview } from "@/app/publisher/publisher-overview"
 import { LAYOUT_TYPES, zoneSchema } from "@/app/publisher/zone-form"
+
+// Plain-language, per-platform steps for pasting the verification line onto
+// a site's ads.txt — most publishers aren't developers and don't know what
+// "root of your domain" means, so we point at the specific dashboard screen
+// for the platforms publishers actually use.
+const ADS_TXT_GUIDES: {
+  value: string
+  label: string
+  steps: (token: string) => React.ReactNode[]
+}[] = [
+  {
+    value: "wordpress",
+    label: "WordPress",
+    steps: (token) => [
+      <>Log in to your host's control panel (cPanel, Hostinger, Bluehost, SiteGround, etc.) and open <b>File Manager</b>.</>,
+      <>Open the <code className="rounded bg-muted px-1 py-0.5 text-xs">public_html</code> folder — this is your site's root.</>,
+      <>Create a new file named exactly <code className="rounded bg-muted px-1 py-0.5 text-xs">ads.txt</code> (if one already exists, open it instead).</>,
+      <>Add this line on its own, then save: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
+    ],
+  },
+  {
+    value: "wix",
+    label: "Wix",
+    steps: (token) => [
+      <>In your Wix dashboard, go to <b>Marketing &amp; SEO → SEO Tools</b>.</>,
+      <>Look for the <b>ads.txt</b> editor (Wix supports this natively for ad networks).</>,
+      <>Paste this line into the box and save: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
+    ],
+  },
+  {
+    value: "shopify",
+    label: "Shopify",
+    steps: () => [
+      <>Shopify doesn't expose a plain ads.txt editor — you'll need a small theme edit.</>,
+      <>Search the Shopify App Store for a free "ads.txt" app, or ask whoever built your theme to add it for you.</>,
+      <>If you'd rather do it yourself, our support team can walk you through the <code className="rounded bg-muted px-1 py-0.5 text-xs">templates/ads.txt.liquid</code> approach — just reach out.</>,
+    ],
+  },
+  {
+    value: "hosting",
+    label: "GoDaddy / cPanel",
+    steps: (token) => [
+      <>Log in to your hosting account and open <b>File Manager</b> (in GoDaddy, this is under "Web Hosting → Manage → File Manager").</>,
+      <>Go to the root folder of your site (often <code className="rounded bg-muted px-1 py-0.5 text-xs">public_html</code>).</>,
+      <>Create or open a file named <code className="rounded bg-muted px-1 py-0.5 text-xs">ads.txt</code>.</>,
+      <>Add this line and save: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
+    ],
+  },
+  {
+    value: "developer",
+    label: "I have a developer",
+    steps: (token) => [
+      <>Send them this line and ask them to make it reachable at <code className="rounded bg-muted px-1 py-0.5 text-xs">https://your-domain.com/ads.txt</code>:</>,
+      <><code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
+      <>If a file already exists there, this line just needs to be added anywhere in it — nothing else should be removed.</>,
+    ],
+  },
+]
 
 const domainSchema = z.object({
   domain: z.string().min(3, "Enter a domain, e.g. example.com"),
@@ -122,6 +181,7 @@ export function PublisherDashboard() {
   const [copied, setCopied] = React.useState(false)
   const [tokenCopied, setTokenCopied] = React.useState(false)
   const [publisherId, setPublisherId] = React.useState<string | null>(null)
+  const [showAdvanced, setShowAdvanced] = React.useState(false)
   // Bumped after a zone is created so <AdZoneManager> re-fetches its list.
   const [zoneListVersion, setZoneListVersion] = React.useState(0)
 
@@ -226,25 +286,17 @@ export function PublisherDashboard() {
           icon={Globe2}
           title="Verify domain ownership"
           done={!!site?.verified}
-          description={
-            <>
-              We check for a verification token at{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                https://your-domain.com/ads.txt
-              </code>
-              .
-            </>
-          }
+          description="We need one small proof that you own this website — no coding required, just a few clicks in your hosting dashboard. Prefer to skip this? Create your ad zone below and paste its snippet on your site — we'll verify it automatically the first time an ad loads there."
         />
         <Form {...domainForm}>
           <form onSubmit={domainForm.handleSubmit(onValidateDomain)}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <FormField
                 control={domainForm.control}
                 name="domain"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Domain</FormLabel>
+                    <FormLabel>Your website address</FormLabel>
                     <FormControl>
                       <Input placeholder="example.com" {...field} />
                     </FormControl>
@@ -252,50 +304,101 @@ export function PublisherDashboard() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={domainForm.control}
-                name="expectedText"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expected verification text (optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="adnetwork-verify=..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Leave blank to use the default token for your account.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
+
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <p className="text-sm font-medium">Your verification code</p>
+                <p className="text-xs text-muted-foreground">
+                  This is unique to your account. You&apos;ll paste it onto your
+                  site in the next step.
+                </p>
+                {defaultToken ? (
+                  <div className="flex items-center gap-2.5">
+                    <code className="flex-1 truncate rounded bg-muted px-1.5 py-1 text-xs">
+                      {defaultToken}
+                    </code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={copyToken}
+                    >
+                      {tokenCopied ? (
+                        <>
+                          <Check className="size-3.5" /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-3.5" /> Copy code
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Loading your code…</p>
                 )}
-              />
-              {defaultToken ? (
-                <div className="flex items-center gap-2.5 rounded-md border bg-muted/30 p-3 text-sm">
-                  <span className="text-muted-foreground">Your default token:</span>
-                  <code className="flex-1 truncate rounded bg-muted px-1.5 py-0.5 text-xs">
-                    {defaultToken}
-                  </code>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={copyToken}
-                  >
-                    {tokenCopied ? (
-                      <>
-                        <Check className="size-3.5" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-3.5" /> Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  How do I add this to my site?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Pick how your website is built for step-by-step instructions.
+                </p>
+                <Tabs defaultValue={ADS_TXT_GUIDES[0].value}>
+                  <TabsList className="h-auto flex-wrap">
+                    {ADS_TXT_GUIDES.map((guide) => (
+                      <TabsTrigger key={guide.value} value={guide.value}>
+                        {guide.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {ADS_TXT_GUIDES.map((guide) => (
+                    <TabsContent key={guide.value} value={guide.value}>
+                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-foreground">
+                        {guide.steps(defaultToken ?? "adnetwork-verify=…").map(
+                          (step, i) => (
+                            <li key={i}>{step}</li>
+                          )
+                        )}
+                      </ol>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
+
+              {showAdvanced ? (
+                <FormField
+                  control={domainForm.control}
+                  name="expectedText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custom verification code (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="adnetwork-verify=..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Only needed if you'd rather use your own code instead
+                        of the one above.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  onClick={() => setShowAdvanced(true)}
+                >
+                  I want to use my own custom code instead
+                </button>
+              )}
+
               {site ? (
                 <div
                   className={

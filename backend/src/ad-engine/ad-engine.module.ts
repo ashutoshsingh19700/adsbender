@@ -28,6 +28,7 @@ import { RedisCampaignCacheStore } from './redis-campaign-cache.store';
 import { RedisStreamMessageBrokerConsumer } from './redis-stream-message-broker.consumer';
 import { RedisStreamMessageBrokerPublisher } from './redis-stream-message-broker.publisher';
 import { RedisVelocityCounterStore } from './redis-velocity-counter.store';
+import { SiteAutoVerificationService } from './site-auto-verification.service';
 
 @Module({
   controllers: [AdEngineController],
@@ -46,6 +47,7 @@ import { RedisVelocityCounterStore } from './redis-velocity-counter.store';
     RedisStreamMessageBrokerConsumer,
     RedisStreamMessageBrokerPublisher,
     RedisVelocityCounterStore,
+    SiteAutoVerificationService,
     {
       provide: CAMPAIGN_CACHE_STORE,
       useExisting: RedisCampaignCacheStore,

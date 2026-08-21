@@ -15,6 +15,7 @@ import { AdTargetingService } from './ad-targeting.service';
 import { DeviceDetectorService } from './device-detector.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
+import { SiteAutoVerificationService } from './site-auto-verification.service';
 
 @Controller('api/v1')
 export class AdEngineController {
@@ -24,6 +25,7 @@ export class AdEngineController {
     private readonly deviceDetectorService: DeviceDetectorService,
     private readonly fraudDetectionService: FraudDetectionService,
     private readonly geoIpService: GeoIpService,
+    private readonly siteAutoVerificationService: SiteAutoVerificationService,
   ) {}
 
   @Get('serve')
@@ -37,6 +39,8 @@ export class AdEngineController {
     @Query('referrer') referrer: string,
     @Headers('user-agent') userAgent: string,
     @Headers('x-geo-country') countryHeader: string,
+    @Headers('referer') refererHeader: string,
+    @Headers('origin') originHeader: string,
     @Ip() ipAddress: string,
   ) {
     const fraudDecision = await this.fraudDetectionService.evaluateServeRequest(
@@ -47,6 +51,17 @@ export class AdEngineController {
     if (fraudDecision.blocked) {
       throw new ForbiddenException(fraudDecision.reason);
     }
+
+    // Fire-and-forget: derived from the real Referer/Origin HTTP header
+    // (not the client-suppliable `origin` query param above), so a request
+    // that already cleared fraud detection is trusted to prove the domain
+    // it came from. Never awaited - must not add latency or ever fail the
+    // ad response itself.
+    void this.siteAutoVerificationService.verifyFromRequestHeader({
+      zoneId,
+      refererHeader,
+      originHeader,
+    });
 
     const numericViewportWidth = Number(viewportWidth);
     const numericViewportHeight = Number(viewportHeight);
