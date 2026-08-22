@@ -101,12 +101,17 @@ function toQueryString(
 
 // --- Auth ---
 
-export type LoginInput = { email: string; password: string }
+export type LoginInput = {
+  email: string
+  password: string
+  captchaToken: string
+}
 export type RegisterInput = {
   name: string
   email: string
   password: string
   role: UserRole
+  captchaToken: string
 }
 
 export function login(input: LoginInput) {

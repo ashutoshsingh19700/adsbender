@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TurnstileService } from './turnstile.service';
 import { UsersModule } from '../users/users.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles/roles.guard';
@@ -15,7 +16,7 @@ import { RolesGuard } from './guards/roles/roles.guard';
 @Module({
   imports: [UsersModule],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, RolesGuard],
+  providers: [AuthService, TurnstileService, JwtAuthGuard, RolesGuard],
   exports: [JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TurnstileService } from './turnstile.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles/roles.guard';
 
@@ -9,6 +10,12 @@ describe('AuthController', () => {
   const authService = {
     register: jest.fn(),
     login: jest.fn(),
+  };
+  // No TURNSTILE_SECRET_KEY in the test env, so the real service already
+  // no-ops (see turnstile.service.spec.ts) - stubbed here too just to keep
+  // these controller tests from making a real network call.
+  const turnstileService = {
+    verify: jest.fn().mockResolvedValue(true),
   };
 
   beforeEach(async () => {
@@ -22,6 +29,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: authService,
+        },
+        {
+          provide: TurnstileService,
+          useValue: turnstileService,
         },
       ],
     })
