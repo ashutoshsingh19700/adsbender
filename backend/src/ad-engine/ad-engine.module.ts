@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { WalletModule } from '../wallet/wallet.module';
+import { AdBillingService } from './ad-billing.service';
 import { AdEngineController } from './ad-engine.controller';
 import {
   AdEventProducerService,
@@ -31,8 +33,10 @@ import { RedisVelocityCounterStore } from './redis-velocity-counter.store';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
 
 @Module({
+  imports: [WalletModule],
   controllers: [AdEngineController],
   providers: [
+    AdBillingService,
     AdEventProducerService,
     AdTargetingService,
     CampaignCacheSyncService,
