@@ -38,10 +38,14 @@ export function SiteHeader() {
     ? NAV_LINKS.filter((link) => link.roles.includes(user.role))
     : []
 
-  // The auth page (login/register, either role) uses its own minimal bar —
-  // just the logo and a contact link, no nav or auth CTAs since the user is
-  // already there.
-  if (pathname === "/login") {
+  // The auth pages (login/register, forgot/reset password, either role) use
+  // their own minimal bar — just the logo and a contact link, no nav or
+  // auth CTAs since the user is already there.
+  if (
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password"
+  ) {
     return (
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">

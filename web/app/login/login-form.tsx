@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,7 +12,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/app/providers/auth-provider"
 import { ApiError, login, register } from "@/lib/api"
 import { ROLE_HOME } from "@/lib/roles"
-import type { UserRole } from "@/lib/types"
+import type { AuthUser, UserRole } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -30,6 +31,8 @@ import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from "@/components/app/turnstile-widget"
+import { GoogleSignInButton } from "@/components/app/google-sign-in-button"
+import { PhoneOtpForm } from "@/components/app/phone-otp-form"
 import { SignupBenefits } from "./signup-benefits"
 
 type AudienceRole = Extract<UserRole, "ADVERTISER" | "PUBLISHER">
@@ -76,6 +79,9 @@ export function LoginForm() {
     searchParams.get("role") === "PUBLISHER" ? "PUBLISHER" : "ADVERTISER"
   )
   const [showPassword, setShowPassword] = React.useState(false)
+  // Which credential the form collects - email/password stays the default;
+  // phone swaps in the OTP mini-flow in place of the password field.
+  const [method, setMethod] = React.useState<"email" | "phone">("email")
 
   // Cloudflare Turnstile token for whichever form (login or register) is
   // currently active - a fresh, single-use token is required per
@@ -138,6 +144,14 @@ export function LoginForm() {
     const next = searchParams.get("next")
     router.push(next && next.startsWith("/") ? next : ROLE_HOME[userRole])
     router.refresh()
+  }
+
+  // Shared success path for the phone-OTP and Google flows, which each
+  // return an already-authenticated user (the session cookie is set by the
+  // backend as part of that same request) rather than needing a follow-up
+  // login() call like register() does.
+  async function handleExternalAuthSuccess(user: AuthUser) {
+    await afterAuth(user.role)
   }
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
@@ -219,7 +233,11 @@ export function LoginForm() {
         I&apos;m {withArticle(otherRole)} {ROLE_LABEL[otherRole]}
       </button>
 
-      {mode === "login" ? (
+      {method === "phone" ? (
+        <div className="mt-6">
+          <PhoneOtpForm role={role} onSuccess={handleExternalAuthSuccess} />
+        </div>
+      ) : mode === "login" ? (
         <Form {...loginForm}>
           <form
             onSubmit={loginForm.handleSubmit(onLogin)}
@@ -267,17 +285,12 @@ export function LoginForm() {
               )}
             />
             <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() =>
-                  toast.info(
-                    "Password resets aren't self-serve yet — email support@adsbender.example."
-                  )
-                }
+              <Link
+                href="/forgot-password"
                 className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
               >
                 Forgot Password?
-              </button>
+              </Link>
             </div>
             {/* Cloudflare Turnstile - blocks scripted login attempts */}
             <TurnstileWidget
@@ -384,6 +397,32 @@ export function LoginForm() {
           </form>
         </Form>
       )}
+
+      <div className="mt-4 text-center">
+        <button
+          type="button"
+          onClick={() => setMethod(method === "email" ? "phone" : "email")}
+          className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
+        >
+          {method === "email"
+            ? "Use phone number instead"
+            : "Use email and password instead"}
+        </button>
+      </div>
+
+      <div className="mt-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs uppercase text-muted-foreground">or</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <div className="mt-4">
+        <GoogleSignInButton
+          role={role}
+          mode={mode}
+          onSuccess={handleExternalAuthSuccess}
+          onError={(message) => toast.error(message)}
+        />
+      </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "login" ? (

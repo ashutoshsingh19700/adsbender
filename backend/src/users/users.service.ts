@@ -18,6 +18,12 @@ export class UsersService {
     });
   }
 
+  async findByPhone(phone: string) {
+    return this.prisma.user.findUnique({
+      where: { phone },
+    });
+  }
+
   // `id` must be the corresponding Supabase auth.users.id - credentials
   // live in Supabase, this table only stores app-level profile/role data.
   async create(data: {
@@ -25,12 +31,20 @@ export class UsersService {
     name: string;
     email: string;
     role: UserRole;
+    phone?: string;
   }) {
     return this.prisma.user.create({
       data: {
         ...data,
         balance_usd: 0,
       },
+    });
+  }
+
+  async setPhone(id: string, phone: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { phone },
     });
   }
 }

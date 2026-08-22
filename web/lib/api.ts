@@ -134,6 +134,48 @@ export function getProfile() {
   )
 }
 
+export function forgotPassword(input: { email: string; captchaToken: string }) {
+  return apiFetch<{ message: string }>("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function resetPassword(input: { accessToken: string; password: string }) {
+  return apiFetch<{ message: string }>("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function sendPhoneOtp(input: { phone: string; captchaToken: string }) {
+  return apiFetch<{ message: string }>("/api/v1/auth/phone/send-otp", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export type VerifyPhoneOtpInput = {
+  phone: string
+  token: string
+  name?: string
+  role?: UserRole
+}
+
+export function verifyPhoneOtp(input: VerifyPhoneOtpInput) {
+  return apiFetch<{ message: string; user: AuthUser }>(
+    "/api/v1/auth/phone/verify-otp",
+    { method: "POST", body: JSON.stringify(input) }
+  )
+}
+
+export function googleAuth(input: { idToken: string; role?: UserRole }) {
+  return apiFetch<{ message: string; user: AuthUser }>("/api/v1/auth/google", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
 // Clears the auth cookie via this app's own route handler (see
 // app/api/logout/route.ts) — the backend itself has no logout endpoint.
 export async function logout() {

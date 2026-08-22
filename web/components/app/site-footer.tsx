@@ -8,7 +8,7 @@ import { useAuth } from "@/app/providers/auth-provider"
 
 // Auth pages (login/register, for either role) use their own minimal
 // chrome — the full marketing footer doesn't belong there.
-const NO_FOOTER_ROUTES = ["/login"]
+const NO_FOOTER_ROUTES = ["/login", "/forgot-password", "/reset-password"]
 
 type FooterLink = { label: string; href: string }
 

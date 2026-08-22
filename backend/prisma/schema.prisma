@@ -81,6 +81,11 @@ model User {
   id          String   @id
   name        String
   email       String   @unique
+  // E.164 format (e.g. "+15551234567"). Optional - only set once a user
+  // verifies a phone number via OTP (see AuthService.verifyPhoneOtp).
+  // Verification itself is delegated to Supabase Auth's phone/SMS provider,
+  // same as email/password lives in Supabase rather than this table.
+  phone       String?  @unique
   role        UserRole
   balance_usd Decimal @default(0) @db.Decimal(12,2)
 
