@@ -27,6 +27,27 @@ export type CampaignStatus =
 
 export type CreativeType = "image" | "html"
 
+export type CampaignAdFormat =
+  | "POPUNDER"
+  | "SOCIAL_BAR"
+  | "NATIVE_BANNER"
+  | "IN_PAGE_PUSH"
+  | "INTERSTITIAL"
+
+export type CampaignPricingModel = "CPM" | "CPA" | "CPC"
+
+export type CampaignStartMode =
+  | "START_ONCE_VERIFIED"
+  | "SCHEDULE"
+  | "KEEP_INACTIVE"
+
+export type CampaignLocation = {
+  country: string
+  region?: string
+  city?: string
+  include: boolean
+}
+
 export type Campaign = {
   id: string
   campaignName: string
@@ -41,6 +62,15 @@ export type Campaign = {
   destinationUrl: string | null
   status: CampaignStatus
   notes: string | null
+  // Adsterra-style setup fields - stored but not yet enforced by ad
+  // serving (see backend's AdvertiserService / schema.prisma comments).
+  adFormat: CampaignAdFormat | null
+  pricingModel: CampaignPricingModel
+  countryPricing: Record<string, number> | null
+  locations: CampaignLocation[] | null
+  budgetUnlimited: boolean
+  startMode: CampaignStartMode
+  scheduledAt: string | null
   createdAt: string
   updatedAt: string
 }

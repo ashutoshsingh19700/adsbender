@@ -71,6 +71,10 @@ export class AdvertiserService {
       throw new BadRequestException('DESTINATION_URL_REQUIRED');
     }
 
+    if (dto.startMode === 'SCHEDULE' && !dto.scheduledAt) {
+      throw new BadRequestException('SCHEDULED_AT_REQUIRED');
+    }
+
     const campaign = await this.prisma.campaign.create({
       data: {
         advertiserId,
@@ -88,6 +92,15 @@ export class AdvertiserService {
         destinationUrl: dto.destinationUrl,
         notes: dto.notes,
         status: CampaignStatus.PENDING_REVIEW,
+        adFormat: dto.adFormat,
+        pricingModel: dto.pricingModel,
+        countryPricing: dto.countryPricing as Prisma.InputJsonValue | undefined,
+        locations: dto.locations as unknown as
+          | Prisma.InputJsonValue
+          | undefined,
+        budgetUnlimited: dto.budgetUnlimited,
+        startMode: dto.startMode,
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
       },
     });
 
@@ -150,6 +163,10 @@ export class AdvertiserService {
       throw new BadRequestException('DAILY_BUDGET_EXCEEDS_TOTAL_BUDGET');
     }
 
+    if (dto.startMode === 'SCHEDULE' && !dto.scheduledAt) {
+      throw new BadRequestException('SCHEDULED_AT_REQUIRED');
+    }
+
     return this.prisma.campaign.update({
       where: { id: campaignId },
       data: {
@@ -162,6 +179,11 @@ export class AdvertiserService {
               device.toLowerCase(),
             )
           : undefined,
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+        countryPricing: dto.countryPricing as Prisma.InputJsonValue | undefined,
+        locations: dto.locations as unknown as
+          | Prisma.InputJsonValue
+          | undefined,
       },
     });
   }

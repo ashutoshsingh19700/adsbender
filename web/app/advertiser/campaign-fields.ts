@@ -17,6 +17,24 @@ export const DEVICES = [
   { value: "tablet", label: "Tablet" },
 ]
 
+// Mirrors CampaignAdFormat in schema.prisma. Stored on the campaign but not
+// yet read by AdEngineController's serving logic - see the comment there.
+export const AD_FORMATS = [
+  { value: "POPUNDER", label: "Popunder" },
+  { value: "SOCIAL_BAR", label: "Social Bar" },
+  { value: "NATIVE_BANNER", label: "Native Banner" },
+  { value: "IN_PAGE_PUSH", label: "In-Page Push" },
+  { value: "INTERSTITIAL", label: "Interstitial" },
+] as const
+
+export const PRICING_MODELS = ["CPM", "CPA", "CPC"] as const
+
+export const START_MODES = [
+  { value: "START_ONCE_VERIFIED", label: "Start once verified" },
+  { value: "SCHEDULE", label: "Schedule" },
+  { value: "KEEP_INACTIVE", label: "Keep inactive" },
+] as const
+
 export const campaignSchema = z
   .object({
     campaignName: z
@@ -40,8 +58,43 @@ export const campaignSchema = z
     // outer anchor would break.
     destinationUrl: z.string().optional(),
     notes: z.string().optional(),
+
+    // --- Adsterra-style setup fields - see schema.prisma / CreateCampaignDto ---
+    adFormat: z
+      .enum([
+        "POPUNDER",
+        "SOCIAL_BAR",
+        "NATIVE_BANNER",
+        "IN_PAGE_PUSH",
+        "INTERSTITIAL",
+      ])
+      .optional(),
+    pricingModel: z.enum(["CPM", "CPA", "CPC"]).default("CPM"),
+    countryPricing: z.record(z.string(), z.coerce.number()).optional(),
+    locations: z
+      .array(
+        z.object({
+          country: z.string(),
+          region: z.string().optional(),
+          city: z.string().optional(),
+          include: z.boolean(),
+        })
+      )
+      .optional(),
+    budgetUnlimited: z.boolean().default(false),
+    startMode: z
+      .enum(["START_ONCE_VERIFIED", "SCHEDULE", "KEEP_INACTIVE"])
+      .default("START_ONCE_VERIFIED"),
+    scheduledAt: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.startMode === "SCHEDULE" && !data.scheduledAt) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["scheduledAt"],
+        message: "Pick a date and time to schedule this campaign",
+      })
+    }
     if (data.dailyBudget > data.totalBudget) {
       ctx.addIssue({
         code: "custom",

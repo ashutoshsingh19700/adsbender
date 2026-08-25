@@ -1,8 +1,12 @@
+import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsIn,
+  IsISO8601,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -10,7 +14,41 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+
+const AD_FORMATS = [
+  'POPUNDER',
+  'SOCIAL_BAR',
+  'NATIVE_BANNER',
+  'IN_PAGE_PUSH',
+  'INTERSTITIAL',
+] as const;
+const PRICING_MODELS = ['CPM', 'CPA', 'CPC'] as const;
+const START_MODES = [
+  'START_ONCE_VERIFIED',
+  'SCHEDULE',
+  'KEEP_INACTIVE',
+] as const;
+
+// Mirrors Campaign.locations in schema.prisma - one region/city
+// include/exclude rule. Stored as-is in the `locations` Json column; not
+// yet read by AdEngineController.
+class CampaignLocationDto {
+  @IsString()
+  country: string;
+
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsBoolean()
+  include: boolean;
+}
 
 export class CreateCampaignDto {
   @IsString()
@@ -73,4 +111,39 @@ export class CreateCampaignDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // --- Adsterra-style setup fields (see schema.prisma - Campaign) ---
+  // All optional and stored as-is; none of these are read by
+  // AdEngineController's serving logic yet.
+
+  @IsOptional()
+  @IsIn(AD_FORMATS)
+  adFormat?: (typeof AD_FORMATS)[number];
+
+  @IsOptional()
+  @IsIn(PRICING_MODELS)
+  pricingModel?: (typeof PRICING_MODELS)[number];
+
+  // { "US": 1.2, "IN": 0.4, ... } - per-country bid override.
+  @IsOptional()
+  @IsObject()
+  countryPricing?: Record<string, number>;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignLocationDto)
+  locations?: CampaignLocationDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  budgetUnlimited?: boolean;
+
+  @IsOptional()
+  @IsIn(START_MODES)
+  startMode?: (typeof START_MODES)[number];
+
+  @ValidateIf((dto: CreateCampaignDto) => dto.startMode === 'SCHEDULE')
+  @IsISO8601()
+  scheduledAt?: string;
 }

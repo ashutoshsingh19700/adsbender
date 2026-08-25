@@ -4,9 +4,22 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import {
+  BellRing,
+  Code2,
+  ImageIcon,
+  Layers,
+  LayoutTemplate,
+  Maximize2,
+  Monitor,
+  Smartphone,
+  Tablet,
+  X,
+} from "lucide-react"
 
 import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
 import type { Campaign } from "@/lib/types"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -16,11 +29,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -34,22 +45,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
+  AD_FORMATS,
   COUNTRIES,
   DEVICES,
+  PRICING_MODELS,
+  START_MODES,
   campaignSchema,
   type CampaignFormInput,
   type CampaignFormOutput,
 } from "@/app/advertiser/campaign-fields"
 
-const STEPS = ["Budget", "Targeting", "Creative"] as const
-const STEP_FIELDS: Record<number, (keyof CampaignFormInput)[]> = {
-  0: ["campaignName", "totalBudget", "dailyBudget", "maxCpc"],
-  1: ["targetCountries", "targetDevices"],
-  2: ["creativeType", "creativeUrl", "creativeHtml", "destinationUrl"],
+const DEVICE_ICONS: Record<string, React.ElementType> = {
+  desktop: Monitor,
+  mobile: Smartphone,
+  tablet: Tablet,
+}
+
+const AD_FORMAT_ICONS: Record<string, React.ElementType> = {
+  POPUNDER: Layers,
+  SOCIAL_BAR: BellRing,
+  NATIVE_BANNER: LayoutTemplate,
+  IN_PAGE_PUSH: BellRing,
+  INTERSTITIAL: Maximize2,
+}
+
+const AD_FORMAT_BADGE: Record<string, string> = {
+  POPUNDER: "Popular",
+  SOCIAL_BAR: "Best choice",
 }
 
 export function CampaignWizard({
@@ -57,7 +83,6 @@ export function CampaignWizard({
 }: {
   onCreated?: (campaign: Campaign) => void
 } = {}) {
-  const [step, setStep] = React.useState(0)
   const [result, setResult] = React.useState<Campaign | null>(null)
   const [uploading, setUploading] = React.useState(false)
 
@@ -75,19 +100,34 @@ export function CampaignWizard({
       creativeHtml: "",
       destinationUrl: "",
       notes: "",
+      pricingModel: "CPM",
+      countryPricing: {},
+      locations: [],
+      budgetUnlimited: false,
+      startMode: "START_ONCE_VERIFIED",
+      scheduledAt: "",
     },
   })
 
   const creativeType = form.watch("creativeType")
+  const campaignName = form.watch("campaignName")
+  const totalBudget = form.watch("totalBudget")
+  const dailyBudget = form.watch("dailyBudget")
+  const maxCpc = form.watch("maxCpc")
+  const targetCountries = form.watch("targetCountries") ?? []
+  const targetDevices = form.watch("targetDevices") ?? []
+  const adFormat = form.watch("adFormat")
+  const pricingModel = form.watch("pricingModel")
+  const countryPricing = form.watch("countryPricing") ?? {}
+  const locations = form.watch("locations") ?? []
+  const budgetUnlimited = form.watch("budgetUnlimited")
+  const startMode = form.watch("startMode")
 
-  async function goNext() {
-    const valid = await form.trigger(STEP_FIELDS[step])
-    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1))
-  }
-
-  function goBack() {
-    setStep((s) => Math.max(s - 1, 0))
-  }
+  const [countryToAdd, setCountryToAdd] = React.useState("")
+  const [priceToAdd, setPriceToAdd] = React.useState("")
+  const [locCountry, setLocCountry] = React.useState("")
+  const [locRegion, setLocRegion] = React.useState("")
+  const [locCity, setLocCity] = React.useState("")
 
   // Mirrors the backend's ALLOWED_CREATIVE_MIME_TYPES /
   // MAX_CREATIVE_UPLOAD_BYTES (see creative-upload.service.ts) — checked
@@ -134,6 +174,74 @@ export function CampaignWizard({
     }
   }
 
+  function toggleDevice(value: string) {
+    const checked = targetDevices.includes(value)
+    form.setValue(
+      "targetDevices",
+      checked
+        ? targetDevices.filter((v) => v !== value)
+        : [...targetDevices, value],
+      { shouldValidate: true, shouldDirty: true }
+    )
+  }
+
+  function addCountry() {
+    if (!countryToAdd) return
+    const price = Number(priceToAdd || 0)
+    if (!targetCountries.includes(countryToAdd)) {
+      form.setValue("targetCountries", [...targetCountries, countryToAdd], {
+        shouldValidate: true,
+        shouldDirty: true,
+      })
+    }
+    form.setValue(
+      "countryPricing",
+      { ...countryPricing, [countryToAdd]: price },
+      { shouldDirty: true }
+    )
+    setCountryToAdd("")
+    setPriceToAdd("")
+  }
+
+  function removeCountry(code: string) {
+    form.setValue(
+      "targetCountries",
+      targetCountries.filter((v) => v !== code),
+      { shouldValidate: true, shouldDirty: true }
+    )
+    const next = { ...countryPricing }
+    delete next[code]
+    form.setValue("countryPricing", next, { shouldDirty: true })
+  }
+
+  function addLocation() {
+    if (!locCountry) return
+    form.setValue(
+      "locations",
+      [
+        ...locations,
+        {
+          country: locCountry,
+          region: locRegion || undefined,
+          city: locCity || undefined,
+          include: true,
+        },
+      ],
+      { shouldDirty: true }
+    )
+    setLocCountry("")
+    setLocRegion("")
+    setLocCity("")
+  }
+
+  function removeLocation(index: number) {
+    form.setValue(
+      "locations",
+      locations.filter((_, i) => i !== index),
+      { shouldDirty: true }
+    )
+  }
+
   if (result) {
     return (
       <div className="mx-auto max-w-2xl py-6">
@@ -160,7 +268,6 @@ export function CampaignWizard({
               onClick={() => {
                 setResult(null)
                 form.reset()
-                setStep(0)
               }}
             >
               Create another campaign
@@ -172,52 +279,394 @@ export function CampaignWizard({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          Create a new campaign
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Create campaign
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Submit a new campaign in three steps.
-        </p>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Card>
-            <CardHeader>
-              <Tabs value={STEPS[step]}>
-                <TabsList className="grid w-full grid-cols-3">
-                  {STEPS.map((label, index) => (
-                    <TabsTrigger
-                      key={label}
-                      value={label}
-                      disabled={index > step}
-                      onClick={() => index < step && setStep(index)}
-                    >
-                      {index + 1}. {label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </CardHeader>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+        >
+          <div className="space-y-10">
+            <div>
+              <h3 className="text-base font-semibold">Required Settings*</h3>
+            </div>
 
-            <CardContent className="space-y-4">
-              {step === 0 ? (
-                <>
+            <SettingsRow label="General">
+              <FormField
+                control={form.control}
+                name="campaignName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Summer sale 2026" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label="Devices"
+              description="Choose one format or combine several."
+            >
+              <FormField
+                control={form.control}
+                name="targetDevices"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+                      {DEVICES.map((device) => (
+                        <OptionTile
+                          key={device.value}
+                          icon={DEVICE_ICONS[device.value] ?? Monitor}
+                          label={device.label}
+                          selected={targetDevices.includes(device.value)}
+                          onClick={() => toggleDevice(device.value)}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+
+            <Separator />
+
+            <SettingsRow
+              label="Ad unit & Pricing type"
+              description="Pick the ad format and how it's billed."
+            >
+              <FormField
+                control={form.control}
+                name="adFormat"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                      {AD_FORMATS.map((format) => (
+                        <AdUnitTile
+                          key={format.value}
+                          icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                          label={format.label}
+                          badge={AD_FORMAT_BADGE[format.value]}
+                          selected={adFormat === format.value}
+                          onClick={() =>
+                            form.setValue("adFormat", format.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {PRICING_MODELS.map((model) => (
+                  <RadioPill
+                    key={model}
+                    label={model}
+                    selected={pricingModel === model}
+                    onClick={() =>
+                      form.setValue("pricingModel", model, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </SettingsRow>
+
+            <Separator />
+
+            <SettingsRow
+              label="Landing URL & Preview"
+              description="Where people land when they click this ad."
+            >
+              <FormField
+                control={form.control}
+                name="destinationUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Landing URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://fakirefashion.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="mt-4 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="creativeType"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Creative type</FormLabel>
+                      <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+                        <OptionTile
+                          icon={ImageIcon}
+                          label="Image"
+                          selected={creativeType === "image"}
+                          onClick={() =>
+                            form.setValue("creativeType", "image", {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                        <OptionTile
+                          icon={Code2}
+                          label="HTML"
+                          selected={creativeType === "html"}
+                          onClick={() =>
+                            form.setValue("creativeType", "html", {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {creativeType === "image" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <FormLabel>Upload image</FormLabel>
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        disabled={uploading}
+                        onChange={handleFileSelected}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        {uploading
+                          ? "Uploading..."
+                          : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                      </p>
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="creativeUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Creative URL</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://cdn.example.com/creative.png"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch("creativeUrl") ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
+                      <img
+                        src={form.watch("creativeUrl")}
+                        alt="Creative preview"
+                        className="max-h-48 rounded-md border object-contain"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none"
+                        }}
+                        onLoad={(event) => {
+                          event.currentTarget.style.display = "block"
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                ) : (
                   <FormField
                     control={form.control}
-                    name="campaignName"
+                    name="creativeHtml"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Campaign name</FormLabel>
+                        <FormLabel>Creative HTML</FormLabel>
                         <FormControl>
-                          <Input placeholder="Summer sale 2026" {...field} />
+                          <Textarea rows={5} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                )}
+              </div>
+            </SettingsRow>
+
+            <Separator />
+
+            <SettingsRow label="Countries" description="By one country.">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="grid gap-1.5">
+                  <FormLabel>Countries</FormLabel>
+                  <Select value={countryToAdd} onValueChange={setCountryToAdd}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Choose a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-1.5">
+                  <FormLabel>Price</FormLabel>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="w-28"
+                    placeholder="0.00"
+                    value={priceToAdd}
+                    onChange={(e) => setPriceToAdd(e.target.value)}
+                  />
+                </div>
+                <Button type="button" variant="outline" onClick={addCountry}>
+                  Add country
+                </Button>
+              </div>
+
+              {targetCountries.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {targetCountries.map((code) => {
+                    const label =
+                      COUNTRIES.find((c) => c.value === code)?.label ?? code
+                    return (
+                      <Badge key={code} variant="outline" className="gap-1.5">
+                        {label}
+                        {countryPricing[code] !== undefined
+                          ? ` · $${countryPricing[code]}`
+                          : ""}
+                        <button
+                          type="button"
+                          onClick={() => removeCountry(code)}
+                          aria-label={`Remove ${label}`}
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </Badge>
+                    )
+                  })}
+                </div>
+              ) : null}
+              <FormField
+                control={form.control}
+                name="targetCountries"
+                render={() => <FormMessage />}
+              />
+            </SettingsRow>
+
+            <Separator />
+
+            <SettingsRow
+              label="Locations"
+              description="Include or exclude specific regions/cities."
+            >
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="grid gap-1.5">
+                  <FormLabel>Country</FormLabel>
+                  <Select value={locCountry} onValueChange={setLocCountry}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Choose a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-1.5">
+                  <FormLabel>Region</FormLabel>
+                  <Input
+                    className="w-32"
+                    placeholder="Optional"
+                    value={locRegion}
+                    onChange={(e) => setLocRegion(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <FormLabel>City</FormLabel>
+                  <Input
+                    className="w-32"
+                    placeholder="Optional"
+                    value={locCity}
+                    onChange={(e) => setLocCity(e.target.value)}
+                  />
+                </div>
+                <Button type="button" variant="outline" onClick={addLocation}>
+                  Add location
+                </Button>
+              </div>
+
+              {locations.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {locations.map((loc, i) => (
+                    <Badge key={i} variant="outline" className="gap-1.5">
+                      {[loc.country, loc.region, loc.city]
+                        .filter(Boolean)
+                        .join(" / ")}
+                      <button
+                        type="button"
+                        onClick={() => removeLocation(i)}
+                        aria-label="Remove location"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </SettingsRow>
+
+            <Separator />
+
+            <SettingsRow label="Total budget">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="budgetUnlimited"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          className="size-4"
+                          checked={field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0">Unlimited budget</FormLabel>
+                    </FormItem>
+                  )}
+                />
+
+                {!budgetUnlimited ? (
                   <div className="grid gap-4 sm:grid-cols-3">
                     <FormField
                       control={form.control}
@@ -274,276 +723,284 @@ export function CampaignWizard({
                       )}
                     />
                   </div>
-                </>
-              ) : null}
+                ) : null}
+              </div>
+            </SettingsRow>
 
-              {step === 1 ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="targetCountries"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Target countries</FormLabel>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {COUNTRIES.map((country) => (
-                            <FormField
-                              key={country.value}
-                              control={form.control}
-                              name="targetCountries"
-                              render={({ field }) => {
-                                const values = field.value ?? []
-                                const checked = values.includes(
-                                  country.value
-                                )
-                                return (
-                                  <label className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                      checked={checked}
-                                      onCheckedChange={(isChecked) => {
-                                        field.onChange(
-                                          isChecked
-                                            ? [...values, country.value]
-                                            : values.filter(
-                                                (v) => v !== country.value
-                                              )
-                                        )
-                                      }}
-                                    />
-                                    {country.label}
-                                  </label>
-                                )
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+            <Separator />
+
+            <SettingsRow
+              label="Choose a start time"
+              description="We will start the campaign right after its verification, which may take from 3 to 12 hours."
+            >
+              <div className="flex flex-wrap gap-2">
+                {START_MODES.map((mode) => (
+                  <RadioPill
+                    key={mode.value}
+                    label={mode.label}
+                    selected={startMode === mode.value}
+                    onClick={() =>
+                      form.setValue("startMode", mode.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
+                    }
                   />
-                  <FormField
-                    control={form.control}
-                    name="targetDevices"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Target devices</FormLabel>
-                        <div className="grid grid-cols-3 gap-2">
-                          {DEVICES.map((device) => (
-                            <FormField
-                              key={device.value}
-                              control={form.control}
-                              name="targetDevices"
-                              render={({ field }) => {
-                                const values = field.value ?? []
-                                const checked = values.includes(device.value)
-                                return (
-                                  <label className="flex items-center gap-2 text-sm">
-                                    <Checkbox
-                                      checked={checked}
-                                      onCheckedChange={(isChecked) => {
-                                        field.onChange(
-                                          isChecked
-                                            ? [...values, device.value]
-                                            : values.filter(
-                                                (v) => v !== device.value
-                                              )
-                                        )
-                                      }}
-                                    />
-                                    {device.label}
-                                  </label>
-                                )
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              ) : null}
+                ))}
+              </div>
 
-              {step === 2 ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="creativeType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Creative type</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="image">Image</SelectItem>
-                            <SelectItem value="html">HTML</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {creativeType === "image" ? (
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <FormLabel>Upload image</FormLabel>
-                        <Input
-                          type="file"
-                          accept="image/png,image/jpeg,image/gif,image/webp"
-                          disabled={uploading}
-                          onChange={handleFileSelected}
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          {uploading
-                            ? "Uploading..."
-                            : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
-                        </p>
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="creativeUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Creative URL</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="https://cdn.example.com/creative.png"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {form.watch("creativeUrl") ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
-                        <img
-                          src={form.watch("creativeUrl")}
-                          alt="Creative preview"
-                          className="max-h-48 rounded-md border object-contain"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none"
-                          }}
-                          onLoad={(event) => {
-                            event.currentTarget.style.display = "block"
-                          }}
-                        />
-                      ) : null}
-
-                      <FormField
-                        control={form.control}
-                        name="destinationUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Destination URL</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="https://fakirefashion.com"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Where people land when they click this ad.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <FormField
-                        control={form.control}
-                        name="creativeHtml"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Creative HTML</FormLabel>
-                            <FormControl>
-                              <Textarea rows={5} {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="destinationUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Destination URL (optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="https://fakirefashion.com"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              For reference only — your HTML above should
-                              already include its own link(s), since this
-                              won&apos;t be wrapped around it automatically.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {startMode === "SCHEDULE" ? (
+                <FormField
+                  control={form.control}
+                  name="scheduledAt"
+                  render={({ field }) => (
+                    <FormItem className="mt-3 max-w-xs">
+                      <FormLabel>Scheduled for</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea rows={3} {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Internal notes for the review team.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
+                />
               ) : null}
-            </CardContent>
+            </SettingsRow>
 
-            <CardFooter className="justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={goBack}
-                disabled={step === 0}
-              >
-                Back
-              </Button>
-              {step < STEPS.length - 1 ? (
-                <Button type="button" onClick={goNext}>
-                  Next
-                </Button>
-              ) : (
-                <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Separator />
+
+            <div>
+              <h3 className="text-base font-semibold">Optional Settings</h3>
+            </div>
+
+            <SettingsRow label="Notes" description="Internal notes for the review team.">
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+          </div>
+
+          <aside className="lg:sticky lg:top-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Campaign summary</CardTitle>
+                <CardDescription>
+                  Review your settings before submitting.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <SummaryRow
+                  label="Name"
+                  value={campaignName || "Untitled campaign"}
+                />
+                <SummaryRow
+                  label="Ad unit"
+                  value={
+                    adFormat
+                      ? (AD_FORMATS.find((f) => f.value === adFormat)?.label ??
+                        adFormat)
+                      : "Not selected"
+                  }
+                />
+                <SummaryRow
+                  label="Pricing type"
+                  value={pricingModel ?? "CPM"}
+                />
+                <SummaryRow
+                  label="Budget"
+                  value={
+                    budgetUnlimited
+                      ? "Unlimited"
+                      : `$${Number(totalBudget || 0).toFixed(2)} total`
+                  }
+                />
+                {!budgetUnlimited ? (
+                  <>
+                    <SummaryRow
+                      label="Daily budget"
+                      value={`$${Number(dailyBudget || 0).toFixed(2)}`}
+                    />
+                    <SummaryRow
+                      label="Max CPC"
+                      value={`$${Number(maxCpc || 0).toFixed(2)}`}
+                    />
+                  </>
+                ) : null}
+                <SummaryRow
+                  label="Devices"
+                  value={
+                    targetDevices.length > 0
+                      ? `${targetDevices.length} selected`
+                      : "None selected"
+                  }
+                />
+                <SummaryRow
+                  label="Countries"
+                  value={
+                    targetCountries.length > 0
+                      ? `${targetCountries.length} selected`
+                      : "None selected"
+                  }
+                />
+                <SummaryRow
+                  label="Start"
+                  value={
+                    START_MODES.find((m) => m.value === startMode)?.label ??
+                    startMode ??
+                    "Start once verified"
+                  }
+                />
+              </CardContent>
+              <CardFooter className="flex-col items-stretch gap-2">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={form.formState.isSubmitting}
+                >
                   {form.formState.isSubmitting
                     ? "Submitting..."
-                    : "Submit campaign"}
+                    : "Proceed to review"}
                 </Button>
-              )}
-            </CardFooter>
-          </Card>
+                <p className="text-center text-xs text-muted-foreground">
+                  Submitted campaigns are reviewed before going live.
+                </p>
+              </CardFooter>
+            </Card>
+          </aside>
         </form>
       </Form>
+    </div>
+  )
+}
+
+function SettingsRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        {description ? (
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
+  )
+}
+
+function OptionTile({
+  icon: Icon,
+  label,
+  selected,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+        selected
+          ? "border-primary bg-primary/5 text-foreground"
+          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+      )}
+    >
+      <Icon className="size-5" />
+      {label}
+    </button>
+  )
+}
+
+function AdUnitTile({
+  icon: Icon,
+  label,
+  badge,
+  selected,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  badge?: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+        selected
+          ? "border-primary bg-primary/5 text-foreground"
+          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+      )}
+    >
+      {badge ? (
+        <Badge className="absolute -top-2 right-2" variant="secondary">
+          {badge}
+        </Badge>
+      ) : null}
+      <Icon className="size-6" />
+      {label}
+    </button>
+  )
+}
+
+function RadioPill({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+        selected
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="max-w-[60%] truncate text-right font-medium">
+        {value}
+      </span>
     </div>
   )
 }

@@ -8,9 +8,13 @@ import type {
   AnalyticsResponse,
   AuthUser,
   Campaign,
+  CampaignAdFormat,
   CampaignBudgetStatus,
   CampaignCreative,
+  CampaignLocation,
+  CampaignPricingModel,
   CampaignSpend,
+  CampaignStartMode,
   CampaignStatus,
   CreativeType,
   Paginated,
@@ -310,6 +314,13 @@ export type CreateCampaignInput = {
   creativeHtml?: string
   destinationUrl?: string
   notes?: string
+  adFormat?: CampaignAdFormat
+  pricingModel?: CampaignPricingModel
+  countryPricing?: Record<string, number>
+  locations?: CampaignLocation[]
+  budgetUnlimited?: boolean
+  startMode?: CampaignStartMode
+  scheduledAt?: string
 }
 
 // Uploads the creative file itself and returns a public URL — use the

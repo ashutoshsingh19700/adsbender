@@ -111,6 +111,15 @@ const STATUS_BADGE: Record<
   ARCHIVED: "secondary",
 }
 
+const STATUS_OPTIONS: CampaignStatusValue[] = [
+  "DRAFT",
+  "PENDING_REVIEW",
+  "ACTIVE",
+  "PAUSED",
+  "COMPLETED",
+  "ARCHIVED",
+]
+
 type ActionKind = "pause" | "resume" | "archive" | "delete"
 
 export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number }) {
@@ -133,6 +142,59 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
     null
   )
   const [deleteTarget, setDeleteTarget] = React.useState<Campaign | null>(null)
+
+  const [search, setSearch] = React.useState("")
+  const [statusFilter, setStatusFilter] = React.useState<
+    CampaignStatusValue | "ALL"
+  >("ALL")
+  const [countryFilter, setCountryFilter] = React.useState("ALL")
+  const [dateFrom, setDateFrom] = React.useState("")
+  const [dateTo, setDateTo] = React.useState("")
+
+  const availableCountries = React.useMemo(() => {
+    const set = new Set<string>()
+    campaigns.forEach((c) => c.targetCountries.forEach((code) => set.add(code)))
+    return Array.from(set).sort()
+  }, [campaigns])
+
+  const filteredCampaigns = React.useMemo(() => {
+    return campaigns.filter((campaign) => {
+      if (
+        search &&
+        !campaign.campaignName.toLowerCase().includes(search.toLowerCase())
+      ) {
+        return false
+      }
+      if (statusFilter !== "ALL" && campaign.status !== statusFilter) {
+        return false
+      }
+      if (
+        countryFilter !== "ALL" &&
+        !campaign.targetCountries.includes(countryFilter)
+      ) {
+        return false
+      }
+      const createdDate = campaign.createdAt.slice(0, 10)
+      if (dateFrom && createdDate < dateFrom) return false
+      if (dateTo && createdDate > dateTo) return false
+      return true
+    })
+  }, [campaigns, search, statusFilter, countryFilter, dateFrom, dateTo])
+
+  function resetFilters() {
+    setSearch("")
+    setStatusFilter("ALL")
+    setCountryFilter("ALL")
+    setDateFrom("")
+    setDateTo("")
+  }
+
+  const filtersActive =
+    !!search ||
+    statusFilter !== "ALL" ||
+    countryFilter !== "ALL" ||
+    !!dateFrom ||
+    !!dateTo
 
   const load = React.useCallback(async () => {
     setLoading(true)
@@ -244,7 +306,95 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <Card>
+        <CardContent className="flex flex-wrap items-end gap-3">
+          <div className="grid min-w-40 flex-1 gap-1.5">
+            <Label htmlFor="campaign-filter-search">Campaign</Label>
+            <Input
+              id="campaign-filter-search"
+              placeholder="Search by name"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="campaign-filter-status">Status</Label>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) =>
+                setStatusFilter(v as CampaignStatusValue | "ALL")
+              }
+            >
+              <SelectTrigger id="campaign-filter-status" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="campaign-filter-country">Country</Label>
+            <Select value={countryFilter} onValueChange={setCountryFilter}>
+              <SelectTrigger id="campaign-filter-country" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All countries</SelectItem>
+                {availableCountries.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="campaign-filter-from">From</Label>
+            <Input
+              id="campaign-filter-from"
+              type="date"
+              className="w-40"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="campaign-filter-to">To</Label>
+            <Input
+              id="campaign-filter-to"
+              type="date"
+              className="w-40"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetFilters}
+            disabled={!filtersActive}
+          >
+            Reset
+          </Button>
+        </CardContent>
+      </Card>
+
+      {filteredCampaigns.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            No campaigns match these filters.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
       {/* Desktop / tablet: table */}
       <Card className="hidden sm:block">
         <div className="overflow-x-auto">
@@ -261,7 +411,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
               </TableRow>
             </TableHeader>
             <TableBody>
-              {campaigns.map((campaign) => (
+              {filteredCampaigns.map((campaign) => (
                 <TableRow key={campaign.id}>
                   <TableCell className="font-medium">
                     {campaign.campaignName}
@@ -313,7 +463,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
 
       {/* Mobile: stacked cards */}
       <div className="grid gap-3 sm:hidden">
-        {campaigns.map((campaign) => (
+        {filteredCampaigns.map((campaign) => (
           <Card key={campaign.id}>
             <CardContent className="space-y-3">
               <div className="flex items-start justify-between gap-2">
@@ -370,6 +520,8 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           </Card>
         ))}
       </div>
+        </div>
+      )}
 
       <CampaignEditDialog
         campaign={editCampaign}
@@ -456,7 +608,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   )
 }
 

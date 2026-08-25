@@ -23,6 +23,27 @@ enum CampaignStatus {
   ARCHIVED
 }
 
+enum CampaignAdFormat {
+  POPUNDER
+  SOCIAL_BAR
+  NATIVE_BANNER
+  IN_PAGE_PUSH
+  INTERSTITIAL
+}
+
+enum CampaignPricingModel {
+  CPM
+  CPA
+  CPC
+}
+
+// Mirrors Adsterra's "Choose a start time" control on campaign creation.
+enum CampaignStartMode {
+  START_ONCE_VERIFIED
+  SCHEDULE
+  KEEP_INACTIVE
+}
+
 enum AdZoneStatus {
   ACTIVE
   PAUSED
@@ -87,12 +108,12 @@ model User {
   // same as email/password lives in Supabase rather than this table.
   phone       String?  @unique
   role        UserRole
-  balance_usd Decimal @default(0) @db.Decimal(12,2)
+  balance_usd Decimal  @default(0) @db.Decimal(12, 2)
 
-  campaigns Campaign[]
-  adZones   AdZone[]
+  campaigns      Campaign[]
+  adZones        AdZone[]
   publisherSites PublisherSite[]
-  wallet    Wallet?
+  wallet         Wallet?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,9 +159,9 @@ model WalletTransaction {
   userId   String
 
   type        TransactionType
-  amount      Decimal            @db.Decimal(12, 2)
-  currency    String             @default("USD")
-  status      TransactionStatus  @default(COMPLETED)
+  amount      Decimal           @db.Decimal(12, 2)
+  currency    String            @default("USD")
+  status      TransactionStatus @default(COMPLETED)
   referenceId String?
   description String?
   metadata    Json?
@@ -181,19 +202,19 @@ model Payout {
 }
 
 model PublisherSite {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   publisherId String
-  publisher   User     @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  publisher   User   @relation(fields: [publisherId], references: [id], onDelete: Cascade)
 
-  domain       String
+  domain             String
   // Only populated for ADS_TXT verifications - AD_SNIPPET sites are proved
   // by an actual ad request's Referer, not by fetching an ads.txt file.
-  adsTxtUrl    String?
-  expectedText String?
+  adsTxtUrl          String?
+  expectedText       String?
   verificationMethod SiteVerificationMethod @default(ADS_TXT)
-  verified     Boolean  @default(false)
-  verifiedAt   DateTime?
-  status       SiteStatus @default(ACTIVE)
+  verified           Boolean                @default(false)
+  verifiedAt         DateTime?
+  status             SiteStatus             @default(ACTIVE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -225,9 +246,24 @@ model Campaign {
   targetCountries String[]
   targetDevices   String[]
 
-  creativeType String?
-  creativeUrl  String?
-  creativeHtml String?
+  // Adsterra-style campaign setup fields. All additive/nullable-or-defaulted
+  // so existing rows and the ad-serving path (AdEngineController) are
+  // unaffected - none of these are read there yet.
+  adFormat        CampaignAdFormat?
+  pricingModel    CampaignPricingModel @default(CPM)
+  // Per-country bid override: { "US": 1.2, "IN": 0.4, ... }. Optional -
+  // falls back to maxCpc when a country has no override.
+  countryPricing  Json?
+  // Region/city include-exclude rules: [{ country, region?, city?, include }]
+  locations       Json?
+  budgetUnlimited Boolean              @default(false)
+  startMode       CampaignStartMode    @default(START_ONCE_VERIFIED)
+  // Only meaningful when startMode is SCHEDULE.
+  scheduledAt     DateTime?
+
+  creativeType   String?
+  creativeUrl    String?
+  creativeHtml   String?
   // Click-through destination for image creatives - AdEngineController
   // wraps the rendered <img> in an anchor through /api/v1/click when this
   // is set, so clicks get recorded before redirecting. HTML creatives
@@ -267,8 +303,8 @@ model AdZone {
 }
 
 model BlacklistedIp {
-  id        String   @id @default(uuid())
-  ipAddress String   @unique
+  id        String @id @default(uuid())
+  ipAddress String @unique
   source    String
   reason    String
 

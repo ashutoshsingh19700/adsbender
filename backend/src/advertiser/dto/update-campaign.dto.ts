@@ -1,8 +1,12 @@
+import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsIn,
+  IsISO8601,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -10,7 +14,39 @@ import {
   Min,
   MinLength,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+
+const AD_FORMATS = [
+  'POPUNDER',
+  'SOCIAL_BAR',
+  'NATIVE_BANNER',
+  'IN_PAGE_PUSH',
+  'INTERSTITIAL',
+] as const;
+const PRICING_MODELS = ['CPM', 'CPA', 'CPC'] as const;
+const START_MODES = [
+  'START_ONCE_VERIFIED',
+  'SCHEDULE',
+  'KEEP_INACTIVE',
+] as const;
+
+// Same shape as CreateCampaignDto's - see there for field notes.
+class CampaignLocationDto {
+  @IsString()
+  country: string;
+
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsBoolean()
+  include: boolean;
+}
 
 // Same fields as CreateCampaignDto, but all optional (partial update).
 // The service only allows this while the campaign is DRAFT or PAUSED -
@@ -78,4 +114,36 @@ export class UpdateCampaignDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // --- Adsterra-style setup fields - see CreateCampaignDto ---
+
+  @IsOptional()
+  @IsIn(AD_FORMATS)
+  adFormat?: (typeof AD_FORMATS)[number];
+
+  @IsOptional()
+  @IsIn(PRICING_MODELS)
+  pricingModel?: (typeof PRICING_MODELS)[number];
+
+  @IsOptional()
+  @IsObject()
+  countryPricing?: Record<string, number>;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignLocationDto)
+  locations?: CampaignLocationDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  budgetUnlimited?: boolean;
+
+  @IsOptional()
+  @IsIn(START_MODES)
+  startMode?: (typeof START_MODES)[number];
+
+  @ValidateIf((dto: UpdateCampaignDto) => dto.startMode === 'SCHEDULE')
+  @IsISO8601()
+  scheduledAt?: string;
 }
