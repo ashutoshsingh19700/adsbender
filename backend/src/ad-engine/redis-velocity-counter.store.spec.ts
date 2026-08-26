@@ -39,4 +39,21 @@ describe('RedisVelocityCounterStore', () => {
     expect(commandSpy).toHaveBeenCalledTimes(1);
     expect(commandSpy).toHaveBeenCalledWith(['INCR', 'rate:imp:127.0.0.1']);
   });
+
+  it('reads a counter without incrementing it', async () => {
+    commandSpy.mockResolvedValueOnce('2');
+
+    await expect(store.get('freqcap:campaign-1:visitor-1')).resolves.toBe(2);
+    expect(commandSpy).toHaveBeenCalledTimes(1);
+    expect(commandSpy).toHaveBeenCalledWith([
+      'GET',
+      'freqcap:campaign-1:visitor-1',
+    ]);
+  });
+
+  it('treats a missing counter as zero rather than erroring', async () => {
+    commandSpy.mockResolvedValueOnce(null);
+
+    await expect(store.get('freqcap:campaign-1:visitor-1')).resolves.toBe(0);
+  });
 });

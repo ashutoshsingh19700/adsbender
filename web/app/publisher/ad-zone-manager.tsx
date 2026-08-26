@@ -615,6 +615,13 @@ function ZoneSnippetDialog({
             className="font-mono text-xs"
           />
         )}
+        <p className="text-xs text-muted-foreground">
+          Paste this directly in your page&apos;s normal, always-rendered
+          content — not inside a modal, lazy-loaded component, or conditional
+          render. On frameworks with server streaming (e.g. Next.js
+          Suspense), placing it inside a boundary that never resolves into
+          the live DOM will inject the ad invisibly.
+        </p>
         <DialogFooter>
           <Button variant="outline" onClick={copy} disabled={!snippet}>
             {copied ? (

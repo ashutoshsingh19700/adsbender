@@ -82,6 +82,8 @@ export class AdvertiserService {
         totalBudget: dto.totalBudget,
         dailyBudget: dto.dailyBudget,
         maxCpc: dto.maxCpc,
+        maxCpm: dto.maxCpm,
+        maxCpa: dto.maxCpa,
         targetCountries: this.normalizeList(dto.targetCountries),
         targetDevices: this.normalizeList(dto.targetDevices).map((device) =>
           device.toLowerCase(),
@@ -91,6 +93,8 @@ export class AdvertiserService {
         creativeHtml: dto.creativeHtml,
         destinationUrl: dto.destinationUrl,
         notes: dto.notes,
+        frequencyCapImpressions: dto.frequencyCapImpressions,
+        frequencyCapWindowSeconds: dto.frequencyCapWindowSeconds,
         status: CampaignStatus.PENDING_REVIEW,
         adFormat: dto.adFormat,
         pricingModel: dto.pricingModel,

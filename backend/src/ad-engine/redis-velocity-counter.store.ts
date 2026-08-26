@@ -2,13 +2,13 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import { RedisRespClient } from './redis-resp.client';
 import type {
+  FrequencyCapCounterStore,
   VelocityCounterResult,
-  VelocityCounterStore,
 } from './velocity-cap.types';
 
 @Injectable()
 export class RedisVelocityCounterStore
-  implements VelocityCounterStore, OnModuleDestroy
+  implements FrequencyCapCounterStore, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
     host: process.env.REDIS_HOST ?? '127.0.0.1',
@@ -32,6 +32,15 @@ export class RedisVelocityCounterStore
       count,
       ttlSeconds,
     };
+  }
+
+  // Reads a counter without incrementing it - a missing key (nothing
+  // recorded yet, or its TTL already expired) comes back as Redis nil,
+  // which means "zero", not "error".
+  async get(key: string): Promise<number> {
+    const value = await this.redis.command<string | null>(['GET', key]);
+
+    return value === null ? 0 : Number(value);
   }
 
   onModuleDestroy() {

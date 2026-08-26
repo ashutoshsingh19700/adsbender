@@ -36,6 +36,7 @@ describe('ClickHouseAnalyticsQueryStore', () => {
       store.getDailyMetrics({
         startDate: '2026-07-20',
         endDate: '2026-07-21',
+        platformFeeBps: 2000,
       }),
     ).resolves.toEqual([
       {
@@ -64,6 +65,7 @@ describe('ClickHouseAnalyticsQueryStore', () => {
       startDate: '2026-07-20',
       endDate: '2026-07-21',
       campaignId,
+      platformFeeBps: 2000,
     });
 
     const url = new URL(fetchSpy.mock.calls[0][0] as string);
@@ -78,6 +80,7 @@ describe('ClickHouseAnalyticsQueryStore', () => {
         startDate: '2026-07-20',
         endDate: '2026-07-21',
         campaignId: "x'; DROP TABLE analytics.impressions; --",
+        platformFeeBps: 2000,
       }),
     ).rejects.toThrow('Invalid campaignId');
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -102,6 +105,7 @@ describe('ClickHouseAnalyticsQueryStore', () => {
       store.getDailyMetrics({
         startDate: '2026-07-20',
         endDate: '2026-07-21',
+        platformFeeBps: 2000,
       }),
     ).resolves.toEqual([
       {
@@ -113,5 +117,33 @@ describe('ClickHouseAnalyticsQueryStore', () => {
         payout: 1.75,
       },
     ]);
+  });
+
+  it('bakes the live platform fee into the payout multiplier instead of a hardcoded 0.7', async () => {
+    await store.getDailyMetrics({
+      startDate: '2026-07-20',
+      endDate: '2026-07-21',
+      platformFeeBps: 3000, // 30% fee -> publisher keeps 70% -> rate 0.7
+    });
+
+    const url = new URL(fetchSpy.mock.calls[0][0] as string);
+    const query = url.searchParams.get('query') ?? '';
+
+    expect(query).toContain('spend * 0.7');
+  });
+
+  it('sums spend from both impressions and clicks, so either pricing model is counted', async () => {
+    await store.getDailyMetrics({
+      startDate: '2026-07-20',
+      endDate: '2026-07-21',
+      platformFeeBps: 2000,
+    });
+
+    const url = new URL(fetchSpy.mock.calls[0][0] as string);
+    const query = url.searchParams.get('query') ?? '';
+
+    expect(query).toContain(
+      "ifNull(daily_impressions.spend, 0) + ifNull(daily_clicks.spend, 0) AS spend",
+    );
   });
 });

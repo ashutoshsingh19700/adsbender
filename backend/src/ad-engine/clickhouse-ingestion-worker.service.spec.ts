@@ -14,6 +14,7 @@ import {
   ClickHouseIngestionWorkerService,
   MESSAGE_BROKER_CONSUMER,
 } from './clickhouse-ingestion-worker.service';
+import { CpmBillingService } from './cpm-billing.service';
 
 const createEvent = (index: number): ImpressionEvent => ({
   type: 'impression',
@@ -36,9 +37,16 @@ describe('ClickHouseIngestionWorkerService', () => {
   let service: ClickHouseIngestionWorkerService;
   let consumer: jest.Mocked<MessageBrokerConsumer>;
   let analyticsStore: jest.Mocked<AnalyticsEventStore>;
+  let cpmBillingService: { recordImpression: jest.Mock };
 
   beforeEach(async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    // Importing @prisma/client (transitively, via CpmBillingService ->
+    // PrismaService) auto-loads backend/.env, which sets
+    // CLICKHOUSE_INGESTION_ENABLED=false as an ambient side effect - pin an
+    // explicit baseline here instead of relying on the var being unset, so
+    // these tests don't depend on that load having happened yet.
+    process.env.CLICKHOUSE_INGESTION_ENABLED = 'true';
     consumer = {
       readBatch: jest.fn(),
       acknowledge: jest.fn(),
@@ -47,6 +55,9 @@ describe('ClickHouseIngestionWorkerService', () => {
       ensureSchema: jest.fn(),
       insertImpressions: jest.fn(),
       insertClicks: jest.fn(),
+    };
+    cpmBillingService = {
+      recordImpression: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +71,10 @@ describe('ClickHouseIngestionWorkerService', () => {
           provide: ANALYTICS_EVENT_STORE,
           useValue: analyticsStore,
         },
+        {
+          provide: CpmBillingService,
+          useValue: cpmBillingService,
+        },
       ],
     }).compile();
 
@@ -68,6 +83,7 @@ describe('ClickHouseIngestionWorkerService', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    delete process.env.CLICKHOUSE_INGESTION_ENABLED;
   });
 
   it('reads up to 2,000 messages, bulk inserts them, then acknowledges processed IDs', async () => {
@@ -97,6 +113,24 @@ describe('ClickHouseIngestionWorkerService', () => {
     );
   });
 
+  it('feeds every impression through CpmBillingService before acknowledging', async () => {
+    const messages = [
+      { id: '1719274200-0', payload: createEvent(0) },
+      { id: '1719274200-1', payload: createEvent(1) },
+    ];
+    consumer.readBatch.mockResolvedValue(messages);
+
+    await service.processNextBatch();
+
+    expect(cpmBillingService.recordImpression).toHaveBeenCalledTimes(2);
+    expect(cpmBillingService.recordImpression).toHaveBeenCalledWith(
+      messages[0].payload,
+    );
+    expect(cpmBillingService.recordImpression).toHaveBeenCalledWith(
+      messages[1].payload,
+    );
+  });
+
   it('does not acknowledge messages if ClickHouse insertion fails', async () => {
     consumer.readBatch.mockResolvedValue([
       {
@@ -114,6 +148,20 @@ describe('ClickHouseIngestionWorkerService', () => {
     expect(consumer.acknowledge).not.toHaveBeenCalled();
   });
 
+  it('bills the CPM batch even if ClickHouse insertion later fails for the same batch', async () => {
+    consumer.readBatch.mockResolvedValue([
+      { id: '1719274200-0', payload: createEvent(0) },
+    ]);
+    analyticsStore.insertImpressions.mockRejectedValue(
+      new Error('ClickHouse unavailable'),
+    );
+
+    await expect(service.processNextBatch()).rejects.toThrow(
+      'ClickHouse unavailable',
+    );
+    expect(cpmBillingService.recordImpression).toHaveBeenCalledTimes(1);
+  });
+
   it('initializes the ClickHouse schema only when ingestion is enabled', async () => {
     process.env.CLICKHOUSE_INGESTION_ENABLED = 'true';
     consumer.readBatch.mockResolvedValue([]);
@@ -126,10 +174,12 @@ describe('ClickHouseIngestionWorkerService', () => {
     delete process.env.CLICKHOUSE_INGESTION_ENABLED;
   });
 
-  it('skips schema initialization when ingestion is explicitly disabled', async () => {
+  it('skips schema initialization when ingestion is explicitly disabled, but still runs the billing loop', async () => {
     process.env.CLICKHOUSE_INGESTION_ENABLED = 'false';
+    consumer.readBatch.mockResolvedValue([]);
 
     await service.onModuleInit();
+    service.onModuleDestroy();
 
     expect(analyticsStore.ensureSchema).not.toHaveBeenCalled();
 

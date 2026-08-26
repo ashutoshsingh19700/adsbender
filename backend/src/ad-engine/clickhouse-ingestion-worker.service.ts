@@ -12,12 +12,20 @@ import type {
   ImpressionEvent,
   MessageBrokerConsumer,
 } from './ad-event.types';
+import { CpmBillingService } from './cpm-billing.service';
 
 export const MESSAGE_BROKER_CONSUMER = Symbol('MESSAGE_BROKER_CONSUMER');
 export const ANALYTICS_EVENT_STORE = Symbol('ANALYTICS_EVENT_STORE');
 export const CLICKHOUSE_INGESTION_BATCH_SIZE = 2_000;
 export const CLICKHOUSE_INGESTION_BLOCK_MS = 1_000;
 
+// Also the only consumer of adengine:events:impressions (same hard-XDEL
+// reasoning as ClickHouseClickIngestionWorkerService's comment on the
+// clicks channel), which is why CPM billing (CpmBillingService) lives in
+// here rather than as a separate worker - see processNextBatch. Billing
+// must run even when ClickHouse itself is disabled/down, so the loop and
+// the billing step run unconditionally now - only the analytics insert
+// stays gated on CLICKHOUSE_INGESTION_ENABLED.
 @Injectable()
 export class ClickHouseIngestionWorkerService
   implements OnModuleInit, OnModuleDestroy
@@ -31,13 +39,10 @@ export class ClickHouseIngestionWorkerService
     private readonly messageBrokerConsumer: MessageBrokerConsumer,
     @Inject(ANALYTICS_EVENT_STORE)
     private readonly analyticsEventStore: AnalyticsEventStore,
+    private readonly cpmBillingService: CpmBillingService,
   ) {}
 
   onModuleInit() {
-    if (process.env.CLICKHOUSE_INGESTION_ENABLED === 'false') {
-      return;
-    }
-
     this.running = true;
     void this.runLoop();
   }
@@ -63,7 +68,21 @@ export class ClickHouseIngestionWorkerService
     const events = messages.map(
       (message) => message.payload as ImpressionEvent,
     );
-    await this.flush(events);
+
+    // Bill first: money movement must happen regardless of whether
+    // ClickHouse analytics insertion is enabled or succeeds.
+    // recordImpression never throws for a CPC event (event.maxCpm unset -
+    // it's a no-op), and any error for a real CPM event is caught inside
+    // AdBillingService/CpmBillingService and logged, not propagated, so one
+    // unbillable event can't stall the batch.
+    for (const event of events) {
+      await this.cpmBillingService.recordImpression(event);
+    }
+
+    if (this.clickHouseEnabled()) {
+      await this.flush(events);
+    }
+
     await this.messageBrokerConsumer.acknowledge(
       IMPRESSION_EVENTS_CHANNEL,
       messages.map((message) => message.id),
@@ -75,17 +94,23 @@ export class ClickHouseIngestionWorkerService
     };
   }
 
+  private clickHouseEnabled(): boolean {
+    return process.env.CLICKHOUSE_INGESTION_ENABLED !== 'false';
+  }
+
   private async runLoop() {
-    while (this.running) {
-      try {
-        await this.analyticsEventStore.ensureSchema();
-        break;
-      } catch (error) {
-        this.logger.error(
-          'ClickHouse schema initialization failed, retrying in 5s',
-          error,
-        );
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+    if (this.clickHouseEnabled()) {
+      while (this.running) {
+        try {
+          await this.analyticsEventStore.ensureSchema();
+          break;
+        } catch (error) {
+          this.logger.error(
+            'ClickHouse schema initialization failed, retrying in 5s',
+            error,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
       }
     }
 

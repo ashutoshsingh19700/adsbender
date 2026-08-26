@@ -2,14 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { ANALYTICS_QUERY_STORE, AnalyticsService } from './analytics.service';
 import type { AnalyticsQueryStore } from './analytics-query.types';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
   let store: jest.Mocked<AnalyticsQueryStore>;
+  let platformSettingsService: { getPlatformFeeBps: jest.Mock };
 
   beforeEach(async () => {
     store = {
       getDailyMetrics: jest.fn(),
+    };
+    platformSettingsService = {
+      getPlatformFeeBps: jest.fn().mockResolvedValue(2000),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -19,10 +24,24 @@ describe('AnalyticsService', () => {
           provide: ANALYTICS_QUERY_STORE,
           useValue: store,
         },
+        {
+          provide: PlatformSettingsService,
+          useValue: platformSettingsService,
+        },
       ],
     }).compile();
 
     service = module.get(AnalyticsService);
+  });
+
+  it('passes the live platform fee down to the query store', async () => {
+    store.getDailyMetrics.mockResolvedValue([]);
+
+    await service.getDailyMetrics('2026-07-20', '2026-07-21');
+
+    expect(store.getDailyMetrics).toHaveBeenCalledWith(
+      expect.objectContaining({ platformFeeBps: 2000 }),
+    );
   });
 
   it('returns daily rows and aggregate dashboard totals with CTR calculation', async () => {

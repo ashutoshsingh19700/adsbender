@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsISO8601,
   IsNumber,
   IsObject,
@@ -73,6 +74,18 @@ export class UpdateCampaignDto {
   @Min(0.01)
   maxCpc?: number;
 
+  // See CreateCampaignDto - CPM bid override.
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  maxCpm?: number;
+
+  // See CreateCampaignDto - CPA bid override.
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  maxCpa?: number;
+
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
@@ -114,6 +127,17 @@ export class UpdateCampaignDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // See CreateCampaignDto - per-campaign frequency-cap override.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  frequencyCapImpressions?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60)
+  frequencyCapWindowSeconds?: number;
 
   // --- Adsterra-style setup fields - see CreateCampaignDto ---
 

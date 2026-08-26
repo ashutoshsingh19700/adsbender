@@ -170,6 +170,8 @@ describe('RedisCampaignCacheStore', () => {
         totalBudget: 100,
         dailyBudget: 10,
         maxCpc: 2.5,
+        maxCpm: null,
+        maxCpa: null,
         targetCountries: ['US'],
         targetDevices: ['mobile'],
         status: 'ACTIVE',
@@ -178,7 +180,102 @@ describe('RedisCampaignCacheStore', () => {
         creativeUrl: null,
         creativeHtml: '<div>ad</div>',
         destinationUrl: null,
+        frequencyCapImpressions: null,
+        frequencyCapWindowSeconds: null,
       },
     ]);
+  });
+
+  it('round-trips a CPM bid', async () => {
+    await store.replaceActiveCampaigns([
+      {
+        id: 'campaign-4',
+        advertiserId: 'advertiser-1',
+        campaignName: 'CPM Campaign',
+        totalBudget: new Prisma.Decimal('100.00'),
+        dailyBudget: new Prisma.Decimal('10.00'),
+        maxCpc: new Prisma.Decimal('1.00'),
+        maxCpm: new Prisma.Decimal('2.50'),
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        status: 'ACTIVE',
+        advertiserBalanceUsd: new Prisma.Decimal('5.00'),
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
+      },
+    ]);
+
+    expect(commandSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'HSET',
+        campaignCacheKey('campaign-4'),
+        'maxCpm',
+        '2.5',
+      ]),
+    );
+  });
+
+  it('round-trips a CPA bid', async () => {
+    await store.replaceActiveCampaigns([
+      {
+        id: 'campaign-5',
+        advertiserId: 'advertiser-1',
+        campaignName: 'CPA Campaign',
+        totalBudget: new Prisma.Decimal('100.00'),
+        dailyBudget: new Prisma.Decimal('10.00'),
+        maxCpc: new Prisma.Decimal('1.00'),
+        maxCpa: new Prisma.Decimal('15.00'),
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        status: 'ACTIVE',
+        advertiserBalanceUsd: new Prisma.Decimal('5.00'),
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
+      },
+    ]);
+
+    expect(commandSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'HSET',
+        campaignCacheKey('campaign-5'),
+        'maxCpa',
+        '15',
+      ]),
+    );
+  });
+
+  it('round-trips a per-campaign frequency cap override', async () => {
+    await store.replaceActiveCampaigns([
+      {
+        id: 'campaign-3',
+        advertiserId: 'advertiser-1',
+        campaignName: 'Custom Cap',
+        totalBudget: new Prisma.Decimal('100.00'),
+        dailyBudget: new Prisma.Decimal('10.00'),
+        maxCpc: new Prisma.Decimal('1.00'),
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        status: 'ACTIVE',
+        advertiserBalanceUsd: new Prisma.Decimal('5.00'),
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
+        frequencyCapImpressions: 5,
+        frequencyCapWindowSeconds: 3600,
+      },
+    ]);
+
+    expect(commandSpy).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'HSET',
+        campaignCacheKey('campaign-3'),
+        'frequencyCapImpressions',
+        '5',
+        'frequencyCapWindowSeconds',
+        '3600',
+      ]),
+    );
   });
 });

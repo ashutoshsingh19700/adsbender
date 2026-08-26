@@ -91,6 +91,10 @@ export class RedisCampaignCacheStore
       totalBudget: campaign.totalBudget.toString(),
       dailyBudget: campaign.dailyBudget.toString(),
       maxCpc: campaign.maxCpc.toString(),
+      maxCpm:
+        campaign.maxCpm != null ? campaign.maxCpm.toString() : '',
+      maxCpa:
+        campaign.maxCpa != null ? campaign.maxCpa.toString() : '',
       targetCountries: JSON.stringify(campaign.targetCountries),
       targetDevices: JSON.stringify(campaign.targetDevices),
       status: campaign.status,
@@ -99,6 +103,14 @@ export class RedisCampaignCacheStore
       creativeUrl: campaign.creativeUrl ?? '',
       creativeHtml: campaign.creativeHtml ?? '',
       destinationUrl: campaign.destinationUrl ?? '',
+      frequencyCapImpressions:
+        campaign.frequencyCapImpressions != null
+          ? String(campaign.frequencyCapImpressions)
+          : '',
+      frequencyCapWindowSeconds:
+        campaign.frequencyCapWindowSeconds != null
+          ? String(campaign.frequencyCapWindowSeconds)
+          : '',
     };
   }
 
@@ -124,6 +136,8 @@ export class RedisCampaignCacheStore
       totalBudget: Number(record.totalBudget ?? 0),
       dailyBudget: Number(record.dailyBudget ?? 0),
       maxCpc: Number(record.maxCpc ?? 0),
+      maxCpm: record.maxCpm ? Number(record.maxCpm) : null,
+      maxCpa: record.maxCpa ? Number(record.maxCpa) : null,
       targetCountries: this.parseJsonArray(record.targetCountries),
       targetDevices: this.parseJsonArray(record.targetDevices),
       status: record.status ?? '',
@@ -132,6 +146,12 @@ export class RedisCampaignCacheStore
       creativeUrl: record.creativeUrl || null,
       creativeHtml: record.creativeHtml || null,
       destinationUrl: record.destinationUrl || null,
+      frequencyCapImpressions: record.frequencyCapImpressions
+        ? Number(record.frequencyCapImpressions)
+        : null,
+      frequencyCapWindowSeconds: record.frequencyCapWindowSeconds
+        ? Number(record.frequencyCapWindowSeconds)
+        : null,
     };
   }
 

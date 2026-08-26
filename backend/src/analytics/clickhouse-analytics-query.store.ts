@@ -43,6 +43,19 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
       params.zoneId ? `AND zone_id = '${params.zoneId}'` : '',
     ].join(' ');
 
+    // Publisher's share of every dollar of spend, from the live
+    // platformFeeBps (see PlatformSettingsService) - e.g. 8000/10000 = 0.8
+    // at the 20% default fee. platformFeeBps is a validated 0-10000 integer
+    // from PlatformSettingsService, never user input, so it's safe to
+    // interpolate directly.
+    const publisherShareRate = (10_000 - params.platformFeeBps) / 10_000;
+
+    // spend sums BOTH tables: a CPC campaign's impressions carry cost=0
+    // (it's billed on click, not impression) and a CPM campaign's clicks
+    // carry cost=0 (billed on impression, not click) - see
+    // AdEngineController.serve - so summing both is always the actual
+    // billed total, never a double-count, regardless of which pricing
+    // model a given campaign uses.
     const sql = `
       SELECT
         date,
@@ -50,14 +63,14 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
         clicks,
         round(if(impressions > 0, (clicks / impressions) * 100, 0), 4) AS ctr,
         spend,
-        round(spend * 0.7, 4) AS payout
+        round(spend * ${publisherShareRate}, 4) AS payout
       FROM
       (
         SELECT
           ifNull(daily_impressions.date, daily_clicks.date) AS date,
           ifNull(daily_impressions.impressions, 0) AS impressions,
           ifNull(daily_clicks.clicks, 0) AS clicks,
-          ifNull(daily_impressions.spend, 0) AS spend
+          ifNull(daily_impressions.spend, 0) + ifNull(daily_clicks.spend, 0) AS spend
         FROM
         (
           SELECT
@@ -74,7 +87,8 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
         (
           SELECT
             toDate(event_time) AS date,
-            count() AS clicks
+            count() AS clicks,
+            round(sum(cost), 4) AS spend
           FROM ${this.options.database}.clicks
           WHERE event_time >= parseDateTimeBestEffort('${params.startDate}')
             AND event_time < parseDateTimeBestEffort('${params.endDate}') + INTERVAL 1 DAY

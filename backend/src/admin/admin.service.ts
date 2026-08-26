@@ -8,6 +8,7 @@ import { CampaignStatus, Prisma, SiteStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
 import { parsePagination } from '../common/pagination.util';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { RejectCampaignDto } from './dto/reject-campaign.dto';
 
 const ADVERTISER_SUMMARY_SELECT = {
@@ -30,6 +31,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletManager: WalletManager,
+    private readonly platformSettingsService: PlatformSettingsService,
   ) {}
 
   // --- Campaign review ---
@@ -205,13 +207,35 @@ export class AdminService {
     });
   }
 
+  // --- Platform settings ---
+
+  async getPlatformFee() {
+    const platformFeeBps = await this.platformSettingsService.getPlatformFeeBps();
+
+    return { platformFeeBps, platformFeePercent: platformFeeBps / 100 };
+  }
+
+  async updatePlatformFee(platformFeeBps: number) {
+    const updated =
+      await this.platformSettingsService.updatePlatformFeeBps(platformFeeBps);
+
+    return {
+      platformFeeBps: updated.platformFeeBps,
+      platformFeePercent: updated.platformFeeBps / 100,
+    };
+  }
+
   // --- Revenue (platform-wide financial rollup) ---
   // Lifetime totals pulled straight from the Postgres ledger (source of
   // truth for money), not ClickHouse - ClickHouse's spend/payout columns
-  // are the same 70% publisher / 30% platform split (see
+  // apply the SAME live platformFeeBps (see
   // ClickHouseAnalyticsQueryStore.getDailyMetrics) but only cover the
   // event-stream window, so this endpoint is the one place that reports
-  // the network's all-time position.
+  // the network's all-time position. Note the ClickHouse side applies
+  // TODAY's rate to all historical rows (it doesn't store the rate that was
+  // actually in effect when each event billed), so it's an approximation -
+  // this endpoint's numbers come straight from what was actually credited
+  // per-transaction and are exact.
   async getRevenueSummary() {
     const [campaignSpend, walletTotals, completedPayouts, pendingPayouts] =
       await Promise.all([

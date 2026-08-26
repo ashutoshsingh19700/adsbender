@@ -5,6 +5,7 @@ import type {
   DailyMetricsParams,
   MetricsRow,
 } from './analytics-query.types';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 export const ANALYTICS_QUERY_STORE = Symbol('ANALYTICS_QUERY_STORE');
 
@@ -13,6 +14,7 @@ export class AnalyticsService {
   constructor(
     @Inject(ANALYTICS_QUERY_STORE)
     private readonly analyticsQueryStore: AnalyticsQueryStore,
+    private readonly platformSettingsService: PlatformSettingsService,
   ) {}
 
   async getDailyMetrics(
@@ -20,9 +22,11 @@ export class AnalyticsService {
     endDate: string,
     filter?: Pick<DailyMetricsParams, 'campaignId' | 'zoneId'>,
   ) {
+    const platformFeeBps = await this.platformSettingsService.getPlatformFeeBps();
     const rows = await this.analyticsQueryStore.getDailyMetrics({
       startDate,
       endDate,
+      platformFeeBps,
       ...filter,
     });
 

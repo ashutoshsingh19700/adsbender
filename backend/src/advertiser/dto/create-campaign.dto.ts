@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsISO8601,
   IsNumber,
   IsObject,
@@ -68,6 +69,23 @@ export class CreateCampaignDto {
   @Min(0.01)
   maxCpc: number;
 
+  // Bid per 1000 impressions - opts this campaign into CPM billing (billed
+  // in lump sums every 1000 impressions) instead of the default
+  // pay-per-click model. Leave unset to stay on CPC/maxCpc.
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  maxCpm?: number;
+
+  // Bid per verified conversion - opts this campaign into CPA billing
+  // (charged only when the advertiser confirms a conversion via
+  // GET /api/v1/conversion, never on click). Not mutually exclusive with
+  // maxCpm; still competes for ad-serving on maxCpc either way.
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  maxCpa?: number;
+
   @IsArray()
   @ArrayMinSize(1)
   @IsString({ each: true })
@@ -111,6 +129,19 @@ export class CreateCampaignDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // Per-campaign override for AdEngine's per-visitor frequency cap - see
+  // Campaign.frequencyCapImpressions in schema.prisma. Leave both unset to
+  // use the platform default (VisitorFrequencyCapService).
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  frequencyCapImpressions?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60)
+  frequencyCapWindowSeconds?: number;
 
   // --- Adsterra-style setup fields (see schema.prisma - Campaign) ---
   // All optional and stored as-is; none of these are read by

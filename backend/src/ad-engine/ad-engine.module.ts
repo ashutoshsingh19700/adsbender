@@ -31,9 +31,16 @@ import { RedisStreamMessageBrokerConsumer } from './redis-stream-message-broker.
 import { RedisStreamMessageBrokerPublisher } from './redis-stream-message-broker.publisher';
 import { RedisVelocityCounterStore } from './redis-velocity-counter.store';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
+import { CpmBillingService } from './cpm-billing.service';
+import { ConversionTrackingService } from './conversion-tracking.service';
+import {
+  VISITOR_FREQUENCY_CAP_STORE,
+  VisitorFrequencyCapService,
+} from './visitor-frequency-cap.service';
+import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
 
 @Module({
-  imports: [WalletModule],
+  imports: [WalletModule, PlatformSettingsModule],
   controllers: [AdEngineController],
   providers: [
     AdBillingService,
@@ -43,6 +50,8 @@ import { SiteAutoVerificationService } from './site-auto-verification.service';
     ClickHouseAnalyticsEventStore,
     ClickHouseClickIngestionWorkerService,
     ClickHouseIngestionWorkerService,
+    ConversionTrackingService,
+    CpmBillingService,
     DeviceDetectorService,
     FrequencyCappingService,
     FraudDetectionService,
@@ -52,6 +61,7 @@ import { SiteAutoVerificationService } from './site-auto-verification.service';
     RedisStreamMessageBrokerPublisher,
     RedisVelocityCounterStore,
     SiteAutoVerificationService,
+    VisitorFrequencyCapService,
     {
       provide: CAMPAIGN_CACHE_STORE,
       useExisting: RedisCampaignCacheStore,
@@ -70,6 +80,13 @@ import { SiteAutoVerificationService } from './site-auto-verification.service';
     },
     {
       provide: VELOCITY_COUNTER_STORE,
+      useExisting: RedisVelocityCounterStore,
+    },
+    {
+      // Same Redis-backed store as VELOCITY_COUNTER_STORE above, just typed
+      // through the richer FrequencyCapCounterStore interface (adds `get`)
+      // that per-visitor capping needs to peek a counter without bumping it.
+      provide: VISITOR_FREQUENCY_CAP_STORE,
       useExisting: RedisVelocityCounterStore,
     },
   ],

@@ -3,8 +3,10 @@ import { Module } from '@nestjs/common';
 import { AnalyticsController } from './analytics.controller';
 import { ANALYTICS_QUERY_STORE, AnalyticsService } from './analytics.service';
 import { ClickHouseAnalyticsQueryStore } from './clickhouse-analytics-query.store';
+import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
 
 @Module({
+  imports: [PlatformSettingsModule],
   controllers: [AnalyticsController],
   providers: [
     AnalyticsService,

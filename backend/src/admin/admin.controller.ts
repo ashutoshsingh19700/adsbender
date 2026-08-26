@@ -11,6 +11,7 @@ import {
 
 import { AdminService } from './admin.service';
 import { RejectCampaignDto } from './dto/reject-campaign.dto';
+import { UpdatePlatformFeeDto } from './dto/update-platform-fee.dto';
 import { AdminUpdateSiteStatusDto } from './dto/update-site-status.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -51,6 +52,18 @@ export class AdminController {
   @Get('revenue/summary')
   getRevenueSummary() {
     return this.adminService.getRevenueSummary();
+  }
+
+  // --- Platform settings ---
+
+  @Get('settings/platform-fee')
+  getPlatformFee() {
+    return this.adminService.getPlatformFee();
+  }
+
+  @Patch('settings/platform-fee')
+  updatePlatformFee(@Body() dto: UpdatePlatformFeeDto) {
+    return this.adminService.updatePlatformFee(dto.platformFeeBps);
   }
 
   // --- Users ---
