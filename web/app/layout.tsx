@@ -36,7 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <SiteHeader />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pt-6">{children}</main>
           <SiteFooter />
           <Toaster richColors position="top-right" />
         </AuthProvider>

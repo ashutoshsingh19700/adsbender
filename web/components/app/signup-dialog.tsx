@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Logo } from "@/components/app/logo"
 
 const SIGNUP_PATHS = [
   {
@@ -81,10 +82,8 @@ export function SignUpDialog() {
         <div className="px-6 pt-8 sm:px-10">
           <DialogHeader className="items-center text-center">
             <div className="flex items-center gap-2 font-semibold tracking-tight">
-              <span className="flex size-6 items-center justify-center rounded-md bg-orange-500 text-xs font-bold text-white">
-                A
-              </span>
-              AdsBender
+              <Logo className="h-16" />
+              <span className="sr-only">AdsBender</span>
             </div>
             <DialogTitle className="mt-3 text-2xl font-bold sm:text-3xl">
               Create your account

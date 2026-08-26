@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight, Check, PlayCircle } from "lucide-react"
@@ -63,8 +62,24 @@ export default function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-background">
         <div className="mx-auto max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1760px] px-4 sm:px-6 lg:px-8 pt-6 pb-16 sm:pt-8 sm:pb-20">
-          <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.15fr] lg:gap-6 xl:gap-10">
-            {/* Left: copy */}
+          <div className="grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-6 xl:gap-10">
+            {/* Left: product animation */}
+            <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
+              <div className="overflow-hidden rounded-2xl">
+                <video
+                  src="/hero/hero-animation.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  poster="/hero/hero-dashboard.png"
+                  aria-label="AdsBender product animation showing campaign performance and dashboard highlights"
+                  className="h-auto w-full scale-110 [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
+                />
+              </div>
+            </div>
+
+            {/* Right: copy */}
             <div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
                 One platform.
@@ -105,20 +120,6 @@ export default function Home() {
                     </Link>
                   </Button>
                 </span>
-              </div>
-            </div>
-
-            {/* Right: product screenshot */}
-            <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
-              <div className="overflow-hidden rounded-2xl">
-                <Image
-                  src="/hero/hero-dashboard.png"
-                  alt="AdsBender analytics dashboard showing spend, impressions, clicks and campaign performance"
-                  width={1536}
-                  height={1017}
-                  priority
-                  className="h-auto w-full [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
-                />
               </div>
             </div>
           </div>

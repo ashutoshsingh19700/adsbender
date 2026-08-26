@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MarketingNav } from "@/components/app/marketing-nav"
 import { SignUpDialog } from "@/components/app/signup-dialog"
+import { Logo } from "@/components/app/logo"
 
 // Each entry is only ever shown to the roles listed — a signed-out visitor,
 // or a signed-in user viewing another role's link, never sees it. This is
@@ -48,15 +49,13 @@ export function SiteHeader() {
   ) {
     return (
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
-        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
+        <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
           <Link
             href="/"
             className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
           >
-            <span className="flex size-8 items-center justify-center rounded-md bg-orange-500 text-sm font-bold text-white">
-              A
-            </span>
-            AdsBender
+            <Logo />
+            <span className="sr-only">AdsBender</span>
           </Link>
           <a
             href="mailto:support@adsbender.example"
@@ -71,15 +70,13 @@ export function SiteHeader() {
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
-      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
+      <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         <Link
           href={user ? ROLE_HOME[user.role] : "/"}
           className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
         >
-          <span className="flex size-8 items-center justify-center rounded-md bg-orange-500 text-sm font-bold text-white">
-            A
-          </span>
-          AdsBender
+          <Logo />
+          <span className="sr-only">AdsBender</span>
         </Link>
 
         {user ? (
