@@ -56,7 +56,7 @@ export function AudienceTabs({
       >
         {cards.map((card) => (
           <div key={card.title}>
-            <div className="flex size-11 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
               <card.icon className="size-5" />
             </div>
             <h3 className="mt-4 font-medium">{card.title}</h3>

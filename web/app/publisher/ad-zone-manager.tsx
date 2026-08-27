@@ -28,10 +28,11 @@ import {
 import type { AdZone, AdZoneStatus, AnalyticsResponse } from "@/lib/types"
 import { defaultDateRange, formatPercent } from "@/lib/utils"
 import {
-  LAYOUT_TYPES,
+  GROUPED_LAYOUT_TYPES,
   zoneSchema,
   type ZoneFormOutput,
 } from "@/app/publisher/zone-form"
+import { adFormatLabel } from "@/lib/ad-formats"
 
 import {
   AlertDialog,
@@ -67,7 +68,9 @@ import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -208,7 +211,7 @@ export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
                     {zone.width}×{zone.height}
                   </TableCell>
                   <TableCell className="text-muted-foreground capitalize">
-                    {zone.layoutType}
+                    {adFormatLabel(zone.layoutType)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_BADGE[zone.status]}>
@@ -245,7 +248,7 @@ export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
                 <div>
                   <p className="font-medium">{zone.zoneName}</p>
                   <p className="text-sm text-muted-foreground capitalize">
-                    {zone.layoutType} · {zone.width}×{zone.height}
+                    {adFormatLabel(zone.layoutType)} · {zone.width}×{zone.height}
                   </p>
                 </div>
                 <Badge variant={STATUS_BADGE[zone.status]}>{zone.status}</Badge>
@@ -503,7 +506,7 @@ function ZoneEditDialog({
               name="layoutType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Layout type</FormLabel>
+                  <FormLabel>Ad format</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -511,10 +514,15 @@ function ZoneEditDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {LAYOUT_TYPES.map((layout) => (
-                        <SelectItem key={layout.value} value={layout.value}>
-                          {layout.label}
-                        </SelectItem>
+                      {GROUPED_LAYOUT_TYPES.map((group) => (
+                        <SelectGroup key={group.category}>
+                          <SelectLabel>{group.category}</SelectLabel>
+                          {group.formats.map((layout) => (
+                            <SelectItem key={layout.value} value={layout.value}>
+                              {layout.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>

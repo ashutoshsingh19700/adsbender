@@ -31,7 +31,9 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -40,7 +42,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdZoneManager } from "@/app/publisher/ad-zone-manager"
 import { PublisherOverview } from "@/app/publisher/publisher-overview"
-import { LAYOUT_TYPES, zoneSchema } from "@/app/publisher/zone-form"
+import { GROUPED_LAYOUT_TYPES, zoneSchema } from "@/app/publisher/zone-form"
+import { getAdFormat } from "@/lib/ad-formats"
 
 // Plain-language, per-platform steps for pasting the verification line onto
 // a site's ads.txt — most publishers aren't developers and don't know what
@@ -128,7 +131,7 @@ function StepHeader({
           "relative flex size-10 shrink-0 items-center justify-center rounded-full " +
           (done
             ? "bg-emerald-100 text-emerald-700"
-            : "bg-orange-100 text-orange-600")
+            : "bg-violet-100 text-violet-600")
         }
       >
         {done ? <CheckCircle2 className="size-5" /> : <Icon className="size-5" />}
@@ -157,7 +160,7 @@ function ZonePreview({ width, height }: { width: number; height: number }) {
     <div className="flex w-full flex-col items-center gap-2 rounded-lg border bg-muted/30 p-4 sm:w-40">
       <p className="text-xs font-medium text-muted-foreground">Preview</p>
       <div
-        className="flex shrink-0 items-center justify-center rounded-md border-2 border-dashed border-orange-300 bg-orange-50 text-[10px] font-medium text-orange-500"
+        className="flex shrink-0 items-center justify-center rounded-md border-2 border-dashed border-violet-300 bg-violet-50 text-[10px] font-medium text-violet-500"
         style={{
           width: hasSize ? Math.max(width * scale, 32) : 96,
           height: hasSize ? Math.max(height * scale, 24) : 60,
@@ -504,9 +507,20 @@ export function PublisherDashboard() {
                 name="layoutType"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>Layout type</FormLabel>
+                    <FormLabel>Ad format</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        const format = getAdFormat(value)
+                        if (format) {
+                          zoneForm.setValue("width", format.recommendedWidth, {
+                            shouldValidate: true,
+                          })
+                          zoneForm.setValue("height", format.recommendedHeight, {
+                            shouldValidate: true,
+                          })
+                        }
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -515,13 +529,22 @@ export function PublisherDashboard() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {LAYOUT_TYPES.map((layout) => (
-                          <SelectItem key={layout.value} value={layout.value}>
-                            {layout.label}
-                          </SelectItem>
+                        {GROUPED_LAYOUT_TYPES.map((group) => (
+                          <SelectGroup key={group.category}>
+                            <SelectLabel>{group.category}</SelectLabel>
+                            {group.formats.map((layout) => (
+                              <SelectItem key={layout.value} value={layout.value}>
+                                {layout.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      {getAdFormat(field.value)?.description ??
+                        "Picking a format fills in the recommended size below - feel free to adjust it."}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

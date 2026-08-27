@@ -16,10 +16,13 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Advertisers",
     links: [
-      { label: "Benefits for Advertisers", href: "#" },
+      { label: "Benefits for Advertisers", href: "/services" },
       { label: "Pricing Models", href: "/pricing-models" },
-      { label: "Self-Serve Platform", href: "#" },
-      { label: "RTB Traffic", href: "#" },
+      { label: "Self-Serve Platform", href: "/login?tab=register&role=ADVERTISER" },
+      // "RTB Traffic" was removed outright, not just unwired — there's no
+      // RTB/OpenRTB/bid-request implementation anywhere in the backend
+      // (checked ad-engine and the rest of backend/src), so the label
+      // itself was advertising a capability that doesn't exist.
     ],
   },
   {
@@ -34,35 +37,44 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Verticals",
     links: [
-      { label: "Games", href: "#" },
-      { label: "E-commerce", href: "#" },
-      { label: "Sweepstakes", href: "#" },
-      { label: "VPN, Utility & Software", href: "#" },
+      // No per-vertical landing pages exist — all four route to the
+      // pricing-models page, which is where each vertical is actually
+      // mapped to a recommended pricing model and ad format today.
+      { label: "Games", href: "/pricing-models" },
+      { label: "E-commerce", href: "/pricing-models" },
+      { label: "Sweepstakes", href: "/pricing-models" },
+      { label: "VPN, Utility & Software", href: "/pricing-models" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { label: "Blog", href: "#" },
-      { label: "Case Studies", href: "#" },
-      { label: "Glossary", href: "#" },
-      { label: "FAQ", href: "#" },
+      { label: "Blog", href: "/blog" },
+      { label: "Case Studies", href: "/case-studies" },
+      { label: "Glossary", href: "/glossary" },
+      { label: "FAQ", href: "/faq" },
     ],
   },
   {
     heading: "Company",
     links: [
-      { label: "About Us", href: "#" },
+      { label: "About Us", href: "/about" },
+      // No careers/jobs page exists — left unwired rather than pointed at
+      // a guess.
       { label: "Careers", href: "#" },
-      { label: "Contact Us", href: "#" },
+      { label: "Contact Us", href: "/contact" },
     ],
   },
 ]
 
+// "Community" and "Social" point at real external profiles (Discord/
+// Telegram, X) that don't exist yet — same gap as ORGANIZATION.sameAs in
+// lib/seo.ts, left unwired rather than pointed at a guess. "Blog" is an
+// in-site link, so it's wired to the real page.
 const SOCIALS = [
   { icon: MessageCircle, href: "#", label: "Community" },
   { icon: AtSign, href: "#", label: "Social" },
-  { icon: Rss, href: "#", label: "Blog" },
+  { icon: Rss, href: "/blog", label: "Blog" },
   { icon: Send, href: "#", label: "Telegram" },
 ]
 
@@ -89,7 +101,7 @@ export function SiteFooter() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground hover:text-orange-600"
+                      className="text-sm text-muted-foreground hover:text-violet-600"
                     >
                       {link.label}
                     </Link>
@@ -103,7 +115,7 @@ export function SiteFooter() {
             <p className="text-sm font-medium text-foreground">Get in touch</p>
             <a
               href="mailto:support@adsbender.example"
-              className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-orange-600"
+              className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-violet-600"
             >
               <Mail className="size-3.5" />
               support@adsbender.example
@@ -120,7 +132,7 @@ export function SiteFooter() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="flex size-7 items-center justify-center rounded-full border text-muted-foreground hover:border-orange-300 hover:text-orange-600"
+                  className="flex size-7 items-center justify-center rounded-full border text-muted-foreground hover:border-violet-300 hover:text-violet-600"
                 >
                   <social.icon className="size-3.5" />
                 </Link>

@@ -223,12 +223,12 @@ export function LoginForm() {
     <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
         {mode === "login" ? "Log in as " : "Sign up as "}
-        {withArticle(role)} <span className="text-orange-600">{ROLE_LABEL[role]}</span>
+        {withArticle(role)} <span className="text-violet-600">{ROLE_LABEL[role]}</span>
       </h1>
       <button
         type="button"
         onClick={() => setRole(otherRole)}
-        className="mt-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
+        className="mt-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
       >
         I&apos;m {withArticle(otherRole)} {ROLE_LABEL[otherRole]}
       </button>
@@ -287,7 +287,7 @@ export function LoginForm() {
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"
-                className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
+                className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
               >
                 Forgot Password?
               </Link>
@@ -303,7 +303,7 @@ export function LoginForm() {
             />
             <Button
               type="submit"
-              className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+              className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
               disabled={loginForm.formState.isSubmitting || !captchaToken}
             >
               {loginForm.formState.isSubmitting ? "Logging in..." : "Log in"}
@@ -387,7 +387,7 @@ export function LoginForm() {
             />
             <Button
               type="submit"
-              className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+              className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
               disabled={registerForm.formState.isSubmitting || !captchaToken}
             >
               {registerForm.formState.isSubmitting
@@ -402,7 +402,7 @@ export function LoginForm() {
         <button
           type="button"
           onClick={() => setMethod(method === "email" ? "phone" : "email")}
-          className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
+          className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
         >
           {method === "email"
             ? "Use phone number instead"
@@ -434,7 +434,7 @@ export function LoginForm() {
                 resetCaptcha()
                 setMode("register")
               }}
-              className="font-medium text-orange-600 hover:underline"
+              className="font-medium text-violet-600 hover:underline"
             >
               Sign up
             </button>
@@ -448,7 +448,7 @@ export function LoginForm() {
                 resetCaptcha()
                 setMode("login")
               }}
-              className="font-medium text-orange-600 hover:underline"
+              className="font-medium text-violet-600 hover:underline"
             >
               Log in
             </button>

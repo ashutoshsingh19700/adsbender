@@ -70,9 +70,9 @@ export function AdvertiserSidebar() {
                 type="button"
                 onClick={() => setOpen((o) => !o)}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-950/30",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/30",
                   item.children.some((c) => pathname === hrefPath(c.href)) &&
-                    "bg-orange-50 text-orange-600 dark:bg-orange-950/30"
+                    "bg-violet-50 text-violet-600 dark:bg-violet-950/30"
                 )}
               >
                 <item.icon className="size-4 shrink-0" />
@@ -93,9 +93,9 @@ export function AdvertiserSidebar() {
                         key={child.href}
                         href={child.href}
                         className={cn(
-                          "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-950/30",
+                          "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/30",
                           active &&
-                            "bg-orange-50 font-medium text-orange-600 dark:bg-orange-950/30"
+                            "bg-violet-50 font-medium text-violet-600 dark:bg-violet-950/30"
                         )}
                       >
                         <child.icon className="size-3.5 shrink-0" />
@@ -111,9 +111,9 @@ export function AdvertiserSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-950/30",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-950/30",
                 pathname === hrefPath(item.href) &&
-                  "bg-orange-500 text-white hover:bg-orange-500 hover:text-white"
+                  "bg-violet-500 text-white hover:bg-violet-500 hover:text-white"
               )}
             >
               <item.icon className="size-4 shrink-0" />

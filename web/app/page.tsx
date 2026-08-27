@@ -1,232 +1,43 @@
-"use client"
+import type { Metadata } from "next"
 
-import * as React from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowRight, Check, PlayCircle } from "lucide-react"
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  jsonLdScriptProps,
+  serviceJsonLd,
+} from "@/lib/seo"
 
-import { useAuth } from "@/app/providers/auth-provider"
-import { ROLE_HOME } from "@/lib/roles"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
+import { HomeView } from "./home-view"
 
-const TRUSTED_BY = ["boAt", "Libas", "caffeine", "PLIX", "BIRKENSTOCK", "THE MAN COMPANY"]
-
-const SIGNUP_OFFERS = [
-  {
-    id: "A",
-    credit: "$100",
-    spend: "$100",
+// The page itself is a server component so it can export metadata — the
+// actual hero/offer UI is a client component (auth-aware redirect,
+// interactive offer picker) in ./home-view.tsx. This split is the standard
+// pattern for any route that needs both `"use client"` and `metadata`.
+export const metadata: Metadata = {
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: "/",
   },
-  {
-    id: "B",
-    credit: "$150",
-    spend: "$500",
-  },
-  {
-    id: "C",
-    credit: "$300",
-    spend: "$1,000",
-  },
-] as const
+}
 
-export default function Home() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-  const [selectedOffer, setSelectedOffer] = React.useState<(typeof SIGNUP_OFFERS)[number]["id"]>(
-    SIGNUP_OFFERS[0].id,
-  )
-
-  // Signed-in users never see the public marketing page — no wallet,
-  // earnings, or campaign data lives at "/" for anyone to land on. They're
-  // sent straight to the dashboard for their role instead.
-  React.useEffect(() => {
-    if (!loading && user) {
-      router.replace(ROLE_HOME[user.role])
-    }
-  }, [loading, user, router])
-
-  if (loading || user) {
-    return (
-      <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] space-y-4 px-4 sm:px-6 lg:px-8 py-16">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    )
-  }
-
+export default function Page() {
   return (
-    <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-background">
-        <div className="mx-auto max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1760px] px-4 sm:px-6 lg:px-8 pt-6 pb-16 sm:pt-8 sm:pb-20">
-          <div className="grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-6 xl:gap-10">
-            {/* Left: product animation */}
-            <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-              <div className="overflow-hidden rounded-2xl">
-                <video
-                  src="/hero/hero-animation.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  poster="/hero/hero-dashboard.png"
-                  aria-label="AdsBender product animation showing campaign performance and dashboard highlights"
-                  className="h-auto w-full scale-110 [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
-                />
-              </div>
-            </div>
-
-            {/* Right: copy */}
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
-                One platform.
-                <br />
-                All your campaigns.
-                <br />
-                <span className="bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
-                  Better results.
-                </span>
-              </h1>
-              <p className="mt-6 max-w-md text-lg text-foreground/80 sm:text-xl">
-                Launch, manage and optimize high-performing ad campaigns
-                across multiple platforms — from one powerful dashboard.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <span className="btn-halo">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
-                  >
-                    <Link href="/login">
-                      Get Started Now
-                      <ArrowRight />
-                    </Link>
-                  </Button>
-                </span>
-                <span className="btn-halo">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="lg"
-                    className="btn-shine btn-shine-tint rounded-full border-violet-300 px-6 text-violet-600 hover:bg-white hover:text-violet-600"
-                  >
-                    <Link href="/analytics">
-                      See How It Works
-                      <PlayCircle />
-                    </Link>
-                  </Button>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Trusted by */}
-          <div className="mt-24 text-center">
-            <p className="text-sm text-muted-foreground">
-              Trusted by 15,000+ creators, publishers &amp; brands worldwide
-            </p>
-            <div className="mt-6 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] overflow-hidden">
-              <div className="animate-marquee flex w-max items-center gap-x-16">
-                {[...TRUSTED_BY, ...TRUSTED_BY].map((name, i) => (
-                  <span
-                    key={`${name}-${i}`}
-                    className="shrink-0 text-lg font-semibold tracking-tight text-muted-foreground opacity-70 grayscale"
-                  >
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sign-up offer */}
-      <section className="bg-violet-50/40 border-y">
-        <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Choose a sign-up offer to jumpstart your first campaign
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Select an offer that fits your monthly budget and sign up when
-              ready. New advertisers receive ad credit after meeting the
-              minimum spend requirement for the selected offer.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            {SIGNUP_OFFERS.map((offer) => {
-              const isSelected = offer.id === selectedOffer
-              return (
-                <button
-                  key={offer.id}
-                  type="button"
-                  onClick={() => setSelectedOffer(offer.id)}
-                  aria-pressed={isSelected}
-                  className={cn(
-                    "relative rounded-2xl border bg-background p-6 text-center transition-colors",
-                    isSelected
-                      ? "border-violet-600 ring-1 ring-violet-600"
-                      : "border-border hover:border-violet-300",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "absolute right-4 top-4 flex size-5 items-center justify-center rounded-full border-2",
-                      isSelected
-                        ? "border-violet-600 bg-violet-600 text-white"
-                        : "border-muted-foreground/30",
-                    )}
-                  >
-                    {isSelected && <Check className="size-3" strokeWidth={3} />}
-                  </span>
-
-                  <span className="inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold tracking-wide text-violet-700">
-                    OFFER {offer.id}
-                  </span>
-                  <p className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
-                    {offer.credit}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-muted-foreground">
-                    in ad credit
-                  </p>
-                  <p className="mt-4 text-sm text-foreground/80">
-                    Spend {offer.spend} with AdsBender in the first 60 days to
-                    unlock the credit.
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row sm:text-left">
-            <div>
-              <p className="font-medium">How to claim your offer</p>
-              <p className="text-sm text-muted-foreground">
-                Sign up and complete payment setup to apply the offer to your
-                account.
-              </p>
-            </div>
-            <span className="btn-halo">
-              <Button
-                asChild
-                size="lg"
-                className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
-              >
-                <Link href="/login">
-                  Claim now
-                  <ArrowRight />
-                </Link>
-              </Button>
-            </span>
-          </div>
-        </div>
-      </section>
-    </div>
+    <>
+      <script
+        {...jsonLdScriptProps(
+          serviceJsonLd({
+            name: "AdsBender Ad Network",
+            description: DEFAULT_DESCRIPTION,
+            path: "/",
+            serviceType: "Online advertising network",
+          }),
+        )}
+      />
+      <HomeView />
+    </>
   )
 }

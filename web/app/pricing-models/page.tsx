@@ -1,8 +1,22 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Lightbulb } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Breadcrumbs } from "@/components/app/breadcrumbs"
+import { faqJsonLd, jsonLdScriptProps } from "@/lib/seo"
+
+const TITLE = "Ad Pricing Models — CPA, CPC & CPM Explained"
+const DESCRIPTION =
+  "Compare AdsBender's CPA, CPC and CPM pricing models — which vertical and ad format each fits best, so you can launch campaigns with full spending transparency."
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/pricing-models" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/pricing-models" },
+}
 
 type PricingModel = {
   id: string
@@ -59,15 +73,33 @@ const PRICING_MODELS: PricingModel[] = [
 export default function PricingModelsPage() {
   return (
     <div>
+      <script
+        {...jsonLdScriptProps(
+          faqJsonLd(
+            PRICING_MODELS.map((model) => ({
+              question: `What is the ${model.name} (${model.tagline}) pricing model?`,
+              answer: model.description,
+            })),
+          ),
+        )}
+      />
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 via-orange-50/40 to-background">
+      <section className="relative overflow-hidden bg-gradient-to-b from-violet-50 via-violet-50/40 to-background">
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
+          className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-violet-200/50 blur-3xl"
         />
         <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
+          <div className="lg:col-span-2">
+            <Breadcrumbs
+              items={[
+                { name: "Home", path: "/" },
+                { name: "Pricing Models", path: "/pricing-models" },
+              ]}
+            />
+          </div>
           <div>
-            <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
+            <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
               AdsBender Pricing
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -82,7 +114,7 @@ export default function PricingModelsPage() {
             <Button
               asChild
               size="lg"
-              className="mt-8 bg-orange-500 text-white hover:bg-orange-600"
+              className="mt-8 bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
             >
               <Link href="/login?tab=register">
                 Run Campaign
@@ -92,11 +124,11 @@ export default function PricingModelsPage() {
           </div>
 
           <div className="relative mx-auto flex h-64 w-full max-w-sm items-center justify-center sm:h-72">
-            <div className="absolute size-52 rotate-6 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl sm:size-60" />
+            <div className="absolute size-52 rotate-6 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 shadow-xl sm:size-60" />
             <span className="absolute top-6 left-2 -rotate-6 rounded-xl bg-neutral-900 px-5 py-3 text-lg font-bold text-white shadow-lg sm:text-xl">
               CPM
             </span>
-            <span className="absolute bottom-8 left-8 rotate-3 rounded-xl bg-white px-5 py-3 text-lg font-bold text-orange-600 shadow-lg ring-1 ring-orange-200 sm:text-xl">
+            <span className="absolute bottom-8 left-8 rotate-3 rounded-xl bg-white px-5 py-3 text-lg font-bold text-violet-600 shadow-lg ring-1 ring-violet-200 sm:text-xl">
               CPA
             </span>
             <span className="absolute right-2 bottom-2 -rotate-3 rounded-xl bg-neutral-900 px-5 py-3 text-lg font-bold text-white shadow-lg sm:text-xl">
@@ -109,7 +141,7 @@ export default function PricingModelsPage() {
       {/* Section heading */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Which <span className="text-orange-500">AdsBender pricing model</span>{" "}
+          Which <span className="text-violet-500">AdsBender pricing model</span>{" "}
           fits your vertical best?
         </h2>
       </section>
@@ -123,7 +155,7 @@ export default function PricingModelsPage() {
           >
             <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] gap-8 px-4 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div>
-                <p className="text-2xl font-bold text-orange-500">{model.name}</p>
+                <p className="text-2xl font-bold text-violet-500">{model.name}</p>
                 <p className="mt-1 text-sm font-medium text-muted-foreground">
                   {model.tagline}
                 </p>
@@ -132,7 +164,7 @@ export default function PricingModelsPage() {
                 </p>
                 {model.tip && (
                   <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
-                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-orange-500" />
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-violet-500" />
                     {model.tip}
                   </p>
                 )}
@@ -162,7 +194,7 @@ export default function PricingModelsPage() {
                     {model.adFormats.map((format) => (
                       <span
                         key={format}
-                        className="rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white"
+                        className="rounded-md bg-violet-500 px-3 py-1.5 text-xs font-medium text-white"
                       >
                         {format}
                       </span>
@@ -178,7 +210,7 @@ export default function PricingModelsPage() {
       <Separator className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]" />
 
       {/* CTA band */}
-      <section className="border-t bg-orange-50/60">
+      <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to launch a campaign?
@@ -190,7 +222,7 @@ export default function PricingModelsPage() {
           <Button
             asChild
             size="lg"
-            className="bg-orange-500 text-white hover:bg-orange-600"
+            className="bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
           >
             <Link href="/login?tab=register">
               Get started

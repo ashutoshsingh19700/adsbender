@@ -1,0 +1,38 @@
+-- Extends CampaignAdFormat with the full ad-format catalog (display,
+-- sidebar, native, popup/overlay, interstitial, video, and premium
+-- inventory formats). POPUNDER and INTERSTITIAL are reused as-is by the new
+-- catalog ("Popunder" / "Full Screen Interstitial") - see schema.prisma.
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'BANNER_728X90';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'LEADERBOARD';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'MEDIUM_RECTANGLE_300X250';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'LARGE_RECTANGLE_336X280';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'STICKY_BANNER';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'SKYSCRAPER_160X600';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'WIDE_SKYSCRAPER_300X600';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'STICKY_SIDEBAR';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'FLOATING_SIDEBAR';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'IN_ARTICLE';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'IN_FEED';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'RECOMMENDED_CONTENT';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'SPONSORED_WIDGET';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'POPUP';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'EXIT_INTENT_POPUP';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'FLOATING_OVERLAY';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'WELCOME_SCREEN';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'PAGE_TRANSITION_INTERSTITIAL';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'PRE_ROLL';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'MID_ROLL';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'POST_ROLL';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'VIDEO_OVERLAY';
+
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'HOMEPAGE_HERO_BANNER';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'NEWSLETTER_SPONSORSHIP';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'SPONSORED_BLOG_POST';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'SPONSORED_SECTION';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'STICKY_BOTTOM_BANNER';
+ALTER TYPE "CampaignAdFormat" ADD VALUE 'FLOATING_CORNER_AD';

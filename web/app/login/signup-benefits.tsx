@@ -78,13 +78,13 @@ export function SignupBenefits({ role }: { role: UserRole }) {
 
   return (
     <div className="rounded-xl border bg-muted/40 p-6">
-      <p className="text-sm font-semibold tracking-wide text-orange-600 uppercase">
+      <p className="text-sm font-semibold tracking-wide text-violet-600 uppercase">
         {content.title}
       </p>
       <div className="mt-5 space-y-5">
         {content.groups.map((group) => (
           <div key={group.heading}>
-            <p className="border-l-2 border-orange-500 pl-2.5 text-sm font-medium">
+            <p className="border-l-2 border-violet-500 pl-2.5 text-sm font-medium">
               {group.heading}
             </p>
             <ul className="mt-2 space-y-1.5 pl-2.5">
@@ -93,7 +93,7 @@ export function SignupBenefits({ role }: { role: UserRole }) {
                   key={item}
                   className="flex items-start gap-2 text-sm text-muted-foreground"
                 >
-                  <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-orange-500" />
+                  <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-violet-500" />
                   {item}
                 </li>
               ))}

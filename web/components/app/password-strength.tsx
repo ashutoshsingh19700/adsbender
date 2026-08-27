@@ -42,7 +42,7 @@ export function passwordMeetsAllRules(password: string) {
 const STRENGTH_LABEL = ["Very weak", "Weak", "Fair", "Good", "Strong"]
 const STRENGTH_BAR_COLOR = [
   "bg-red-500",
-  "bg-orange-500",
+  "bg-violet-500",
   "bg-yellow-500",
   "bg-lime-500",
   "bg-green-500",

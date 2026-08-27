@@ -1,8 +1,22 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Bell, Layers, LogIn, UserPlus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Breadcrumbs } from "@/components/app/breadcrumbs"
+import { jsonLdScriptProps, serviceJsonLd } from "@/lib/seo"
+
+const TITLE = "In-Page Push Ads — Native Notification Ad Format"
+const DESCRIPTION =
+  "Run In-Page Push campaigns as an advertiser or monetize every impression as a publisher — native-style notification ads with no opt-in friction, on CPM, CPC, or CPA."
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/ad-formats/in-page-push" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/ad-formats/in-page-push" },
+}
 
 // Copy on this page is written for AdsBender and describes how In-Page Push
 // generically works — it isn't sourced or paraphrased from any competitor's
@@ -33,7 +47,7 @@ function MockCard({ className = "" }: { className?: string }) {
     <div className={`rounded-xl border border-neutral-800 bg-neutral-900 p-4 ${className}`}>
       <div className="rounded-lg bg-card p-3">
         <div className="flex items-center gap-3 rounded-md border p-2.5">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-orange-100 text-orange-600">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-violet-100 text-violet-600">
             <Bell className="size-4" />
           </div>
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -42,7 +56,7 @@ function MockCard({ className = "" }: { className?: string }) {
           </div>
         </div>
         <div className="mt-2.5 flex items-center gap-3 rounded-md border p-2.5">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-orange-500/10 text-orange-600">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-violet-500/10 text-violet-600">
             <Layers className="size-4" />
           </div>
           <div className="min-w-0 flex-1 space-y-1.5">
@@ -58,15 +72,34 @@ function MockCard({ className = "" }: { className?: string }) {
 export default function InPagePushAdsPage() {
   return (
     <div>
+      <script
+        {...jsonLdScriptProps(
+          serviceJsonLd({
+            name: "In-Page Push Ads",
+            description: DESCRIPTION,
+            path: "/ad-formats/in-page-push",
+            serviceType: "Native notification advertising",
+          }),
+        )}
+      />
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 via-orange-50/40 to-background">
+      <section className="relative overflow-hidden bg-gradient-to-b from-violet-50 via-violet-50/40 to-background">
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-orange-200/50 blur-3xl"
+          className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-violet-200/50 blur-3xl"
         />
         <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:grid-cols-2">
+          <div className="lg:col-span-2">
+            <Breadcrumbs
+              items={[
+                { name: "Home", path: "/" },
+                { name: "Services", path: "/services" },
+                { name: "In-Page Push Ads", path: "/ad-formats/in-page-push" },
+              ]}
+            />
+          </div>
           <div>
-            <p className="text-sm font-semibold tracking-wide text-orange-500 uppercase">
+            <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
               In-Page Push Ads
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -81,7 +114,7 @@ export default function InPagePushAdsPage() {
               <Button
                 asChild
                 size="lg"
-                className="bg-orange-500 text-white hover:bg-orange-600"
+                className="bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
               >
                 <Link href="/login?tab=register&role=ADVERTISER">
                   Launch Campaign
@@ -99,12 +132,12 @@ export default function InPagePushAdsPage() {
 
           {/* PLACEHOLDER — replace with a real product screenshot/image. */}
           <div className="relative mx-auto w-full max-w-sm">
-            <MockCard className="rotate-3 shadow-2xl shadow-orange-900/10" />
+            <MockCard className="rotate-3 shadow-2xl shadow-violet-900/10" />
             <div className="absolute -bottom-5 -left-5 -rotate-6 rounded-lg border bg-card p-2 shadow-xl">
               <div className="w-40 space-y-1.5 p-1">
                 <div className="h-2 w-full rounded bg-muted" />
                 <div className="h-2 w-2/3 rounded bg-muted" />
-                <div className="mt-2 h-8 rounded-md bg-orange-500/90" />
+                <div className="mt-2 h-8 rounded-md bg-violet-500/90" />
               </div>
             </div>
           </div>
@@ -127,7 +160,7 @@ export default function InPagePushAdsPage() {
               device, browser, and OS.
             </p>
             <p className="mt-4">
-              <span className="font-medium text-orange-600">
+              <span className="font-medium text-violet-600">
                 For advertisers:
               </span>{" "}
               <span className="text-muted-foreground">
@@ -136,7 +169,7 @@ export default function InPagePushAdsPage() {
               </span>
             </p>
             <p className="mt-3">
-              <span className="font-medium text-orange-600">
+              <span className="font-medium text-violet-600">
                 For publishers:
               </span>{" "}
               <span className="text-muted-foreground">
@@ -160,7 +193,7 @@ export default function InPagePushAdsPage() {
           {/* PLACEHOLDER — replace with a real product screenshot/image. */}
           <MockCard />
           <div>
-            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-orange-600">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-violet-600">
               <UserPlus className="size-5" />
               For Advertisers
             </div>
@@ -182,7 +215,7 @@ export default function InPagePushAdsPage() {
           {/* PLACEHOLDER — replace with a real product screenshot/image. */}
           <MockCard />
           <div>
-            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-orange-600">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-violet-600">
               <LogIn className="size-5" />
               For Publishers
             </div>
@@ -201,9 +234,9 @@ export default function InPagePushAdsPage() {
       </section>
 
       {/* CTA band */}
-      <section className="border-t bg-orange-50/60">
+      <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <Bell className="size-8 text-orange-500" />
+          <Bell className="size-8 text-violet-500" />
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try In-Page Push?
           </h2>
@@ -215,7 +248,7 @@ export default function InPagePushAdsPage() {
             <Button
               asChild
               size="lg"
-              className="bg-orange-500 text-white hover:bg-orange-600"
+              className="bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
             >
               <Link href="/login?tab=register&role=ADVERTISER">
                 Launch Campaign

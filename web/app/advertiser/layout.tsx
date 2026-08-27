@@ -1,5 +1,14 @@
+import type { Metadata } from "next"
+
 import { RequireRole } from "@/components/app/require-role"
 import { AdvertiserSidebar } from "@/components/app/advertiser-sidebar"
+
+// Authenticated account area — never a search result. robots.ts also
+// disallows crawling this prefix; this noindex is the belt to that
+// suspenders (covers the case a link to it leaks in from elsewhere).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 // Shared shell for every /advertiser/* page: role gate + the persistent
 // sidebar (Dashboard, Statistics, Campaigns, Add Funds). Individual pages

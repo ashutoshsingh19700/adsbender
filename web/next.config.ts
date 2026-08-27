@@ -23,6 +23,23 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        // "/book-call" is the URL named in the SEO plan as the eventual
+        // home for a real booking calendar (see /schedule-meeting's own
+        // noindex comment). No calendar is wired up yet, so rather than
+        // duplicate that page's placeholder content under a second URL,
+        // this just points /book-call at it. Temporary (not permanent)
+        // because the redirect's target/direction may well flip once a
+        // real booking widget lands — a 308 here would get cached longer
+        // than that decision should be locked in for.
+        source: "/book-call",
+        destination: "/schedule-meeting",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

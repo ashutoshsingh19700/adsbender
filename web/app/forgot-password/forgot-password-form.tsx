@@ -72,7 +72,7 @@ export function ForgotPasswordForm() {
         </p>
         <Link
           href="/login"
-          className="mt-6 inline-block text-sm font-medium text-orange-600 hover:underline"
+          className="mt-6 inline-block text-sm font-medium text-violet-600 hover:underline"
         >
           Back to log in
         </Link>
@@ -125,7 +125,7 @@ export function ForgotPasswordForm() {
           />
           <Button
             type="submit"
-            className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+            className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
             disabled={form.formState.isSubmitting || !captchaToken}
           >
             {form.formState.isSubmitting ? "Sending..." : "Send reset link"}
@@ -134,7 +134,7 @@ export function ForgotPasswordForm() {
       </Form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link href="/login" className="font-medium text-orange-600 hover:underline">
+        <Link href="/login" className="font-medium text-violet-600 hover:underline">
           Back to log in
         </Link>
       </p>

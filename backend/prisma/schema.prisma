@@ -23,12 +23,59 @@ enum CampaignStatus {
   ARCHIVED
 }
 
+// POPUNDER and INTERSTITIAL are reused by the extended format catalog below
+// (as "Popunder" and "Full Screen Interstitial" respectively - see
+// AD_FORMAT_CATALOG in web/lib/ad-formats.ts) instead of adding duplicate
+// values. SOCIAL_BAR / NATIVE_BANNER / IN_PAGE_PUSH predate that catalog and
+// are kept only for backward compatibility with existing campaigns.
 enum CampaignAdFormat {
   POPUNDER
   SOCIAL_BAR
   NATIVE_BANNER
   IN_PAGE_PUSH
   INTERSTITIAL
+
+  // --- Display Ads ---
+  BANNER_728X90
+  LEADERBOARD
+  MEDIUM_RECTANGLE_300X250
+  LARGE_RECTANGLE_336X280
+  STICKY_BANNER
+
+  // --- Sidebar Ads ---
+  SKYSCRAPER_160X600
+  WIDE_SKYSCRAPER_300X600
+  STICKY_SIDEBAR
+  FLOATING_SIDEBAR
+
+  // --- Native Ads ---
+  IN_ARTICLE
+  IN_FEED
+  RECOMMENDED_CONTENT
+  SPONSORED_WIDGET
+
+  // --- Popup & Overlay Ads ---
+  POPUP
+  EXIT_INTENT_POPUP
+  FLOATING_OVERLAY
+  WELCOME_SCREEN
+
+  // --- Interstitial Ads ---
+  PAGE_TRANSITION_INTERSTITIAL
+
+  // --- Video Ads ---
+  PRE_ROLL
+  MID_ROLL
+  POST_ROLL
+  VIDEO_OVERLAY
+
+  // --- Premium Inventory ---
+  HOMEPAGE_HERO_BANNER
+  NEWSLETTER_SPONSORSHIP
+  SPONSORED_BLOG_POST
+  SPONSORED_SECTION
+  STICKY_BOTTOM_BANNER
+  FLOATING_CORNER_AD
 }
 
 enum CampaignPricingModel {

@@ -48,7 +48,7 @@ export function StatCard({
           ) : null}
         </div>
         {Icon ? (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
             <Icon className="size-4.5" />
           </div>
         ) : null}

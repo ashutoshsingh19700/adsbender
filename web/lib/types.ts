@@ -27,12 +27,11 @@ export type CampaignStatus =
 
 export type CreativeType = "image" | "html"
 
-export type CampaignAdFormat =
-  | "POPUNDER"
-  | "SOCIAL_BAR"
-  | "NATIVE_BANNER"
-  | "IN_PAGE_PUSH"
-  | "INTERSTITIAL"
+// Mirrors CampaignAdFormat in schema.prisma - kept as `string` rather than a
+// literal union since the full set of values lives in one place,
+// web/lib/ad-formats.ts (AD_FORMAT_CATALOG), plus a few legacy values kept
+// for backward compatibility (see campaign-fields.ts).
+export type CampaignAdFormat = string
 
 export type CampaignPricingModel = "CPM" | "CPA" | "CPC"
 

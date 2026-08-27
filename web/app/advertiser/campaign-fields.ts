@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { AD_FORMAT_CATALOG, AD_FORMAT_CATEGORIES } from "@/lib/ad-formats"
+
 // Shared between the creation wizard (campaign-wizard.tsx) and the edit
 // dialog (campaign-manager.tsx) so both stay in sync with the backend's
 // CreateCampaignDto / UpdateCampaignDto field set and validation rules.
@@ -19,13 +21,43 @@ export const DEVICES = [
 
 // Mirrors CampaignAdFormat in schema.prisma. Stored on the campaign but not
 // yet read by AdEngineController's serving logic - see the comment there.
-export const AD_FORMATS = [
-  { value: "POPUNDER", label: "Popunder" },
+// The three formats below (Social Bar, Native Banner, In-Page Push) predate
+// the full catalog in lib/ad-formats.ts and are kept for backward
+// compatibility with existing campaigns; every other format - including
+// Popunder and Full Screen Interstitial, reused from this same legacy set -
+// comes from the shared catalog so publisher inventory and advertiser
+// targeting use the exact same format vocabulary.
+export const LEGACY_AD_FORMATS = [
   { value: "SOCIAL_BAR", label: "Social Bar" },
   { value: "NATIVE_BANNER", label: "Native Banner" },
   { value: "IN_PAGE_PUSH", label: "In-Page Push" },
-  { value: "INTERSTITIAL", label: "Interstitial" },
 ] as const
+
+export const AD_FORMATS = [
+  ...LEGACY_AD_FORMATS,
+  ...AD_FORMAT_CATALOG.map((format) => ({
+    value: format.value,
+    label: format.label,
+  })),
+] as const
+
+export const AD_FORMAT_VALUES = AD_FORMATS.map((f) => f.value) as [
+  string,
+  ...string[],
+]
+
+// Same formats as AD_FORMATS, grouped for the campaign wizard's categorized
+// ad-unit picker (see AD_FORMAT_CATEGORIES / AD_FORMAT_CATALOG in
+// lib/ad-formats.ts).
+export const GROUPED_AD_FORMATS = [
+  { category: "Legacy" as const, formats: LEGACY_AD_FORMATS },
+  ...AD_FORMAT_CATEGORIES.map((category) => ({
+    category,
+    formats: AD_FORMAT_CATALOG.filter((f) => f.category === category).map(
+      (f) => ({ value: f.value, label: f.label })
+    ),
+  })),
+]
 
 export const PRICING_MODELS = ["CPM", "CPA", "CPC"] as const
 
@@ -60,15 +92,7 @@ export const campaignSchema = z
     notes: z.string().optional(),
 
     // --- Adsterra-style setup fields - see schema.prisma / CreateCampaignDto ---
-    adFormat: z
-      .enum([
-        "POPUNDER",
-        "SOCIAL_BAR",
-        "NATIVE_BANNER",
-        "IN_PAGE_PUSH",
-        "INTERSTITIAL",
-      ])
-      .optional(),
+    adFormat: z.enum(AD_FORMAT_VALUES).optional(),
     pricingModel: z.enum(["CPM", "CPA", "CPC"]).default("CPM"),
     countryPricing: z.record(z.string(), z.coerce.number()).optional(),
     locations: z

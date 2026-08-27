@@ -1,8 +1,14 @@
 import { Suspense } from "react"
 import Link from "next/link"
+import type { Metadata } from "next"
 import { AtSign, MessageCircle, Send } from "lucide-react"
 
 import { LoginForm } from "./login-form"
+
+export const metadata: Metadata = {
+  title: "Log In",
+  robots: { index: false, follow: false },
+}
 
 // Auth page gets its own minimal chrome (see SiteHeader/SiteFooter route
 // checks) — this shell supplies the decorative dot field and the small
@@ -31,16 +37,16 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 flex items-center justify-center gap-4 px-4 pb-8 text-sm text-muted-foreground sm:px-8">
-        <Link href="#" aria-label="Community" className="hover:text-orange-600">
+        <Link href="#" aria-label="Community" className="hover:text-violet-600">
           <MessageCircle className="size-4" />
         </Link>
-        <Link href="#" aria-label="Social" className="hover:text-orange-600">
+        <Link href="#" aria-label="Social" className="hover:text-violet-600">
           <AtSign className="size-4" />
         </Link>
-        <Link href="#" aria-label="Telegram" className="hover:text-orange-600">
+        <Link href="#" aria-label="Telegram" className="hover:text-violet-600">
           <Send className="size-4" />
         </Link>
-        <Link href="#" className="font-medium tracking-wide hover:text-orange-600">
+        <Link href="#" className="font-medium tracking-wide hover:text-violet-600">
           BLOG
         </Link>
       </div>

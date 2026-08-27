@@ -115,7 +115,7 @@ export function PhoneOtpForm({ role, onSuccess }: PhoneOtpFormProps) {
         />
         <Button
           type="submit"
-          className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+          className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
           disabled={verifying}
         >
           {verifying ? "Verifying..." : "Verify & continue"}
@@ -126,7 +126,7 @@ export function PhoneOtpForm({ role, onSuccess }: PhoneOtpFormProps) {
             setStep("phone")
             setCode("")
           }}
-          className="w-full text-center text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-orange-600"
+          className="w-full text-center text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
         >
           Use a different number
         </button>
@@ -147,7 +147,7 @@ export function PhoneOtpForm({ role, onSuccess }: PhoneOtpFormProps) {
       <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
       <Button
         type="submit"
-        className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+        className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
         disabled={sending || !captchaToken}
       >
         {sending ? "Sending code..." : "Send verification code"}

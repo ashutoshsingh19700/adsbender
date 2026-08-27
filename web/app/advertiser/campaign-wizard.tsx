@@ -10,7 +10,6 @@ import {
   ImageIcon,
   Layers,
   LayoutTemplate,
-  Maximize2,
   Monitor,
   Smartphone,
   Tablet,
@@ -20,6 +19,7 @@ import {
 import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -52,6 +52,7 @@ import {
   AD_FORMATS,
   COUNTRIES,
   DEVICES,
+  GROUPED_AD_FORMATS,
   PRICING_MODELS,
   START_MODES,
   campaignSchema,
@@ -65,12 +66,18 @@ const DEVICE_ICONS: Record<string, React.ElementType> = {
   tablet: Tablet,
 }
 
-const AD_FORMAT_ICONS: Record<string, React.ElementType> = {
-  POPUNDER: Layers,
+// Icons for the three pre-catalog legacy formats (see LEGACY_AD_FORMATS in
+// campaign-fields.ts). Every other format's icon comes straight off
+// AD_FORMAT_CATALOG, built into AD_FORMAT_ICONS below.
+const LEGACY_AD_FORMAT_ICONS: Record<string, React.ElementType> = {
   SOCIAL_BAR: BellRing,
   NATIVE_BANNER: LayoutTemplate,
   IN_PAGE_PUSH: BellRing,
-  INTERSTITIAL: Maximize2,
+}
+
+const AD_FORMAT_ICONS: Record<string, React.ElementType> = {
+  ...LEGACY_AD_FORMAT_ICONS,
+  ...Object.fromEntries(AD_FORMAT_CATALOG.map((f) => [f.value, f.icon])),
 }
 
 const AD_FORMAT_BADGE: Record<string, string> = {
@@ -349,21 +356,38 @@ export function CampaignWizard({
                 name="adFormat"
                 render={() => (
                   <FormItem>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                      {AD_FORMATS.map((format) => (
-                        <AdUnitTile
-                          key={format.value}
-                          icon={AD_FORMAT_ICONS[format.value] ?? Layers}
-                          label={format.label}
-                          badge={AD_FORMAT_BADGE[format.value]}
-                          selected={adFormat === format.value}
-                          onClick={() =>
-                            form.setValue("adFormat", format.value, {
-                              shouldValidate: true,
-                              shouldDirty: true,
-                            })
-                          }
-                        />
+                    <div className="space-y-4">
+                      {GROUPED_AD_FORMATS.map((group) => (
+                        <div key={group.category}>
+                          <p className="mb-2 text-xs font-medium text-muted-foreground">
+                            {group.category}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                            {group.formats.map((format) => (
+                              <AdUnitTile
+                                key={format.value}
+                                icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                                label={format.label}
+                                sublabel={
+                                  getAdFormat(format.value)
+                                    ? `${getAdFormat(format.value)!.recommendedWidth}×${
+                                        getAdFormat(format.value)!.recommendedHeight
+                                      }`
+                                    : undefined
+                                }
+                                description={getAdFormat(format.value)?.description}
+                                badge={AD_FORMAT_BADGE[format.value]}
+                                selected={adFormat === format.value}
+                                onClick={() =>
+                                  form.setValue("adFormat", format.value, {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                  })
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                     <FormMessage />
@@ -935,12 +959,16 @@ function OptionTile({
 function AdUnitTile({
   icon: Icon,
   label,
+  sublabel,
+  description,
   badge,
   selected,
   onClick,
 }: {
   icon: React.ElementType
   label: string
+  sublabel?: string
+  description?: string
   badge?: string
   selected: boolean
   onClick: () => void
@@ -950,8 +978,9 @@ function AdUnitTile({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
+      title={description}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center text-sm font-medium transition-colors",
         selected
           ? "border-primary bg-primary/5 text-foreground"
           : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
@@ -963,7 +992,12 @@ function AdUnitTile({
         </Badge>
       ) : null}
       <Icon className="size-6" />
-      {label}
+      <span>{label}</span>
+      {sublabel ? (
+        <span className="text-xs font-normal text-muted-foreground">
+          {sublabel}
+        </span>
+      ) : null}
     </button>
   )
 }

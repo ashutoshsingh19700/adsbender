@@ -18,13 +18,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-const AD_FORMATS = [
-  'POPUNDER',
-  'SOCIAL_BAR',
-  'NATIVE_BANNER',
-  'IN_PAGE_PUSH',
-  'INTERSTITIAL',
-] as const;
+import { AD_FORMATS } from '../../common/ad-formats';
+
 const PRICING_MODELS = ['CPM', 'CPA', 'CPC'] as const;
 const START_MODES = [
   'START_ONCE_VERIFIED',

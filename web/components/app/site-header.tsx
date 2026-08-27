@@ -8,7 +8,6 @@ import { ROLE_HOME } from "@/lib/roles"
 import type { UserRole } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MarketingNav } from "@/components/app/marketing-nav"
 import { SignUpDialog } from "@/components/app/signup-dialog"
 import { Logo } from "@/components/app/logo"
 
@@ -59,7 +58,7 @@ export function SiteHeader() {
           </Link>
           <a
             href="mailto:support@adsbender.example"
-            className="text-sm font-medium tracking-wide text-muted-foreground hover:text-orange-600"
+            className="text-sm font-medium tracking-wide text-muted-foreground hover:text-violet-600"
           >
             CONTACT US
           </a>
@@ -79,7 +78,7 @@ export function SiteHeader() {
           <span className="sr-only">AdsBender</span>
         </Link>
 
-        {user ? (
+        {user && (
           <nav className="hidden items-center gap-1 md:flex">
             {visibleLinks.map((link) => (
               <Button
@@ -92,8 +91,6 @@ export function SiteHeader() {
               </Button>
             ))}
           </nav>
-        ) : (
-          <MarketingNav />
         )}
 
         <div className="flex items-center gap-3">
@@ -112,9 +109,18 @@ export function SiteHeader() {
               <span className="btn-halo">
                 <Button
                   asChild
+                  size="lg"
+                  className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
+                >
+                  <Link href="/schedule-meeting">Schedule a meeting</Link>
+                </Button>
+              </span>
+              <span className="btn-halo">
+                <Button
+                  asChild
                   variant="outline"
                   size="lg"
-                  className="btn-shine rounded-full border-orange-300 px-6 text-orange-600 hover:bg-white hover:text-orange-600"
+                  className="btn-shine rounded-full border-violet-300 px-6 text-violet-600 hover:bg-white hover:text-violet-600"
                 >
                   <Link href="/login">Log in</Link>
                 </Button>

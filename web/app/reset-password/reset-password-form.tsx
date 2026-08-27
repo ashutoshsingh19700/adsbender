@@ -99,7 +99,7 @@ export function ResetPasswordForm() {
         </p>
         <Link
           href="/forgot-password"
-          className="mt-6 inline-block text-sm font-medium text-orange-600 hover:underline"
+          className="mt-6 inline-block text-sm font-medium text-violet-600 hover:underline"
         >
           Request a new link
         </Link>
@@ -162,7 +162,7 @@ export function ResetPasswordForm() {
           />
           <Button
             type="submit"
-            className="h-12 w-full rounded-xl bg-orange-500 text-base font-semibold text-white hover:bg-orange-600"
+            className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? "Updating..." : "Update password"}
