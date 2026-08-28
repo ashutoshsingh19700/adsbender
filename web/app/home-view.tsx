@@ -61,29 +61,32 @@ export function HomeView() {
       <section className="relative overflow-hidden bg-background">
         <div className="mx-auto max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1760px] px-4 sm:px-6 lg:px-8 pt-6 pb-16 sm:pt-8 sm:pb-20">
           <div className="grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-6 xl:gap-10">
-            {/* Left: product animation */}
+            {/* Left: product explainer — full-bleed, edges feathered into the
+                page background rather than boxed in a card, so it reads as
+                part of the page rather than a video embed. */}
             <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-              <div className="overflow-hidden rounded-2xl">
-                <video
-                  src="/hero/hero-animation.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  poster="/hero/hero-dashboard.png"
-                  aria-label="AdsBender product animation showing campaign performance and dashboard highlights"
-                  className="h-auto w-full scale-110 [mask-image:linear-gradient(to_bottom,black_82%,transparent)]"
-                />
-              </div>
+              <video
+                src="/hero/hero-explainer.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-label="AdsBender product explainer: too many ad platforms, too much complexity, brought together into one dashboard for better results"
+                className="h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_22%,black_78%,transparent),linear-gradient(to_right,transparent,black_20%,black_80%,transparent)] [mask-composite:intersect] [-webkit-mask-composite:source-in]"
+              />
             </div>
 
             {/* Right: copy */}
             <div>
+              {/* The explainer video already types out "One platform." /
+                  "All your campaigns." as part of its story, so showing
+                  those lines again here would just repeat it back-to-back.
+                  They stay in the markup for SEO/screen readers (video text
+                  isn't indexable or accessible) but are visually hidden;
+                  "Better results." is the one line that isn't in the video,
+                  so that's what's shown. */}
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
-                One platform.
-                <br />
-                All your campaigns.
-                <br />
+                <span className="sr-only">One platform. All your campaigns. </span>
                 <span className="bg-gradient-to-r from-violet-600 to-blue-500 bg-clip-text text-transparent">
                   Better results.
                 </span>

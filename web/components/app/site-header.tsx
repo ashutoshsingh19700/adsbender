@@ -53,7 +53,7 @@ export function SiteHeader() {
             href="/"
             className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
           >
-            <Logo />
+            <Logo className="h-10 sm:h-14 md:h-20" />
             <span className="sr-only">AdsBender</span>
           </Link>
           <a
@@ -74,7 +74,7 @@ export function SiteHeader() {
           href={user ? ROLE_HOME[user.role] : "/"}
           className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
         >
-          <Logo />
+          <Logo className="h-10 sm:h-14 md:h-20" />
           <span className="sr-only">AdsBender</span>
         </Link>
 
@@ -93,7 +93,7 @@ export function SiteHeader() {
           </nav>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {loading ? null : user ? (
             <>
               <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -106,21 +106,32 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <span className="btn-halo">
-                <Button
-                  asChild
-                  size="lg"
-                  className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
-                >
-                  <Link href="/schedule-meeting">Schedule a meeting</Link>
-                </Button>
+              {/* Least essential of the three CTAs, and it has its own
+                  dedicated page — dropped below sm so "Log in" / "Sign up"
+                  have room to fit next to the logo without wrapping the
+                  header or forcing horizontal scroll on phones. The
+                  hidden/inline-flex toggle lives on this wrapper rather
+                  than the .btn-halo span itself: .btn-halo sets its own
+                  `display` in globals.css outside Tailwind's utility
+                  layer, so it always wins a same-element specificity tie
+                  against the `hidden` utility. */}
+              <span className="hidden sm:inline-flex">
+                <span className="btn-halo">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
+                  >
+                    <Link href="/schedule-meeting">Schedule a meeting</Link>
+                  </Button>
+                </span>
               </span>
               <span className="btn-halo">
                 <Button
                   asChild
                   variant="outline"
                   size="lg"
-                  className="btn-shine rounded-full border-violet-300 px-6 text-violet-600 hover:bg-white hover:text-violet-600"
+                  className="btn-shine rounded-full border-violet-300 px-3 text-violet-600 hover:bg-white hover:text-violet-600 sm:px-6"
                 >
                   <Link href="/login">Log in</Link>
                 </Button>
