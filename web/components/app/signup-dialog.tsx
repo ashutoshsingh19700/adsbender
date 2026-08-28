@@ -73,7 +73,7 @@ export function SignUpDialog() {
       <DialogTrigger asChild>
         <Button
           size="lg"
-          className="btn-shine rounded-full bg-violet-500 px-6 text-white hover:bg-violet-600"
+          className="btn-shine rounded-full bg-violet-500 px-3 text-white hover:bg-violet-600 sm:px-6"
         >
           Sign up
         </Button>
