@@ -12,6 +12,7 @@ describe('AnalyticsService', () => {
   beforeEach(async () => {
     store = {
       getDailyMetrics: jest.fn(),
+      getGroupedMetrics: jest.fn(),
     };
     platformSettingsService = {
       getPlatformFeeBps: jest.fn().mockResolvedValue(2000),

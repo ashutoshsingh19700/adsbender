@@ -1,32 +1,10 @@
-import { ImageResponse } from "next/og"
+import { NextRequest, NextResponse } from "next/server"
 
-// Square brand mark served as a plain PNG for consumers that need a static
-// image URL (Organization JSON-LD `logo`, favicons on platforms that want
-// >180px art) — the real header logo is a video (components/app/logo.tsx)
-// and can't be used there.
+// Kept only for back-compat with anything that already cached/indexed this
+// URL (e.g. Organization JSON-LD `logo` used to point here) — the real
+// brand mark now lives as a static file, which lib/seo.ts's ORGANIZATION.logo
+// points to directly, so this just redirects there instead of duplicating it.
 
-export const runtime = "edge"
-
-export async function GET() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)",
-          color: "white",
-          fontFamily: "sans-serif",
-          fontSize: 220,
-          fontWeight: 700,
-        }}
-      >
-        A
-      </div>
-    ),
-    { width: 512, height: 512 },
-  )
+export async function GET(request: NextRequest) {
+  return NextResponse.redirect(new URL("/brand/adsbender-mark.png", request.url))
 }

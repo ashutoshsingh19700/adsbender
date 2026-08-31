@@ -13,9 +13,10 @@ import { UpdateSiteDto } from './dto/update-site.dto';
 import { ValidateDomainDto } from './dto/validate-domain.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import type { GroupDimension } from '../analytics/analytics-query.types';
 import { assertTransition } from '../common/status-transition.util';
 import { parsePagination } from '../common/pagination.util';
-import { normalizeDomain } from '../common/domain.util';
+import { normalizeDomain, normalizeStatsDomain } from '../common/domain.util';
 
 @Injectable()
 export class PublisherService {
@@ -85,6 +86,8 @@ export class PublisherService {
         verified: true,
         verifiedAt: new Date(),
         verificationMethod: 'ADS_TXT',
+        ...(dto.category !== undefined ? { category: dto.category } : {}),
+        ...(dto.adultAds !== undefined ? { adultAds: dto.adultAds } : {}),
       },
       create: {
         publisherId,
@@ -94,6 +97,8 @@ export class PublisherService {
         verified: true,
         verifiedAt: new Date(),
         verificationMethod: 'ADS_TXT',
+        category: dto.category,
+        adultAds: dto.adultAds ?? false,
       },
     });
   }
@@ -128,7 +133,11 @@ export class PublisherService {
 
     return this.prisma.publisherSite.update({
       where: { id: siteId },
-      data: { status: dto.status },
+      data: {
+        status: dto.status,
+        category: dto.category,
+        adultAds: dto.adultAds,
+      },
     });
   }
 
@@ -243,6 +252,84 @@ export class PublisherService {
     return this.analyticsService.getDailyMetrics(startDate, endDate, {
       zoneId,
     });
+  }
+
+  // Powers the publisher-facing Statistics screen: totals across every zone
+  // this publisher owns (or just one, via `zoneId`), grouped by whichever
+  // dimension the "Group by" tabs select. Domain/placement/country/device
+  // are all real columns on the ClickHouse events (see
+  // ClickHouseAnalyticsEventStore.ensureSchema); there's no "browser" or "OS"
+  // dimension because the raw user_agent is stored but never parsed into
+  // either.
+  async getStatistics(
+    publisherId: string,
+    query: {
+      startDate: string;
+      endDate: string;
+      country?: string;
+      domain?: string;
+      zoneId?: string;
+      groupBy?: GroupDimension;
+    },
+  ) {
+    const zones = await this.prisma.adZone.findMany({
+      where: { publisherId },
+      select: { id: true, zoneName: true },
+    });
+
+    let zoneIds = zones.map((zone) => zone.id);
+    if (query.zoneId) {
+      const zone = await this.findOwnedZoneOrThrow(publisherId, query.zoneId);
+      zoneIds = [zone.id];
+    }
+
+    const groupBy = query.groupBy ?? 'date';
+
+    const result = await this.analyticsService.getGroupedMetrics({
+      startDate: query.startDate,
+      endDate: query.endDate,
+      zoneIds,
+      groupBy,
+      country: query.country || undefined,
+      // Normalized the same way the ClickHouse query store groups "domain"
+      // rows (see NORMALIZED_DOMAIN_EXPR there), so "example.com" and
+      // "https://example.com/" both match.
+      domain: query.domain ? normalizeStatsDomain(query.domain) : undefined,
+    });
+
+    // ClickHouse only knows zone ids, not the human-readable name a
+    // publisher gave that zone - fill it in here for the "Placement" view.
+    // Every other dimension's key is already display-ready.
+    const zoneNameById = new Map(zones.map((zone) => [zone.id, zone.zoneName]));
+
+    return {
+      groupBy,
+      totals: result.totals,
+      rows: result.rows.map((row) => ({
+        ...row,
+        label: this.labelStatisticsRow(groupBy, row.key, zoneNameById),
+      })),
+    };
+  }
+
+  // "placement" rows come back as `${domain}\x01${zoneId}` (see
+  // GROUP_EXPRESSIONS.placement in the ClickHouse query store) so a
+  // publisher can tell one "Homepage banner" from another - matches
+  // Adsterra's "domain - placement name" convention. Every other dimension's
+  // key is already the label.
+  private labelStatisticsRow(
+    groupBy: GroupDimension,
+    key: string,
+    zoneNameById: Map<string, string>,
+  ) {
+    if (groupBy !== 'placement') {
+      return key;
+    }
+
+    const separator = String.fromCharCode(1);
+    const [domain, zoneId] = key.split(separator);
+    const zoneName = zoneNameById.get(zoneId) ?? zoneId;
+    return domain ? `${domain} - ${zoneName}` : zoneName;
   }
 
   buildSnippet(zoneId: string) {

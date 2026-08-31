@@ -24,6 +24,8 @@ import type {
   PublisherSite,
   RevenueSummary,
   SiteStatus,
+  StatisticsGroupBy,
+  StatisticsResponse,
   TransactionType,
   UserRole,
   Wallet,
@@ -188,7 +190,12 @@ export async function logout() {
 
 // --- Publisher ---
 
-export type ValidateDomainInput = { domain: string; expectedText?: string }
+export type ValidateDomainInput = {
+  domain: string
+  expectedText?: string
+  category?: string
+  adultAds?: boolean
+}
 
 export function validateDomain(input: ValidateDomainInput) {
   return apiFetch<PublisherSite>("/api/v1/publisher/domains/validate", {
@@ -297,6 +304,19 @@ export function getAdZonePerformance(
       startDate,
       endDate,
     })}`
+  )
+}
+
+export function getPublisherStatistics(params: {
+  startDate: string
+  endDate: string
+  country?: string
+  domain?: string
+  zoneId?: string
+  groupBy?: StatisticsGroupBy
+}) {
+  return apiFetch<StatisticsResponse>(
+    `/api/v1/publisher/statistics${toQueryString(params)}`
   )
 }
 

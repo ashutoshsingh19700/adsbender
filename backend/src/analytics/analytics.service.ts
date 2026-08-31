@@ -3,6 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   AnalyticsQueryStore,
   DailyMetricsParams,
+  GroupedMetricsParams,
+  GroupedMetricsRow,
   MetricsRow,
 } from './analytics-query.types';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
@@ -36,7 +38,22 @@ export class AnalyticsService {
     };
   }
 
-  private calculateTotals(rows: MetricsRow[]) {
+  async getGroupedMetrics(
+    params: Omit<GroupedMetricsParams, 'platformFeeBps'>,
+  ) {
+    const platformFeeBps = await this.platformSettingsService.getPlatformFeeBps();
+    const rows = await this.analyticsQueryStore.getGroupedMetrics({
+      ...params,
+      platformFeeBps,
+    });
+
+    return {
+      rows,
+      totals: this.calculateTotals(rows),
+    };
+  }
+
+  private calculateTotals(rows: MetricsRow[] | GroupedMetricsRow[]) {
     const totals = rows.reduce(
       (acc, row) => ({
         impressions: acc.impressions + row.impressions,

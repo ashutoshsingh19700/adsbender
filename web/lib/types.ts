@@ -115,6 +115,11 @@ export type PublisherSite = {
   verified: boolean
   verifiedAt: string | null
   status: SiteStatus
+  // Set from the "Add new Website" dialog - see PublisherSite.category /
+  // .adultAds in the backend's schema.prisma for why category is freeform
+  // rather than a fixed enum.
+  category: string | null
+  adultAds: boolean
   createdAt: string
   updatedAt: string
 }
@@ -250,6 +255,36 @@ export type AnalyticsTotals = {
 export type AnalyticsResponse = {
   rows: AnalyticsRow[]
   totals: AnalyticsTotals
+}
+
+// --- Publisher: Statistics ---
+// "browser" and "operating system" aren't offered as group-by dimensions -
+// the backend stores the raw user_agent per event but never parses either
+// out of it, so there's nothing to group by (see PublisherService.getStatistics).
+export type StatisticsGroupBy =
+  | "date"
+  | "domain"
+  | "placement"
+  | "country"
+  | "device"
+
+export type StatisticsRow = {
+  // Raw group value (a date, domain, zone id, country code, or device type).
+  key: string
+  // Human-readable version - only differs from `key` for "placement", where
+  // it's the zone's name instead of its id.
+  label: string
+  impressions: number
+  clicks: number
+  ctr: number
+  spend: number
+  payout: number
+}
+
+export type StatisticsResponse = {
+  groupBy: StatisticsGroupBy
+  totals: AnalyticsTotals
+  rows: StatisticsRow[]
 }
 
 // --- Admin ---

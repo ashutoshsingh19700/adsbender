@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import type { AuthenticatedRequest } from '../common/authenticated-request';
+import type { GroupDimension } from '../analytics/analytics-query.types';
 import { CreateAdZoneDto } from './dto/create-ad-zone.dto';
 import { UpdateAdZoneDto } from './dto/update-ad-zone.dto';
 import { UpdateAdZoneStatusDto } from './dto/update-ad-zone-status.dto';
@@ -112,6 +113,22 @@ export class PublisherController {
   @Get('ad-zones/:id/snippet')
   getAdZoneSnippet(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.publisherService.getAdZoneSnippet(req.user.id, id);
+  }
+
+  @Get('statistics')
+  getStatistics(
+    @Req() req: AuthenticatedRequest,
+    @Query()
+    query: {
+      startDate: string;
+      endDate: string;
+      country?: string;
+      domain?: string;
+      zoneId?: string;
+      groupBy?: GroupDimension;
+    },
+  ) {
+    return this.publisherService.getStatistics(req.user.id, query);
   }
 
   @Get('ad-zones/:id/performance')

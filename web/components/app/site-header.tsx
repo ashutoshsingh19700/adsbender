@@ -16,6 +16,8 @@ import { Logo } from "@/components/app/logo"
 // what keeps wallet/earnings/admin surfaces out of the global nav.
 const NAV_LINKS: { href: string; label: string; roles: UserRole[] }[] = [
   { href: "/publisher", label: "Publisher Portal", roles: ["PUBLISHER"] },
+  { href: "/publisher/websites", label: "Websites", roles: ["PUBLISHER"] },
+  { href: "/publisher/statistics", label: "Statistics", roles: ["PUBLISHER"] },
   { href: "/publisher/earnings", label: "Earnings", roles: ["PUBLISHER"] },
   { href: "/advertiser", label: "Advertiser Studio", roles: ["ADVERTISER"] },
   { href: "/advertiser/wallet", label: "Wallet", roles: ["ADVERTISER"] },

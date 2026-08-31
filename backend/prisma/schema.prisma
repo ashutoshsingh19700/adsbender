@@ -262,6 +262,16 @@ model PublisherSite {
   verified           Boolean                @default(false)
   verifiedAt         DateTime?
   status             SiteStatus             @default(ACTIVE)
+  // Free-text content category picked in the "Add new Website" dialog (e.g.
+  // "Entertainment", "Technology") - purely descriptive, not enforced
+  // against a fixed enum since the publisher-facing category list lives in
+  // the frontend (web/app/publisher/websites/site-meta.ts) and can grow
+  // without a migration.
+  category           String?
+  // Publisher opted this site in to adult ad demand (typically higher CPM).
+  // Ad serving does not yet branch on this - it's recorded for the
+  // publisher's own reference and for future targeting.
+  adultAds           Boolean                @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

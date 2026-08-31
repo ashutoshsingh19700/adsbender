@@ -16,7 +16,7 @@ export const ORGANIZATION = {
   name: SITE_NAME,
   legalName: "AdsBender",
   url: SITE_URL,
-  logo: `${SITE_URL}/api/og/logo`,
+  logo: `${SITE_URL}/brand/adsbender-mark.png`,
   sameAs: [
     // TODO: fill in the real, live profile URLs — placeholders in
     // site-footer.tsx currently point at "#". An Organization/sameAs entry
