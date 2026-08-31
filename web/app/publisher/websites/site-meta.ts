@@ -50,10 +50,15 @@ export const WEBSITE_CATEGORIES = [
   "Other",
 ] as const
 
+// width/height are nominal defaults used only when the dialog below turns a
+// checked format into a real AdZone - popunder/smartlink/social-bar have no
+// visible footprint on the page, so they get the 1x1 placeholder size the
+// ad-serving snippet ignores anyway; native-banner/banner get an actual
+// slot size, matching the "Medium Rectangle" default in lib/ad-formats.ts.
 export const AD_UNIT_FORMAT_OPTIONS = [
-  { value: "popunder", label: "Popunder", top: true },
-  { value: "smartlink", label: "Smartlink", top: false },
-  { value: "native-banner", label: "Native Banner", top: false },
-  { value: "social-bar", label: "Social Bar", top: true },
-  { value: "banner", label: "Banner", top: false },
+  { value: "popunder", label: "Popunder", top: true, width: 1, height: 1 },
+  { value: "smartlink", label: "Smartlink", top: false, width: 1, height: 1 },
+  { value: "native-banner", label: "Native Banner", top: false, width: 300, height: 250 },
+  { value: "social-bar", label: "Social Bar", top: true, width: 1, height: 1 },
+  { value: "banner", label: "Banner", top: false, width: 300, height: 250 },
 ] as const

@@ -128,6 +128,10 @@ export type AdZoneStatus = "ACTIVE" | "PAUSED" | "ARCHIVED"
 
 export type AdZone = {
   id: string
+  // Set when the zone was created for a specific website (see
+  // web/app/publisher/websites/add-website-dialog.tsx) - null for zones
+  // created from the generic Publisher Portal flow.
+  siteId: string | null
   zoneName: string
   width: number
   height: number

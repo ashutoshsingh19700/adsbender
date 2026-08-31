@@ -155,9 +155,17 @@ export class PublisherService {
   // --- Ad zones ---
 
   async createAdZone(publisherId: string, dto: CreateAdZoneDto) {
+    // Same NotFound-on-someone-else's-id posture as the other ownership
+    // checks below - a siteId for a site you don't own fails the same way
+    // as one that doesn't exist at all.
+    if (dto.siteId) {
+      await this.findOwnedSiteOrThrow(publisherId, dto.siteId);
+    }
+
     const zone = await this.prisma.adZone.create({
       data: {
         publisherId,
+        siteId: dto.siteId,
         zoneName: dto.zoneName,
         width: dto.width,
         height: dto.height,
@@ -173,12 +181,21 @@ export class PublisherService {
 
   async listAdZones(
     publisherId: string,
-    query: { page?: string; pageSize?: string; status?: string },
+    query: {
+      page?: string;
+      pageSize?: string;
+      status?: string;
+      siteId?: string;
+    },
   ) {
     const { skip, take, page, pageSize } = parsePagination(query);
     const status = this.parseAdZoneStatusFilter(query.status);
 
-    const where = { publisherId, ...(status ? { status } : {}) };
+    const where = {
+      publisherId,
+      ...(status ? { status } : {}),
+      ...(query.siteId ? { siteId: query.siteId } : {}),
+    };
 
     const [zones, total] = await Promise.all([
       this.prisma.adZone.findMany({

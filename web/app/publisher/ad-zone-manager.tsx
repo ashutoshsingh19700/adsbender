@@ -549,7 +549,7 @@ function ZoneEditDialog({
   )
 }
 
-function ZoneSnippetDialog({
+export function ZoneSnippetDialog({
   zone,
   onOpenChange,
 }: {

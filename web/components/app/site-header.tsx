@@ -4,27 +4,15 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
 import { useAuth } from "@/app/providers/auth-provider"
-import { ROLE_HOME } from "@/lib/roles"
-import type { UserRole } from "@/lib/types"
+import { BARE_CHROME_PATHS, ROLE_HOME } from "@/lib/roles"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SignUpDialog } from "@/components/app/signup-dialog"
 import { Logo } from "@/components/app/logo"
 
-// Each entry is only ever shown to the roles listed — a signed-out visitor,
-// or a signed-in user viewing another role's link, never sees it. This is
-// what keeps wallet/earnings/admin surfaces out of the global nav.
-const NAV_LINKS: { href: string; label: string; roles: UserRole[] }[] = [
-  { href: "/publisher", label: "Publisher Portal", roles: ["PUBLISHER"] },
-  { href: "/publisher/websites", label: "Websites", roles: ["PUBLISHER"] },
-  { href: "/publisher/statistics", label: "Statistics", roles: ["PUBLISHER"] },
-  { href: "/publisher/earnings", label: "Earnings", roles: ["PUBLISHER"] },
-  { href: "/advertiser", label: "Advertiser Studio", roles: ["ADVERTISER"] },
-  { href: "/advertiser/wallet", label: "Wallet", roles: ["ADVERTISER"] },
-  { href: "/analytics", label: "Analytics", roles: ["ADVERTISER", "PUBLISHER", "ADMIN"] },
-  { href: "/admin", label: "Admin", roles: ["ADMIN"] },
-]
-
+// Signed-in nav (Websites, Statistics, Earnings, Admin, etc.) lives in the
+// left sidebar now — see components/app/app-sidebar.tsx. This bar is just
+// the brand mark plus the account menu for every route, signed in or not.
 export function SiteHeader() {
   const { user, loading, logout } = useAuth()
   const pathname = usePathname()
@@ -36,18 +24,10 @@ export function SiteHeader() {
     router.refresh()
   }
 
-  const visibleLinks = user
-    ? NAV_LINKS.filter((link) => link.roles.includes(user.role))
-    : []
-
   // The auth pages (login/register, forgot/reset password, either role) use
   // their own minimal bar — just the logo and a contact link, no nav or
   // auth CTAs since the user is already there.
-  if (
-    pathname === "/login" ||
-    pathname === "/forgot-password" ||
-    pathname === "/reset-password"
-  ) {
+  if (BARE_CHROME_PATHS.includes(pathname)) {
     return (
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
         <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
@@ -79,21 +59,6 @@ export function SiteHeader() {
           <Logo className="h-10 sm:h-14 md:h-20" />
           <span className="sr-only">AdsBender</span>
         </Link>
-
-        {user && (
-          <nav className="hidden items-center gap-1 md:flex">
-            {visibleLinks.map((link) => (
-              <Button
-                key={link.href}
-                asChild
-                variant={pathname === link.href ? "secondary" : "ghost"}
-                size="sm"
-              >
-                <Link href={link.href}>{link.label}</Link>
-              </Button>
-            ))}
-          </nav>
-        )}
 
         <div className="flex items-center gap-2 sm:gap-3">
           {loading ? null : user ? (

@@ -6,12 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 
-import { ApiError, validateDomain } from "@/lib/api"
+import { ApiError, createAdZone, validateDomain } from "@/lib/api"
 import type { PublisherSite } from "@/lib/types"
 import {
   AD_UNIT_FORMAT_OPTIONS,
   WEBSITE_CATEGORIES,
-  setSiteMeta,
 } from "@/app/publisher/websites/site-meta"
 
 import { Badge } from "@/components/ui/badge"
@@ -82,10 +81,38 @@ export function AddWebsiteDialog({
         category: values.category,
         adultAds: values.adultAds,
       })
-      // Ad unit formats still have no backend column (see site-meta.ts) -
-      // category/adultAds are now real fields on the site itself.
-      setSiteMeta(site.domain, { adUnitFormats: values.adUnitFormats })
-      toast.success(`${site.domain} added`)
+
+      // Each checked format becomes a real ad zone tied to this site, so it
+      // shows up nested under the site on the Websites page instead of just
+      // living as a client-side label (see site-meta.ts's old
+      // adUnitFormats-only approach). One zone failing to create shouldn't
+      // roll back the site itself - it's already been added successfully.
+      const failures: string[] = []
+      await Promise.all(
+        values.adUnitFormats.map(async (formatValue) => {
+          const format = AD_UNIT_FORMAT_OPTIONS.find(
+            (option) => option.value === formatValue
+          )
+          if (!format) return
+          try {
+            await createAdZone({
+              zoneName: `${site.domain} - ${format.label}`,
+              width: format.width,
+              height: format.height,
+              layoutType: format.value,
+              siteId: site.id,
+            })
+          } catch {
+            failures.push(format.label)
+          }
+        })
+      )
+
+      if (failures.length > 0) {
+        toast.error(`${site.domain} added, but couldn't create: ${failures.join(", ")}`)
+      } else {
+        toast.success(`${site.domain} added`)
+      }
       onCreated(site)
       onOpenChange(false)
     } catch (error) {
@@ -97,23 +124,27 @@ export function AddWebsiteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add new Website</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-5"
+            className="space-y-6"
           >
             <FormField
               control={form.control}
               name="domain"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website</FormLabel>
+                  <FormLabel className="sr-only">Website</FormLabel>
                   <FormControl>
-                    <Input placeholder="example.com" {...field} />
+                    <Input
+                      placeholder="Website"
+                      className="h-11 rounded-lg px-3.5 text-sm"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,10 +156,10 @@ export function AddWebsiteDialog({
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website category</FormLabel>
+                  <FormLabel className="sr-only">Website category</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="h-11 w-full rounded-lg px-3.5 text-sm">
                         <SelectValue placeholder="Website category" />
                       </SelectTrigger>
                     </FormControl>
@@ -223,7 +254,7 @@ export function AddWebsiteDialog({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="border-t pt-4">
               <Button
                 type="button"
                 variant="ghost"

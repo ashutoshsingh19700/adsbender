@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/app/providers/auth-provider";
 import { SiteHeader } from "@/components/app/site-header";
+import { AppShell } from "@/components/app/app-shell";
 import { SiteFooter } from "@/components/app/site-footer";
 import { Toaster } from "@/components/ui/sonner";
 import {
@@ -92,7 +93,7 @@ export default function RootLayout({
         <script {...jsonLdScriptProps(websiteJsonLd())} />
         <AuthProvider>
           <SiteHeader />
-          <main className="flex-1 pt-6">{children}</main>
+          <AppShell>{children}</AppShell>
           <SiteFooter />
           <Toaster richColors position="top-right" />
         </AuthProvider>

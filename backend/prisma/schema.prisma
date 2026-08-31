@@ -276,6 +276,8 @@ model PublisherSite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  adZones AdZone[]
+
   @@unique([publisherId, domain])
   @@index([publisherId])
   @@index([verified])
@@ -369,6 +371,13 @@ model AdZone {
   publisherId String
   publisher   User   @relation(fields: [publisherId], references: [id], onDelete: Cascade)
 
+  // Optional - zones created before this field existed, or created from the
+  // generic Publisher Portal flow rather than a specific site's "Add ad
+  // unit" action, have no site. SetNull (not Cascade) so archiving/deleting
+  // a site never takes a zone's stats history with it.
+  siteId String?
+  site   PublisherSite? @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
   zoneName String
 
   width  Int
@@ -382,6 +391,7 @@ model AdZone {
 
   @@index([publisherId])
   @@index([status])
+  @@index([siteId])
 }
 
 model BlacklistedIp {

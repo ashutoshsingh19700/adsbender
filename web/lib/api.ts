@@ -209,6 +209,9 @@ export type CreateAdZoneInput = {
   width: number
   height: number
   layoutType: string
+  // Ties the zone to one of the publisher's sites so it can be nested under
+  // that site on the Websites page - optional, same as on the backend DTO.
+  siteId?: string
 }
 
 export function createAdZone(input: CreateAdZoneInput) {
@@ -256,6 +259,7 @@ export function listAdZones(params?: {
   page?: number
   pageSize?: number
   status?: AdZoneStatus
+  siteId?: string
 }) {
   return apiFetch<Paginated<AdZone, "zones">>(
     `/api/v1/publisher/ad-zones${toQueryString(params ?? {})}`

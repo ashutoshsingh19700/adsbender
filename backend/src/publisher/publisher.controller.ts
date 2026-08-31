@@ -77,7 +77,13 @@ export class PublisherController {
   @Get('ad-zones')
   listAdZones(
     @Req() req: AuthenticatedRequest,
-    @Query() query: { page?: string; pageSize?: string; status?: string },
+    @Query()
+    query: {
+      page?: string;
+      pageSize?: string;
+      status?: string;
+      siteId?: string;
+    },
   ) {
     return this.publisherService.listAdZones(req.user.id, query);
   }

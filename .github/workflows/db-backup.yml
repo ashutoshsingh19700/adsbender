@@ -1,0 +1,115 @@
+name: Nightly database backup
+
+# Off-platform safety net for the Supabase Postgres DB - exists because of
+# a 2026-08-31 incident where every Supabase Auth user got wiped by a script
+# that trusted an unverified API filter. Supabase's own PITR/backup feature
+# is a separate, complementary layer - this workflow does not replace it,
+# and does not depend on it being enabled.
+#
+# What this does, every night: pg_dump the `public` AND `auth` schemas
+# (auth.users lives in the same Postgres instance as our own tables, so a
+# public-schema-only dump would miss exactly what an Auth-wipe destroys) to
+# a single custom-format file, plus a small human-readable CSV of just
+# auth.users as a second, independent fallback. Both get uploaded to
+# Cloudflare R2, off Supabase and off GitHub.
+#
+# One-time setup (cannot be done from here - needs your Cloudflare + GitHub
+# access):
+#   1. Create an R2 bucket in the Cloudflare dashboard (e.g. "adnetwork-db-backups").
+#   2. Create an R2 API token scoped to just that bucket (Object Read & Write).
+#   3. In this repo's Settings -> Secrets and variables -> Actions, add:
+#        BACKUP_DATABASE_URL   - the backend's DIRECT_URL (session-mode pooler;
+#                                 the pgbouncer transaction-mode DATABASE_URL
+#                                 doesn't support pg_dump's queries)
+#        R2_ACCOUNT_ID         - your Cloudflare account id
+#        R2_ACCESS_KEY_ID      - from the R2 API token
+#        R2_SECRET_ACCESS_KEY  - from the R2 API token
+#        R2_BUCKET_NAME        - the bucket name from step 1
+#   4. In the R2 bucket's settings, add a lifecycle rule to auto-expire
+#      objects under db-backups/ after e.g. 30 days. Deliberately not
+#      scripted here - after the incident above, this workflow does no
+#      deleting of its own; retention is the bucket's job, controlled by you
+#      in the Cloudflare dashboard, not by an unattended delete loop.
+#
+# Until those secrets exist, every run below fails at the dump step - that's
+# expected and safe (nothing partial gets uploaded).
+#
+# To restore: download the .dump file from R2, then
+#   pg_restore --no-owner --no-privileges -d "<target DATABASE_URL>" the-file.dump
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Dump public + auth schemas
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::BACKUP_DATABASE_URL secret is not set - see the setup steps in this workflow's file header."
+            exit 1
+          fi
+          STAMP="$(date -u +"%Y-%m-%dT%H-%M-%SZ")"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          DUMP_FILE="adnetwork-${STAMP}.dump"
+          echo "DUMP_FILE=$DUMP_FILE" >> "$GITHUB_ENV"
+
+          # postgres:16 image ships a pg_dump close enough to Supabase's
+          # server version to avoid the version-mismatch errors an
+          # apt-installed client on ubuntu-latest can hit.
+          docker run --rm -e PGCONNECT_TIMEOUT=30 postgres:16 \
+            pg_dump "$DATABASE_URL" \
+              --format=custom \
+              --no-owner \
+              --no-privileges \
+              --schema=public \
+              --schema=auth \
+              --file=/dev/stdout \
+            > "$DUMP_FILE"
+
+          ls -lh "$DUMP_FILE"
+
+      - name: Export auth.users as CSV (second, independent fallback)
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          CSV_FILE="adnetwork-auth-users-${STAMP}.csv"
+          echo "CSV_FILE=$CSV_FILE" >> "$GITHUB_ENV"
+
+          docker run --rm postgres:16 \
+            psql "$DATABASE_URL" \
+              -c "\copy (select id, email, role, created_at, updated_at from auth.users order by created_at) to stdout with csv header" \
+            > "$CSV_FILE"
+
+          wc -l "$CSV_FILE"
+
+      - name: Upload to Cloudflare R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          R2_BUCKET: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${R2_BUCKET:-}" ]; then
+            echo "::error::R2_BUCKET_NAME (and/or the other R2_* secrets) is not set - see the setup steps in this workflow's file header."
+            exit 1
+          fi
+          aws s3 cp "$DUMP_FILE" "s3://$R2_BUCKET/db-backups/$DUMP_FILE" --endpoint-url "$R2_ENDPOINT"
+          aws s3 cp "$CSV_FILE" "s3://$R2_BUCKET/db-backups/$CSV_FILE" --endpoint-url "$R2_ENDPOINT"

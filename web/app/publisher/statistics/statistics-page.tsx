@@ -383,26 +383,6 @@ export function PublisherStatisticsPage() {
         </div>
       </div>
 
-      {/* Summary strip */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        <SummaryTile
-          label="Impressions"
-          value={loading && !result ? undefined : (result?.totals.impressions ?? 0).toLocaleString()}
-        />
-        <SummaryTile
-          label="Clicks"
-          value={loading && !result ? undefined : (result?.totals.clicks ?? 0).toLocaleString()}
-        />
-        <SummaryTile
-          label="CTR"
-          value={loading && !result ? undefined : `${(result?.totals.ctr ?? 0).toFixed(3)}%`}
-        />
-        <SummaryTile
-          label="Revenue"
-          value={loading && !result ? undefined : formatCurrency(result?.totals.payout ?? 0)}
-        />
-      </div>
-
       <Card>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <button
@@ -563,16 +543,5 @@ function StatisticsTableRow({
         {formatCurrency(row.payout)}
       </TableCell>
     </TableRow>
-  )
-}
-
-function SummaryTile({ label, value }: { label: string; value?: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums">{value ?? "-"}</p>
-      </CardContent>
-    </Card>
   )
 }
