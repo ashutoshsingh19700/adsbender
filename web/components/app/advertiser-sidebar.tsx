@@ -43,6 +43,9 @@ const NAV: (LeafItem | GroupItem)[] = [
     ],
   },
   { href: "/advertiser/wallet", label: "Add Funds", icon: Wallet },
+  // Shared with the global AppSidebar (see app-shell.tsx) - kept here too
+  // since /advertiser/* pages render this sidebar instead of that one.
+  { href: "/analytics", label: "Analytics", icon: LineChart },
 ]
 
 function isGroup(item: LeafItem | GroupItem): item is GroupItem {

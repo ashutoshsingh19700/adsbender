@@ -130,6 +130,16 @@ export function CampaignWizard({
   const budgetUnlimited = form.watch("budgetUnlimited")
   const startMode = form.watch("startMode")
 
+  // Which ad-format category's tiles to show below the dropdown - defaults
+  // to the category of the currently-selected format (if any) so editing an
+  // existing campaign doesn't land on an empty-looking picker.
+  const [adFormatCategory, setAdFormatCategory] = React.useState(
+    () =>
+      GROUPED_AD_FORMATS.find((group) =>
+        group.formats.some((f) => f.value === form.getValues("adFormat"))
+      )?.category ?? GROUPED_AD_FORMATS[0].category
+  )
+
   const [countryToAdd, setCountryToAdd] = React.useState("")
   const [priceToAdd, setPriceToAdd] = React.useState("")
   const [locCountry, setLocCountry] = React.useState("")
@@ -264,7 +274,7 @@ export function CampaignWizard({
               <span className="font-medium">{result.campaignName}</span>
               <Badge>{result.status}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-foreground">
               Total budget ${result.totalBudget} · Daily budget $
               {result.dailyBudget} · Max CPC ${result.maxCpc}
             </p>
@@ -354,45 +364,64 @@ export function CampaignWizard({
               <FormField
                 control={form.control}
                 name="adFormat"
-                render={() => (
-                  <FormItem>
-                    <div className="space-y-4">
-                      {GROUPED_AD_FORMATS.map((group) => (
-                        <div key={group.category}>
-                          <p className="mb-2 text-xs font-medium text-muted-foreground">
-                            {group.category}
-                          </p>
-                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                            {group.formats.map((format) => (
-                              <AdUnitTile
-                                key={format.value}
-                                icon={AD_FORMAT_ICONS[format.value] ?? Layers}
-                                label={format.label}
-                                sublabel={
-                                  getAdFormat(format.value)
-                                    ? `${getAdFormat(format.value)!.recommendedWidth}×${
-                                        getAdFormat(format.value)!.recommendedHeight
-                                      }`
-                                    : undefined
-                                }
-                                description={getAdFormat(format.value)?.description}
-                                badge={AD_FORMAT_BADGE[format.value]}
-                                selected={adFormat === format.value}
-                                onClick={() =>
-                                  form.setValue("adFormat", format.value, {
-                                    shouldValidate: true,
-                                    shouldDirty: true,
-                                  })
-                                }
-                              />
+                render={() => {
+                  const activeGroup =
+                    GROUPED_AD_FORMATS.find(
+                      (group) => group.category === adFormatCategory
+                    ) ?? GROUPED_AD_FORMATS[0]
+
+                  return (
+                    <FormItem>
+                      <div className="space-y-4">
+                        <Select
+                          value={adFormatCategory}
+                          onValueChange={setAdFormatCategory}
+                        >
+                          <SelectTrigger className="w-full sm:w-64">
+                            <SelectValue placeholder="Choose an ad type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GROUPED_AD_FORMATS.map((group) => (
+                              <SelectItem
+                                key={group.category}
+                                value={group.category}
+                              >
+                                {group.category}
+                              </SelectItem>
                             ))}
-                          </div>
+                          </SelectContent>
+                        </Select>
+
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                          {activeGroup.formats.map((format) => (
+                            <AdUnitTile
+                              key={format.value}
+                              icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                              label={format.label}
+                              sublabel={
+                                getAdFormat(format.value)
+                                  ? `${getAdFormat(format.value)!.recommendedWidth}×${
+                                      getAdFormat(format.value)!.recommendedHeight
+                                    }`
+                                  : undefined
+                              }
+                              description={getAdFormat(format.value)?.description}
+                              badge={AD_FORMAT_BADGE[format.value]}
+                              selected={adFormat === format.value}
+                              onClick={() =>
+                                form.setValue("adFormat", format.value, {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                })
+                              }
+                            />
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -481,7 +510,7 @@ export function CampaignWizard({
                         disabled={uploading}
                         onChange={handleFileSelected}
                       />
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-base text-foreground">
                         {uploading
                           ? "Uploading..."
                           : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
@@ -820,7 +849,7 @@ export function CampaignWizard({
                   Review your settings before submitting.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="space-y-3 text-base">
                 <SummaryRow
                   label="Name"
                   value={campaignName || "Untitled campaign"}
@@ -893,7 +922,7 @@ export function CampaignWizard({
                     ? "Submitting..."
                     : "Proceed to review"}
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-sm text-foreground">
                   Submitted campaigns are reviewed before going live.
                 </p>
               </CardFooter>
@@ -917,9 +946,9 @@ function SettingsRow({
   return (
     <section className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
       <div>
-        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="text-base font-medium text-foreground">{label}</p>
         {description ? (
-          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          <p className="mt-1 text-sm text-foreground">{description}</p>
         ) : null}
       </div>
       <div className="min-w-0">{children}</div>
@@ -944,10 +973,10 @@ function OptionTile({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+        "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
           ? "border-primary bg-primary/5 text-foreground"
-          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+          : "border-border text-foreground hover:border-foreground/30"
       )}
     >
       <Icon className="size-5" />
@@ -980,10 +1009,10 @@ function AdUnitTile({
       onClick={onClick}
       title={description}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center text-sm font-medium transition-colors",
+        "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-md border p-4 text-center text-base font-medium transition-colors",
         selected
           ? "border-primary bg-primary/5 text-foreground"
-          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+          : "border-border text-foreground hover:border-foreground/30"
       )}
     >
       {badge ? (
@@ -994,7 +1023,7 @@ function AdUnitTile({
       <Icon className="size-6" />
       <span>{label}</span>
       {sublabel ? (
-        <span className="text-xs font-normal text-muted-foreground">
+        <span className="text-sm font-normal text-foreground">
           {sublabel}
         </span>
       ) : null}
@@ -1017,10 +1046,10 @@ function RadioPill({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+        "rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors",
         selected
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+          : "border-border text-foreground hover:border-foreground/30"
       )}
     >
       {label}
@@ -1031,8 +1060,8 @@ function RadioPill({
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="max-w-[60%] truncate text-right font-medium">
+      <span className="text-foreground">{label}</span>
+      <span className="max-w-[60%] truncate text-right font-semibold">
         {value}
       </span>
     </div>

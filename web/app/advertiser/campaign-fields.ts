@@ -49,13 +49,23 @@ export const AD_FORMAT_VALUES = AD_FORMATS.map((f) => f.value) as [
 // Same formats as AD_FORMATS, grouped for the campaign wizard's categorized
 // ad-unit picker (see AD_FORMAT_CATEGORIES / AD_FORMAT_CATALOG in
 // lib/ad-formats.ts).
+// FLOATING_SIDEBAR is dropped from the picker only - "Sticky Sidebar" and
+// "Floating Sidebar" looked like the same option to advertisers, so the
+// wizard now shows a single "Sidebar" tile (still using the STICKY_SIDEBAR
+// value). The FLOATING_SIDEBAR enum value stays valid in AD_FORMATS/
+// AD_FORMAT_VALUES and schema.prisma for any campaign that already uses it.
+const PICKER_HIDDEN_AD_FORMATS = new Set(["FLOATING_SIDEBAR"])
+
 export const GROUPED_AD_FORMATS = [
   { category: "Legacy" as const, formats: LEGACY_AD_FORMATS },
   ...AD_FORMAT_CATEGORIES.map((category) => ({
     category,
-    formats: AD_FORMAT_CATALOG.filter((f) => f.category === category).map(
-      (f) => ({ value: f.value, label: f.label })
-    ),
+    formats: AD_FORMAT_CATALOG.filter(
+      (f) => f.category === category && !PICKER_HIDDEN_AD_FORMATS.has(f.value)
+    ).map((f) => ({
+      value: f.value,
+      label: f.value === "STICKY_SIDEBAR" ? "Sidebar" : f.label,
+    })),
   })),
 ]
 
