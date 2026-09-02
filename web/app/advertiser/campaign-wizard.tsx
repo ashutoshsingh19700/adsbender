@@ -133,7 +133,7 @@ export function CampaignWizard({
   // Which ad-format category's tiles to show below the dropdown - defaults
   // to the category of the currently-selected format (if any) so editing an
   // existing campaign doesn't land on an empty-looking picker.
-  const [adFormatCategory, setAdFormatCategory] = React.useState(
+  const [adFormatCategory, setAdFormatCategory] = React.useState<string>(
     () =>
       GROUPED_AD_FORMATS.find((group) =>
         group.formats.some((f) => f.value === form.getValues("adFormat"))
