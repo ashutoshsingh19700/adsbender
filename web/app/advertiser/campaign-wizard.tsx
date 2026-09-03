@@ -338,7 +338,7 @@ export function CampaignWizard({
                 name="targetDevices"
                 render={() => (
                   <FormItem>
-                    <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+                    <div className="grid grid-cols-3 gap-2 sm:max-w-md sm:gap-3">
                       {DEVICES.map((device) => (
                         <OptionTile
                           key={device.value}

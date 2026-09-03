@@ -35,9 +35,14 @@ export function Logo({ className }: LogoProps) {
       if (!video) return
       video.currentTime = 0
       video.play().catch(() => {
-        // Autoplay can be blocked before any user gesture on some
-        // browsers — the video just stays on the first frame,
-        // which still reads fine as a static logo.
+        // Autoplay can be blocked before any user gesture — common on
+        // mobile browsers on first load. The video then just sits on
+        // whatever frame `currentTime` last landed on; frame 0 of this
+        // clip is a blank fade-in, so left alone the header shows no
+        // logo at all. Seeking past that (still allowed without a
+        // gesture — only .play() is gated) lands on a frame with the
+        // mark fully drawn, so it still reads as a static logo.
+        video.currentTime = 0.5
       })
     }
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SignUpDialog } from "@/components/app/signup-dialog"
 import { Logo } from "@/components/app/logo"
+import { MobileSidebarTrigger } from "@/components/app/mobile-sidebar"
 
 // Signed-in nav (Websites, Statistics, Earnings, Admin, etc.) lives in the
 // left sidebar now — see components/app/app-sidebar.tsx. This bar is just
@@ -52,13 +53,16 @@ export function SiteHeader() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
       <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
-        <Link
-          href={user ? ROLE_HOME[user.role] : "/"}
-          className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
-        >
-          <Logo className="h-10 sm:h-14 md:h-20" />
-          <span className="sr-only">AdsBender</span>
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <MobileSidebarTrigger />
+          <Link
+            href={user ? ROLE_HOME[user.role] : "/"}
+            className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
+          >
+            <Logo className="h-10 sm:h-14 md:h-20" />
+            <span className="sr-only">AdsBender</span>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {loading ? null : user ? (

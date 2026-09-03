@@ -46,12 +46,19 @@ function TabsList({
 }: React.ComponentProps<typeof TabsPrimitive.List> &
   VariantProps<typeof tabsListVariants>) {
   return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
-      {...props}
-    />
+    // A list with more triggers than fit a phone's width (e.g. the admin
+    // dashboard's 5 tabs) scrolls horizontally within itself instead of
+    // widening the page — same "contain the overflow" pattern as
+    // components/ui/table.tsx's wrapper, so callers don't each need their
+    // own flex-wrap/scroll handling.
+    <div className="max-w-full overflow-x-auto">
+      <TabsPrimitive.List
+        data-slot="tabs-list"
+        data-variant={variant}
+        className={cn(tabsListVariants({ variant }), className)}
+        {...props}
+      />
+    </div>
   )
 }
 

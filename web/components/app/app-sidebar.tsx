@@ -40,7 +40,9 @@ const LINKS: SidebarLink[] = [
   { href: "/analytics", label: "Analytics", icon: LineChart, roles: ["ADVERTISER", "PUBLISHER", "ADMIN"] },
 ]
 
-export function AppSidebar() {
+// Shared between the desktop <aside> and the mobile drawer (MobileSidebarNav)
+// so both stay in sync off one link list and one "what's active" rule.
+export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth()
   const pathname = usePathname()
 
@@ -49,33 +51,44 @@ export function AppSidebar() {
   const links = LINKS.filter((link) => link.roles.includes(user.role))
 
   return (
+    <nav className="flex h-full flex-col gap-0.5 overflow-y-auto px-3 py-5">
+      <p className="px-2.5 pb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        Platform
+      </p>
+      {links.map((link) => {
+        const active = link.exactMatch
+          ? pathname === link.href
+          : pathname === link.href || pathname.startsWith(`${link.href}/`)
+        const Icon = link.icon
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+              active
+                ? "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <Icon className="size-4 shrink-0" />
+            {link.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
+export function AppSidebar() {
+  const { user } = useAuth()
+
+  if (!user) return null
+
+  return (
     <aside className="sticky top-24 hidden h-[calc(100vh-6rem)] w-56 shrink-0 border-r bg-background md:block">
-      <nav className="flex h-full flex-col gap-0.5 overflow-y-auto px-3 py-5">
-        <p className="px-2.5 pb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Platform
-        </p>
-        {links.map((link) => {
-          const active = link.exactMatch
-            ? pathname === link.href
-            : pathname === link.href || pathname.startsWith(`${link.href}/`)
-          const Icon = link.icon
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              {link.label}
-            </Link>
-          )
-        })}
-      </nav>
+      <AppSidebarNav />
     </aside>
   )
 }
