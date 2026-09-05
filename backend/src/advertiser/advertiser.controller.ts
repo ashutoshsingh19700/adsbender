@@ -140,6 +140,15 @@ export class AdvertiserController {
     );
   }
 
+  @Get('traffic-quality')
+  getTrafficQuality(
+    @Req() req: AuthenticatedRequest,
+    @Query()
+    query: { startDate: string; endDate: string; campaignId?: string },
+  ) {
+    return this.advertiserService.getTrafficQuality(req.user.id, query);
+  }
+
   @Get('campaigns/:id/spend')
   getCampaignSpend(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.advertiserService.getCampaignSpend(req.user.id, id);

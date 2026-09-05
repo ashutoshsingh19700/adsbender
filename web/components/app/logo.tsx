@@ -73,6 +73,8 @@ export function Logo({ className }: LogoProps) {
         autoPlay
         playsInline
         disablePictureInPicture
+        disableRemotePlayback
+        controlsList="nodownload nofullscreen noremoteplayback"
         preload="auto"
         aria-hidden="true"
       />

@@ -6,7 +6,8 @@ import type {
   ParsedCampaignCacheRecord,
 } from './campaign-cache.types';
 import { VisitorFrequencyCapService } from './visitor-frequency-cap.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { ZONE_CACHE_STORE } from './zone-cache-sync.service';
+import type { ZoneCacheStore } from './zone-cache.types';
 
 export type TargetingRequest = {
   zoneId: string;
@@ -24,7 +25,8 @@ export class AdTargetingService {
   constructor(
     @Inject(CAMPAIGN_CACHE_STORE)
     private readonly campaignCacheStore: CampaignCacheStore,
-    private readonly prisma: PrismaService,
+    @Inject(ZONE_CACHE_STORE)
+    private readonly zoneCacheStore: ZoneCacheStore,
     private readonly visitorFrequencyCapService: VisitorFrequencyCapService,
   ) {}
 
@@ -35,18 +37,23 @@ export class AdTargetingService {
     // paused or nonexistent zone's id, would still serve a live campaign.
     // Confirm the zone exists and is ACTIVE before spending any targeting
     // effort on it.
-    const zone = await this.prisma.adZone
-      .findUnique({
-        where: { id: request.zoneId },
-        select: { status: true },
-      })
-      // A malformed zoneId (not a UUID at all - e.g. a stale/hand-typed
-      // integration) fails Postgres's uuid cast rather than just missing a
-      // row. Either way there's no real zone behind it, so treat it the
-      // same as "not found" instead of surfacing a 500.
-      .catch(() => null);
+    //
+    // Reads the Redis-cached ACTIVE zone set (see ZoneCacheSyncService)
+    // rather than querying Postgres on every single /serve request -
+    // that's now a plain SISMEMBER (no query planning, no network round
+    // trip to a cross-region DB), same reasoning as the campaign cache
+    // this already mirrors. A newly-created or just-reactivated zone can
+    // take up to ZONE_CACHE_SYNC_INTERVAL_MS to start serving, and a
+    // just-paused one up to that long to stop - the same staleness budget
+    // already accepted for campaigns. A malformed zoneId (not a real UUID
+    // at all) is simply never a member of the set, so it falls out the
+    // same "not found" path as any other unknown id, no special handling
+    // needed the way the old Postgres uuid-cast failure required.
+    const isActiveZone = await this.zoneCacheStore.isActiveZone(
+      request.zoneId,
+    );
 
-    if (!zone || zone.status !== 'ACTIVE') {
+    if (!isActiveZone) {
       return null;
     }
 

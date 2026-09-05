@@ -317,6 +317,40 @@ export class AdvertiserService {
     });
   }
 
+  // Powers the "Traffic Quality" panel on the advertiser Statistics screen -
+  // clicks blocked/flagged by fraud detection across every campaign this
+  // advertiser owns, or just one via `campaignId`, so they can see they were
+  // never billed for that invalid traffic (see FraudDetectionService /
+  // AdEngineController.publishTrafficEvent). Impression-stage rows are NOT
+  // scoped by campaign here - a blocked/flagged impression happens before a
+  // campaign is even selected (see AdEngineController.serve), so it never
+  // carries a campaignId - only click-stage rows do.
+  async getTrafficQuality(
+    advertiserId: string,
+    query: { startDate: string; endDate: string; campaignId?: string },
+  ) {
+    let campaignIds: string[];
+    if (query.campaignId) {
+      const campaign = await this.findOwnedCampaignOrThrow(
+        advertiserId,
+        query.campaignId,
+      );
+      campaignIds = [campaign.id];
+    } else {
+      const campaigns = await this.prisma.campaign.findMany({
+        where: { advertiserId },
+        select: { id: true },
+      });
+      campaignIds = campaigns.map((campaign) => campaign.id);
+    }
+
+    return this.analyticsService.getTrafficQuality({
+      startDate: query.startDate,
+      endDate: query.endDate,
+      campaignIds,
+    });
+  }
+
   async getCampaignSpend(advertiserId: string, campaignId: string) {
     const campaign = await this.findOwnedCampaignOrThrow(
       advertiserId,

@@ -5,10 +5,12 @@ import * as React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { AdminOverview } from "./admin-overview"
+import { BlacklistPanel } from "./blacklist-panel"
 import { CampaignReviewPanel } from "./campaign-review-panel"
 import { PayoutsPanel } from "./payouts-panel"
 import { RevenuePanel } from "./revenue-panel"
 import { SitesPanel } from "./sites-panel"
+import { AdminTrafficQualityPanel } from "./traffic-quality-panel"
 import { UsersPanel } from "./users-panel"
 
 export function AdminDashboard() {
@@ -36,6 +38,8 @@ export function AdminDashboard() {
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="sites">Sites</TabsTrigger>
+          <TabsTrigger value="traffic-quality">Traffic Quality</TabsTrigger>
+          <TabsTrigger value="blacklist">IP Blacklist</TabsTrigger>
         </TabsList>
 
         <TabsContent value="campaigns" className="pt-4">
@@ -54,6 +58,12 @@ export function AdminDashboard() {
         </TabsContent>
         <TabsContent value="sites" className="pt-4">
           <SitesPanel />
+        </TabsContent>
+        <TabsContent value="traffic-quality" className="pt-4">
+          <AdminTrafficQualityPanel />
+        </TabsContent>
+        <TabsContent value="blacklist" className="pt-4">
+          <BlacklistPanel />
         </TabsContent>
       </Tabs>
     </div>

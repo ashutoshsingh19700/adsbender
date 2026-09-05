@@ -4,12 +4,13 @@ import { AdTargetingService } from './ad-targeting.service';
 import { CAMPAIGN_CACHE_STORE } from './campaign-cache-sync.service';
 import type { CampaignCacheStore } from './campaign-cache.types';
 import { VisitorFrequencyCapService } from './visitor-frequency-cap.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { ZONE_CACHE_STORE } from './zone-cache-sync.service';
+import type { ZoneCacheStore } from './zone-cache.types';
 
 describe('AdTargetingService', () => {
   let service: AdTargetingService;
   let campaignCacheStore: jest.Mocked<CampaignCacheStore>;
-  let prisma: { adZone: { findUnique: jest.Mock } };
+  let zoneCacheStore: jest.Mocked<ZoneCacheStore>;
   let visitorFrequencyCapService: jest.Mocked<VisitorFrequencyCapService>;
 
   beforeEach(async () => {
@@ -17,12 +18,11 @@ describe('AdTargetingService', () => {
       replaceActiveCampaigns: jest.fn(),
       getActiveCampaigns: jest.fn(),
     };
-    prisma = {
-      adZone: {
-        // Defaults to an active zone so the existing campaign-targeting
-        // tests below don't each need to know about zone lookups.
-        findUnique: jest.fn().mockResolvedValue({ status: 'ACTIVE' }),
-      },
+    zoneCacheStore = {
+      replaceActiveZoneIds: jest.fn(),
+      // Defaults to an active zone so the existing campaign-targeting
+      // tests below don't each need to know about zone lookups.
+      isActiveZone: jest.fn().mockResolvedValue(true),
     };
     visitorFrequencyCapService = {
       // Defaults to "nothing is capped" so existing rotation/targeting
@@ -39,8 +39,8 @@ describe('AdTargetingService', () => {
           useValue: campaignCacheStore,
         },
         {
-          provide: PrismaService,
-          useValue: prisma,
+          provide: ZONE_CACHE_STORE,
+          useValue: zoneCacheStore,
         },
         {
           provide: VisitorFrequencyCapService,
@@ -175,7 +175,7 @@ describe('AdTargetingService', () => {
   });
 
   it('never serves a campaign for a paused zone', async () => {
-    prisma.adZone.findUnique.mockResolvedValue({ status: 'PAUSED' });
+    zoneCacheStore.isActiveZone.mockResolvedValue(false);
     campaignCacheStore.getActiveCampaigns.mockResolvedValue([
       {
         id: 'campaign-high',
@@ -206,7 +206,7 @@ describe('AdTargetingService', () => {
   });
 
   it('never serves a campaign for a zone that does not exist', async () => {
-    prisma.adZone.findUnique.mockResolvedValue(null);
+    zoneCacheStore.isActiveZone.mockResolvedValue(false);
 
     await expect(
       service.selectCampaign({
@@ -219,10 +219,11 @@ describe('AdTargetingService', () => {
     expect(campaignCacheStore.getActiveCampaigns).not.toHaveBeenCalled();
   });
 
-  it('treats a malformed zoneId (failed lookup) as no zone rather than erroring', async () => {
-    prisma.adZone.findUnique.mockRejectedValue(
-      new Error('invalid input syntax for type uuid'),
-    );
+  it('treats a malformed zoneId as no zone rather than erroring', async () => {
+    // A malformed/nonexistent zoneId is simply never a member of the
+    // cached ACTIVE-zone set - no special error handling needed the way a
+    // direct Postgres uuid-cast failure used to require.
+    zoneCacheStore.isActiveZone.mockResolvedValue(false);
 
     await expect(
       service.selectCampaign({

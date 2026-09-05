@@ -30,7 +30,7 @@ export function SiteHeader() {
   // auth CTAs since the user is already there.
   if (BARE_CHROME_PATHS.includes(pathname)) {
     return (
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+      <header className="border-b bg-background sticky top-0 z-40">
         <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
           <Link
             href="/"
@@ -51,7 +51,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+    <header className="border-b bg-background sticky top-0 z-40">
       <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         <div className="flex items-center gap-2 sm:gap-3">
           <MobileSidebarTrigger />

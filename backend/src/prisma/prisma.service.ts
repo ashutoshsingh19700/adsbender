@@ -1,8 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
     super({
       transactionOptions: {
@@ -22,5 +25,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async onModuleInit() {
     await this.$connect();
+  }
+
+  // Pairs with app.enableShutdownHooks() in main.ts - releases the
+  // connection pool cleanly on SIGTERM/SIGINT instead of letting Postgres
+  // notice a dropped-but-unclosed connection on its own timeout.
+  async onModuleDestroy() {
+    await this.$disconnect();
   }
 }

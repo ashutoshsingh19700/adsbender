@@ -349,6 +349,31 @@ export class PublisherService {
     return domain ? `${domain} - ${zoneName}` : zoneName;
   }
 
+  // Same zone-scoping rule as getStatistics above: every zone this
+  // publisher owns, or just one via `zoneId`, never another publisher's.
+  async getTrafficQuality(
+    publisherId: string,
+    query: { startDate: string; endDate: string; zoneId?: string },
+  ) {
+    let zoneIds: string[];
+    if (query.zoneId) {
+      const zone = await this.findOwnedZoneOrThrow(publisherId, query.zoneId);
+      zoneIds = [zone.id];
+    } else {
+      const zones = await this.prisma.adZone.findMany({
+        where: { publisherId },
+        select: { id: true },
+      });
+      zoneIds = zones.map((zone) => zone.id);
+    }
+
+    return this.analyticsService.getTrafficQuality({
+      startDate: query.startDate,
+      endDate: query.endDate,
+      zoneIds,
+    });
+  }
+
   buildSnippet(zoneId: string) {
     const tagUrl =
       process.env.PUBLIC_TAG_URL ??

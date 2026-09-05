@@ -33,3 +33,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Local load-test env (throwaway secrets, points at docker-compose stack)
+backend/.env.loadtest

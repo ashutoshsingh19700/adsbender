@@ -57,7 +57,34 @@ export type GroupedMetricsParams = {
   platformFeeBps: number;
 };
 
+// One row of the traffic-quality breakdown: how many blocked/flagged
+// impression or click attempts FraudDetectionService recorded for a given
+// reason (IP_BLACKLISTED, SUSPICIOUS_USER_AGENT, DATACENTER_IP_CLICK,
+// MISSING_CLICK_TOKEN, CLICK_TOKEN_EXPIRED, ...) - see TrafficEvent in
+// ad-engine/ad-event.types.ts, the only source of these rows.
+export type TrafficQualityRow = {
+  date: string;
+  stage: 'impression' | 'click';
+  outcome: 'blocked' | 'flagged';
+  reason: string;
+  count: number;
+};
+
+export type TrafficQualityParams = {
+  startDate: string;
+  endDate: string;
+  // Scope filters - mirrors the zoneId/campaignId scoping on
+  // DailyMetricsParams/GroupedMetricsParams above. Admin passes neither
+  // (platform-wide); PublisherService passes zoneIds; AdvertiserService
+  // passes campaignIds. Both empty means "no scope restriction" for admin,
+  // NOT "zero rows" - unlike GroupedMetricsParams.zoneIds, these are
+  // optional rather than required, so an admin call can omit them entirely.
+  zoneIds?: string[];
+  campaignIds?: string[];
+};
+
 export interface AnalyticsQueryStore {
   getDailyMetrics(params: DailyMetricsParams): Promise<MetricsRow[]>;
   getGroupedMetrics(params: GroupedMetricsParams): Promise<GroupedMetricsRow[]>;
+  getTrafficQuality(params: TrafficQualityParams): Promise<TrafficQualityRow[]>;
 }

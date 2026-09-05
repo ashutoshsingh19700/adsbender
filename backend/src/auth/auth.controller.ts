@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 
 import { AuthService } from './auth.service';
@@ -31,12 +32,22 @@ export class AuthController {
     private readonly turnstile: TurnstileService,
   ) {}
 
+  // Tighter than the global default (see ThrottlerModule.forRoot in
+  // app.module.ts) - credential guessing, OTP/email-bomb spam, and account
+  // enumeration all live behind these specific endpoints, and Turnstile
+  // (assertHuman below) only stops scripted abuse, not a slow manual retry
+  // loop or a captcha-solving service. Named to match the global 'burst'
+  // tracker so this REPLACES that tracker's limit for this route rather
+  // than stacking as a separate counter; the global 'sustained' tracker
+  // still applies on top of it.
+  @Throttle({ burst: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() registerDto: RegisterDto, @Ip() ip: string) {
     await this.assertHuman(registerDto.captchaToken, ip);
     return this.authService.register(registerDto);
   }
 
+  @Throttle({ burst: { limit: 10, ttl: 60_000 } })
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
@@ -47,6 +58,7 @@ export class AuthController {
     return this.authService.login(loginDto, response);
   }
 
+  @Throttle({ burst: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
@@ -56,17 +68,23 @@ export class AuthController {
     return this.authService.forgotPassword(dto);
   }
 
+  @Throttle({ burst: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
   }
 
+  @Throttle({ burst: { limit: 5, ttl: 60_000 } })
   @Post('phone/send-otp')
   async sendPhoneOtp(@Body() dto: SendPhoneOtpDto, @Ip() ip: string) {
     await this.assertHuman(dto.captchaToken, ip);
     return this.authService.sendPhoneOtp(dto);
   }
 
+  // A short numeric OTP is brute-forceable in well under a minute without
+  // a limit here - captcha doesn't cover this route at all (see
+  // sendPhoneOtp above for the send side).
+  @Throttle({ burst: { limit: 10, ttl: 60_000 } })
   @Post('phone/verify-otp')
   async verifyPhoneOtp(
     @Body() dto: VerifyPhoneOtpDto,

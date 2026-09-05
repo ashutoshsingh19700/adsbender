@@ -1,16 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { BLACKLIST_CACHE_STORE } from './blacklist-cache-sync.service';
+import type { BlacklistCacheStore } from './blacklist-cache.types';
+import { ClickIntegrityService } from './click-integrity.service';
+import { DatacenterIpService } from './datacenter-ip.service';
 import { FrequencyCappingService } from './frequency-capping.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('FraudDetectionService', () => {
   let service: FraudDetectionService;
+  let clickIntegrityService: ClickIntegrityService;
   const prismaService = {
     blacklistedIp: {
-      findUnique: jest.fn(),
       upsert: jest.fn(),
     },
+  };
+  const blacklistCacheStore: jest.Mocked<BlacklistCacheStore> = {
+    replaceBlacklistedIps: jest.fn(),
+    isBlacklisted: jest.fn(),
   };
   const frequencyCappingService = {
     evaluateImpression: jest.fn(),
@@ -37,6 +45,8 @@ describe('FraudDetectionService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FraudDetectionService,
+        ClickIntegrityService,
+        DatacenterIpService,
         {
           provide: PrismaService,
           useValue: prismaService,
@@ -45,16 +55,19 @@ describe('FraudDetectionService', () => {
           provide: FrequencyCappingService,
           useValue: frequencyCappingService,
         },
+        {
+          provide: BLACKLIST_CACHE_STORE,
+          useValue: blacklistCacheStore,
+        },
       ],
     }).compile();
 
     service = module.get(FraudDetectionService);
+    clickIntegrityService = module.get(ClickIntegrityService);
   });
 
-  it('blocks IPs already stored in the blacklist table', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue({
-      ipAddress: '127.0.0.1',
-    });
+  it('blocks IPs already stored in the blacklist cache', async () => {
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(true);
 
     await expect(
       service.evaluateServeRequest('::ffff:127.0.0.1', 'Mozilla/5.0'),
@@ -65,7 +78,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('blocks missing and known automation user agents', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue(null);
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
 
     await expect(
       service.evaluateServeRequest('127.0.0.1', ''),
@@ -82,7 +95,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('allows normal browser profiles not present in the blacklist', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue(null);
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
 
     await expect(
       service.evaluateServeRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36'),
@@ -95,7 +108,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('blocks traffic after the Redis velocity cap is exceeded', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue(null);
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
     frequencyCappingService.evaluateImpression.mockResolvedValue({
       allowed: false,
       key: 'rate:imp:127.0.0.1',
@@ -114,7 +127,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('allows normal click traffic and checks the click velocity cap, not the impression cap', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue(null);
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
 
     await expect(
       service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36'),
@@ -128,7 +141,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('blocks click traffic once the click velocity cap is exceeded', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue(null);
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
     frequencyCappingService.evaluateClick.mockResolvedValue({
       allowed: false,
       key: 'rate:click:127.0.0.1',
@@ -147,9 +160,7 @@ describe('FraudDetectionService', () => {
   });
 
   it('blocks blacklisted IPs and known automation user agents on the click path too', async () => {
-    prismaService.blacklistedIp.findUnique.mockResolvedValue({
-      ipAddress: '127.0.0.1',
-    });
+    blacklistCacheStore.isBlacklisted.mockResolvedValue(true);
 
     await expect(
       service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0'),
@@ -178,6 +189,140 @@ describe('FraudDetectionService', () => {
         source: 'HONEYPOT',
         reason: 'Hidden honeypot link requested by BadBot/1.0',
       },
+    });
+  });
+
+  describe('click integrity (no-impression / replayed clicks)', () => {
+    const zoneId = 'zone-1';
+    const campaignId = 'campaign-1';
+
+    it('blocks a billable click with no click token at all', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+
+      await expect(
+        service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          billable: true,
+        }),
+      ).resolves.toEqual({
+        blocked: true,
+        reason: 'MISSING_CLICK_TOKEN',
+      });
+    });
+
+    it('blocks a billable click whose token was issued for a different campaign', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+      const token = clickIntegrityService.sign(
+        zoneId,
+        'some-other-campaign',
+        Date.now() - 1000,
+      );
+
+      await expect(
+        service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          clickToken: token,
+          billable: true,
+        }),
+      ).resolves.toEqual({
+        blocked: true,
+        reason: 'CLICK_TOKEN_SCOPE_MISMATCH',
+      });
+    });
+
+    it('blocks a billable click fired faster than a human can react', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+      const token = clickIntegrityService.sign(zoneId, campaignId, Date.now());
+
+      await expect(
+        service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          clickToken: token,
+          billable: true,
+        }),
+      ).resolves.toEqual({
+        blocked: true,
+        reason: 'CLICK_TOKEN_EXPIRED',
+      });
+    });
+
+    it('flags rather than blocks the same bad token on a non-billable click', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+
+      await expect(
+        service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          billable: false,
+        }),
+      ).resolves.toEqual({
+        blocked: false,
+        flagged: true,
+        reason: 'MISSING_CLICK_TOKEN',
+      });
+    });
+
+    it('allows a billable click carrying a valid, freshly-issued token', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+      const token = clickIntegrityService.sign(
+        zoneId,
+        campaignId,
+        Date.now() - 1000,
+      );
+
+      await expect(
+        service.evaluateClickRequest('127.0.0.1', 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          clickToken: token,
+          billable: true,
+        }),
+      ).resolves.toEqual({
+        blocked: false,
+      });
+    });
+  });
+
+  describe('datacenter IP detection', () => {
+    const zoneId = 'zone-1';
+    const campaignId = 'campaign-1';
+    // 52.x.x.x falls inside the AWS range in DatacenterIpService's table.
+    const datacenterIp = '52.10.20.30';
+
+    it('flags (does not block) an impression served to a datacenter IP', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+
+      await expect(
+        service.evaluateServeRequest(datacenterIp, 'Mozilla/5.0 Safari/537.36'),
+      ).resolves.toEqual({
+        blocked: false,
+        flagged: true,
+        reason: 'DATACENTER_IP',
+      });
+    });
+
+    it('blocks a billable click from a datacenter IP even with a valid token', async () => {
+      blacklistCacheStore.isBlacklisted.mockResolvedValue(false);
+      const token = clickIntegrityService.sign(
+        zoneId,
+        campaignId,
+        Date.now() - 1000,
+      );
+
+      await expect(
+        service.evaluateClickRequest(datacenterIp, 'Mozilla/5.0 Safari/537.36', {
+          zoneId,
+          campaignId,
+          clickToken: token,
+          billable: true,
+        }),
+      ).resolves.toEqual({
+        blocked: true,
+        reason: 'DATACENTER_IP_CLICK',
+      });
     });
   });
 });

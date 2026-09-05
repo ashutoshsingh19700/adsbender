@@ -10,6 +10,7 @@ import {
 import { AdTargetingService } from './ad-targeting.service';
 import { ClickHouseAnalyticsEventStore } from './clickhouse-analytics-event.store';
 import { ClickHouseClickIngestionWorkerService } from './clickhouse-click-ingestion-worker.service';
+import { ClickHouseTrafficIngestionWorkerService } from './clickhouse-traffic-ingestion-worker.service';
 import {
   ANALYTICS_EVENT_STORE,
   ClickHouseIngestionWorkerService,
@@ -19,6 +20,12 @@ import {
   CAMPAIGN_CACHE_STORE,
   CampaignCacheSyncService,
 } from './campaign-cache-sync.service';
+import {
+  BLACKLIST_CACHE_STORE,
+  BlacklistCacheSyncService,
+} from './blacklist-cache-sync.service';
+import { ClickIntegrityService } from './click-integrity.service';
+import { DatacenterIpService } from './datacenter-ip.service';
 import { DeviceDetectorService } from './device-detector.service';
 import {
   FrequencyCappingService,
@@ -26,11 +33,17 @@ import {
 } from './frequency-capping.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
+import { RedisBlacklistCacheStore } from './redis-blacklist-cache.store';
 import { RedisCampaignCacheStore } from './redis-campaign-cache.store';
 import { RedisStreamMessageBrokerConsumer } from './redis-stream-message-broker.consumer';
 import { RedisStreamMessageBrokerPublisher } from './redis-stream-message-broker.publisher';
 import { RedisVelocityCounterStore } from './redis-velocity-counter.store';
+import { RedisZoneCacheStore } from './redis-zone-cache.store';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
+import {
+  ZONE_CACHE_STORE,
+  ZoneCacheSyncService,
+} from './zone-cache-sync.service';
 import { CpmBillingService } from './cpm-billing.service';
 import { ConversionTrackingService } from './conversion-tracking.service';
 import {
@@ -46,25 +59,40 @@ import { PlatformSettingsModule } from '../platform-settings/platform-settings.m
     AdBillingService,
     AdEventProducerService,
     AdTargetingService,
+    BlacklistCacheSyncService,
     CampaignCacheSyncService,
     ClickHouseAnalyticsEventStore,
     ClickHouseClickIngestionWorkerService,
     ClickHouseIngestionWorkerService,
+    ClickHouseTrafficIngestionWorkerService,
+    ClickIntegrityService,
     ConversionTrackingService,
     CpmBillingService,
+    DatacenterIpService,
     DeviceDetectorService,
     FrequencyCappingService,
     FraudDetectionService,
     GeoIpService,
+    RedisBlacklistCacheStore,
     RedisCampaignCacheStore,
     RedisStreamMessageBrokerConsumer,
     RedisStreamMessageBrokerPublisher,
     RedisVelocityCounterStore,
+    RedisZoneCacheStore,
     SiteAutoVerificationService,
     VisitorFrequencyCapService,
+    ZoneCacheSyncService,
     {
       provide: CAMPAIGN_CACHE_STORE,
       useExisting: RedisCampaignCacheStore,
+    },
+    {
+      provide: ZONE_CACHE_STORE,
+      useExisting: RedisZoneCacheStore,
+    },
+    {
+      provide: BLACKLIST_CACHE_STORE,
+      useExisting: RedisBlacklistCacheStore,
     },
     {
       provide: MESSAGE_BROKER_PUBLISHER,

@@ -55,6 +55,7 @@ describe('ClickHouseClickIngestionWorkerService', () => {
       ensureSchema: jest.fn(),
       insertImpressions: jest.fn(),
       insertClicks: jest.fn(),
+      insertTrafficEvents: jest.fn(),
     };
     adBillingService = {
       billClick: jest.fn().mockResolvedValue(undefined),

@@ -5,11 +5,13 @@ import { toast } from "sonner"
 
 import {
   ApiError,
+  getAdvertiserTrafficQuality,
   getCampaignPerformance,
   listCampaigns,
 } from "@/lib/api"
 import type { AnalyticsTotals, Campaign, CampaignStatus } from "@/lib/types"
 import { defaultDateRange, formatCurrency, formatPercent } from "@/lib/utils"
+import { TrafficQualityPanel } from "@/components/app/traffic-quality-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -276,6 +278,22 @@ export function StatisticsPage() {
           </Table>
         </div>
       </Card>
+
+      <div className="space-y-3 pt-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Traffic Quality
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Clicks blocked or flagged as invalid traffic across your
+            campaigns - you were never billed for these.
+          </p>
+        </div>
+        <TrafficQualityPanel
+          description="Clicks the ad network's fraud detection blocked or flagged before they could bill your budget - e.g. clicks with no matching ad impression, from datacenter/hosting IPs, or from a single IP clicking far too fast."
+          fetchTrafficQuality={getAdvertiserTrafficQuality}
+        />
+      </div>
     </div>
   )
 }

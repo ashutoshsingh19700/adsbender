@@ -26,6 +26,8 @@ describe('PublisherService', () => {
   };
   const analyticsService = {
     getDailyMetrics: jest.fn(),
+    getGroupedMetrics: jest.fn(),
+    getTrafficQuality: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -210,5 +212,60 @@ describe('PublisherService', () => {
       '2026-08-13',
       { zoneId: 'zone-1' },
     );
+  });
+
+  it('scopes traffic-quality to every zone this publisher owns', async () => {
+    prismaService.adZone.findMany.mockResolvedValue([
+      { id: 'zone-1' },
+      { id: 'zone-2' },
+    ]);
+    analyticsService.getTrafficQuality.mockResolvedValue({
+      totalBlocked: 3,
+      totalFlagged: 1,
+      byReason: [],
+      byDate: [],
+    });
+
+    await service.getTrafficQuality('publisher-1', {
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+    });
+
+    expect(prismaService.adZone.findMany).toHaveBeenCalledWith({
+      where: { publisherId: 'publisher-1' },
+      select: { id: true },
+    });
+    expect(analyticsService.getTrafficQuality).toHaveBeenCalledWith({
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      zoneIds: ['zone-1', 'zone-2'],
+    });
+  });
+
+  it('scopes traffic-quality to a single owned zone when zoneId is given', async () => {
+    prismaService.adZone.findUnique.mockResolvedValue({
+      id: 'zone-1',
+      publisherId: 'publisher-1',
+      status: AdZoneStatus.ACTIVE,
+    });
+    analyticsService.getTrafficQuality.mockResolvedValue({
+      totalBlocked: 0,
+      totalFlagged: 0,
+      byReason: [],
+      byDate: [],
+    });
+
+    await service.getTrafficQuality('publisher-1', {
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      zoneId: 'zone-1',
+    });
+
+    expect(prismaService.adZone.findMany).not.toHaveBeenCalled();
+    expect(analyticsService.getTrafficQuality).toHaveBeenCalledWith({
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      zoneIds: ['zone-1'],
+    });
   });
 });

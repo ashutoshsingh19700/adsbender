@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { CampaignStatus, Prisma, SiteStatus, UserRole } from '@prisma/client';
 
+import { AnalyticsService } from '../analytics/analytics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
 import { parsePagination } from '../common/pagination.util';
@@ -32,6 +33,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly walletManager: WalletManager,
     private readonly platformSettingsService: PlatformSettingsService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   // --- Campaign review ---
@@ -293,6 +295,66 @@ export class AdminService {
       pendingPayoutCount: pendingPayouts._count,
       pendingPayoutAmount,
     };
+  }
+
+  // --- Traffic quality / fraud protection (platform-wide) ---
+  // See PublisherService.getTrafficQuality and
+  // AdvertiserService.getTrafficQuality for the equivalent zone-/campaign-
+  // scoped views - this is the unscoped, every-tenant admin rollup.
+
+  async getTrafficQuality(query: { startDate: string; endDate: string }) {
+    return this.analyticsService.getTrafficQuality({
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
+  }
+
+  async listBlacklistedIps(query: { page?: string; pageSize?: string }) {
+    const { skip, take, page, pageSize } = parsePagination(query);
+
+    const [total, ips] = await Promise.all([
+      this.prisma.blacklistedIp.count(),
+      this.prisma.blacklistedIp.findMany({
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      ips,
+      page,
+      pageSize,
+      total,
+    };
+  }
+
+  // Manual add - the automated path (a honeypot hit) goes through
+  // FraudDetectionService.recordHoneypotHit instead, which always sets
+  // source 'HONEYPOT'. This is for an admin blocking an IP off other
+  // evidence (dashboard traffic patterns, an external abuse report, ...).
+  async addBlacklistedIp(ipAddress: string, reason: string) {
+    const normalizedIp = ipAddress.replace('::ffff:', '').split(',')[0].trim();
+
+    if (!normalizedIp) {
+      throw new BadRequestException('ipAddress is required');
+    }
+
+    return this.prisma.blacklistedIp.upsert({
+      where: { ipAddress: normalizedIp },
+      update: { source: 'MANUAL', reason },
+      create: { ipAddress: normalizedIp, source: 'MANUAL', reason },
+    });
+  }
+
+  async removeBlacklistedIp(id: string) {
+    try {
+      await this.prisma.blacklistedIp.delete({ where: { id } });
+    } catch {
+      throw new NotFoundException('Blacklisted IP not found');
+    }
+
+    return { removed: true };
   }
 
   // --- Helpers ---

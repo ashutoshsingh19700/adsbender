@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -52,6 +53,30 @@ export class AdminController {
   @Get('revenue/summary')
   getRevenueSummary() {
     return this.adminService.getRevenueSummary();
+  }
+
+  // --- Traffic quality / fraud protection ---
+
+  @Get('traffic-quality')
+  getTrafficQuality(@Query() query: { startDate: string; endDate: string }) {
+    return this.adminService.getTrafficQuality(query);
+  }
+
+  @Get('blacklist')
+  listBlacklistedIps(
+    @Query() query: { page?: string; pageSize?: string },
+  ) {
+    return this.adminService.listBlacklistedIps(query);
+  }
+
+  @Post('blacklist')
+  addBlacklistedIp(@Body() dto: { ipAddress: string; reason: string }) {
+    return this.adminService.addBlacklistedIp(dto.ipAddress, dto.reason);
+  }
+
+  @Delete('blacklist/:id')
+  removeBlacklistedIp(@Param('id') id: string) {
+    return this.adminService.removeBlacklistedIp(id);
   }
 
   // --- Platform settings ---

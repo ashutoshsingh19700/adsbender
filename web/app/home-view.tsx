@@ -71,6 +71,10 @@ export function HomeView() {
                 loop
                 muted
                 playsInline
+                preload="auto"
+                disablePictureInPicture
+                disableRemotePlayback
+                controlsList="nodownload nofullscreen noremoteplayback"
                 aria-label="AdsBender product explainer: too many ad platforms, too much complexity, brought together into one dashboard for better results"
                 className="h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_22%,black_78%,transparent),linear-gradient(to_right,transparent,black_20%,black_80%,transparent)] [mask-composite:intersect] [-webkit-mask-composite:source-in]"
               />

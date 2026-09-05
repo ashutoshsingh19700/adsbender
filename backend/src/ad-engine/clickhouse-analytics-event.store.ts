@@ -4,6 +4,7 @@ import type {
   AnalyticsEventStore,
   ClickEvent,
   ImpressionEvent,
+  TrafficEvent,
 } from './ad-event.types';
 
 type ClickHouseOptions = {
@@ -59,6 +60,27 @@ export class ClickHouseAnalyticsEventStore implements AnalyticsEventStore {
       )
       ENGINE = MergeTree
       ORDER BY (event_time, campaign_id, zone_id)
+    `);
+
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS ${this.options.database}.traffic_events
+      (
+        event_time DateTime,
+        stage String,
+        outcome String,
+        reason String,
+        zone_id String,
+        campaign_id Nullable(String),
+        advertiser_id Nullable(String),
+        origin String,
+        path String,
+        country Nullable(String),
+        device String,
+        ip_address String,
+        user_agent String
+      )
+      ENGINE = MergeTree
+      ORDER BY (event_time, zone_id, reason)
     `);
   }
 
@@ -116,6 +138,37 @@ export class ClickHouseAnalyticsEventStore implements AnalyticsEventStore {
 
     await this.query(
       `INSERT INTO ${this.options.database}.clicks FORMAT JSONEachRow`,
+      rows,
+    );
+  }
+
+  async insertTrafficEvents(events: TrafficEvent[]) {
+    if (events.length === 0) {
+      return;
+    }
+
+    const rows = events
+      .map((event) =>
+        JSON.stringify({
+          event_time: this.formatDateTime(event.time),
+          stage: event.stage,
+          outcome: event.outcome,
+          reason: event.reason,
+          zone_id: event.zone,
+          campaign_id: event.campaign ?? null,
+          advertiser_id: event.advertiser ?? null,
+          origin: event.request.origin,
+          path: event.request.path,
+          country: event.request.country,
+          device: event.request.device,
+          ip_address: event.request.ipAddress,
+          user_agent: event.request.userAgent,
+        }),
+      )
+      .join('\n');
+
+    await this.query(
+      `INSERT INTO ${this.options.database}.traffic_events FORMAT JSONEachRow`,
       rows,
     );
   }

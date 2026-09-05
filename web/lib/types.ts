@@ -328,3 +328,39 @@ export type RevenueSummary = {
   pendingPayoutCount: number
   pendingPayoutAmount: string
 }
+
+// --- Traffic quality / fraud protection ---
+// GET /admin/traffic-quality, /publisher/traffic-quality,
+// /advertiser/traffic-quality - see AnalyticsService.getTrafficQuality.
+// "Blocked" traffic never got an ad / never got tracked at all; "flagged"
+// traffic was allowed through but looked suspicious enough to record (e.g. a
+// datacenter IP) - see FraudDetectionService.
+export type TrafficQualityReasonRow = {
+  reason: string
+  stage: "impression" | "click"
+  blocked: number
+  flagged: number
+}
+
+export type TrafficQualityDateRow = {
+  date: string
+  blocked: number
+  flagged: number
+}
+
+export type TrafficQualityResponse = {
+  totalBlocked: number
+  totalFlagged: number
+  byReason: TrafficQualityReasonRow[]
+  byDate: TrafficQualityDateRow[]
+}
+
+// GET /admin/blacklist
+export type BlacklistedIp = {
+  id: string
+  ipAddress: string
+  source: string
+  reason: string
+  createdAt: string
+  updatedAt: string
+}

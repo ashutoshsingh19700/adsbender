@@ -199,3 +199,16 @@
     transparent 100%
   );
 }
+
+/* iOS Safari draws its own play/pause "start playback" glyph and a
+   picture-in-picture/AirPlay control overlay on <video> elements even
+   without the `controls` attribute. Our looping background videos (hero
+   explainer, animated logo) are meant to read as inert imagery, so strip
+   all of that native chrome on WebKit. */
+video::-webkit-media-controls,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
