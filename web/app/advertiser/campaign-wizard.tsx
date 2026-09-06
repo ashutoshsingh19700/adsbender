@@ -20,6 +20,11 @@ import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
+import {
+  AdvertiseTargetDialog,
+  type AdvertiseTarget,
+} from "@/app/advertiser/advertise-target-dialog"
+import { CountryGlobe } from "@/app/advertiser/country-globe"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -92,6 +97,10 @@ export function CampaignWizard({
 } = {}) {
   const [result, setResult] = React.useState<Campaign | null>(null)
   const [uploading, setUploading] = React.useState(false)
+  const [showIntake, setShowIntake] = React.useState(true)
+  const [advertiseTarget, setAdvertiseTarget] =
+    React.useState<AdvertiseTarget | null>(null)
+  const [step, setStep] = React.useState(0)
 
   const form = useForm<CampaignFormInput, unknown, CampaignFormOutput>({
     resolver: zodResolver(campaignSchema),
@@ -145,6 +154,57 @@ export function CampaignWizard({
   const [locCountry, setLocCountry] = React.useState("")
   const [locRegion, setLocRegion] = React.useState("")
   const [locCity, setLocCity] = React.useState("")
+
+  const STEPS = [
+    {
+      title: "General",
+      fields: [
+        "campaignName",
+        "targetDevices",
+        "adFormat",
+        "pricingModel",
+      ] as const,
+    },
+    {
+      title: "Landing & targeting",
+      fields: [
+        "destinationUrl",
+        "creativeType",
+        "creativeUrl",
+        "creativeHtml",
+        "targetCountries",
+      ] as const,
+    },
+    {
+      title: "Budget & schedule",
+      fields: [
+        "totalBudget",
+        "dailyBudget",
+        "maxCpc",
+        "startMode",
+        "scheduledAt",
+      ] as const,
+    },
+  ]
+  const isLastStep = step === STEPS.length - 1
+
+  async function goNext() {
+    const valid = await form.trigger(STEPS[step].fields)
+    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1))
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(s - 1, 0))
+  }
+
+  function handleIntakeSubmit(target: AdvertiseTarget, landingUrl: string) {
+    setAdvertiseTarget(target)
+    form.setValue("destinationUrl", landingUrl, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    setShowIntake(false)
+  }
 
   // Mirrors the backend's ALLOWED_CREATIVE_MIME_TYPES /
   // MAX_CREATIVE_UPLOAD_BYTES (see creative-upload.service.ts) — checked
@@ -285,6 +345,9 @@ export function CampaignWizard({
               onClick={() => {
                 setResult(null)
                 form.reset()
+                setStep(0)
+                setAdvertiseTarget(null)
+                setShowIntake(true)
               }}
             >
               Create another campaign
@@ -297,10 +360,39 @@ export function CampaignWizard({
 
   return (
     <div className="mx-auto max-w-6xl">
+      <AdvertiseTargetDialog open={showIntake} onSubmit={handleIntakeSubmit} />
+
       <div className="mb-6">
         <h2 className="text-xl font-semibold tracking-tight">
           Create campaign
         </h2>
+        <ol className="mt-4 flex flex-wrap gap-2">
+          {STEPS.map((s, i) => (
+            <li
+              key={s.title}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium",
+                i === step
+                  ? "border-primary bg-primary/5 text-foreground"
+                  : i < step
+                    ? "border-border text-foreground"
+                    : "border-border text-muted-foreground"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-4 items-center justify-center rounded-full text-[10px]",
+                  i <= step
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                {i + 1}
+              </span>
+              {s.title}
+            </li>
+          ))}
+        </ol>
       </div>
 
       <Form {...form}>
@@ -309,6 +401,8 @@ export function CampaignWizard({
           className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
         >
           <div className="space-y-10">
+            {step === 0 ? (
+            <>
             <div>
               <h3 className="text-base font-semibold">Required Settings*</h3>
             </div>
@@ -440,9 +534,11 @@ export function CampaignWizard({
                 ))}
               </div>
             </SettingsRow>
+            </>
+            ) : null}
 
-            <Separator />
-
+            {step === 1 ? (
+            <>
             <SettingsRow
               label="Landing URL & Preview"
               description="Where people land when they click this ad."
@@ -569,71 +665,92 @@ export function CampaignWizard({
 
             <Separator />
 
-            <SettingsRow label="Countries" description="By one country.">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="grid gap-1.5">
-                  <FormLabel>Countries</FormLabel>
-                  <Select value={countryToAdd} onValueChange={setCountryToAdd}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Choose a country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-1.5">
-                  <FormLabel>Price</FormLabel>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    className="w-28"
-                    placeholder="0.00"
-                    value={priceToAdd}
-                    onChange={(e) => setPriceToAdd(e.target.value)}
+            <SettingsRow
+              label="Countries"
+              description="Pick a country — it lights up on the globe."
+            >
+              <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_220px]">
+                <div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="grid gap-1.5">
+                      <FormLabel>Countries</FormLabel>
+                      <Select
+                        value={countryToAdd}
+                        onValueChange={setCountryToAdd}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Choose a country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem
+                              key={country.value}
+                              value={country.value}
+                            >
+                              {country.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <FormLabel>Price</FormLabel>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="w-28"
+                        placeholder="0.00"
+                        value={priceToAdd}
+                        onChange={(e) => setPriceToAdd(e.target.value)}
+                      />
+                    </div>
+                    <Button type="button" variant="outline" onClick={addCountry}>
+                      Add country
+                    </Button>
+                  </div>
+
+                  {targetCountries.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {targetCountries.map((code) => {
+                        const label =
+                          COUNTRIES.find((c) => c.value === code)?.label ??
+                          code
+                        return (
+                          <Badge key={code} variant="outline" className="gap-1.5">
+                            {label}
+                            {countryPricing[code] !== undefined
+                              ? ` · $${countryPricing[code]}`
+                              : ""}
+                            <button
+                              type="button"
+                              onClick={() => removeCountry(code)}
+                              aria-label={`Remove ${label}`}
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  ) : null}
+                  <FormField
+                    control={form.control}
+                    name="targetCountries"
+                    render={() => <FormMessage />}
                   />
                 </div>
-                <Button type="button" variant="outline" onClick={addCountry}>
-                  Add country
-                </Button>
+
+                <CountryGlobe
+                  selectedCountries={targetCountries}
+                  highlightedCountry={countryToAdd || undefined}
+                />
               </div>
-
-              {targetCountries.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {targetCountries.map((code) => {
-                    const label =
-                      COUNTRIES.find((c) => c.value === code)?.label ?? code
-                    return (
-                      <Badge key={code} variant="outline" className="gap-1.5">
-                        {label}
-                        {countryPricing[code] !== undefined
-                          ? ` · $${countryPricing[code]}`
-                          : ""}
-                        <button
-                          type="button"
-                          onClick={() => removeCountry(code)}
-                          aria-label={`Remove ${label}`}
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </Badge>
-                    )
-                  })}
-                </div>
-              ) : null}
-              <FormField
-                control={form.control}
-                name="targetCountries"
-                render={() => <FormMessage />}
-              />
             </SettingsRow>
+            </>
+            ) : null}
 
-            <Separator />
-
+            {step === 2 ? (
+            <>
             <SettingsRow
               label="Locations"
               description="Include or exclude specific regions/cities."
@@ -839,6 +956,24 @@ export function CampaignWizard({
                 )}
               />
             </SettingsRow>
+            </>
+            ) : null}
+
+            <div className="flex items-center justify-between border-t pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goBack}
+                disabled={step === 0}
+              >
+                Back
+              </Button>
+              {!isLastStep ? (
+                <Button type="button" onClick={goNext}>
+                  Next
+                </Button>
+              ) : null}
+            </div>
           </div>
 
           <aside className="lg:sticky lg:top-6">
@@ -850,6 +985,18 @@ export function CampaignWizard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-base">
+                {advertiseTarget ? (
+                  <SummaryRow
+                    label="Advertising"
+                    value={
+                      advertiseTarget === "social_media"
+                        ? "Social media"
+                        : advertiseTarget === "app"
+                          ? "App"
+                          : "Website"
+                    }
+                  />
+                ) : null}
                 <SummaryRow
                   label="Name"
                   value={campaignName || "Untitled campaign"}
@@ -913,15 +1060,21 @@ export function CampaignWizard({
                 />
               </CardContent>
               <CardFooter className="flex-col items-stretch gap-2">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting
-                    ? "Submitting..."
-                    : "Proceed to review"}
-                </Button>
+                {isLastStep ? (
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting
+                      ? "Submitting..."
+                      : "Proceed to review"}
+                  </Button>
+                ) : (
+                  <Button type="button" className="w-full" onClick={goNext}>
+                    Next
+                  </Button>
+                )}
                 <p className="text-center text-sm text-foreground">
                   Submitted campaigns are reviewed before going live.
                 </p>
