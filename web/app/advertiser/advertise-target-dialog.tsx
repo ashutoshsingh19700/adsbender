@@ -50,7 +50,7 @@ export function AdvertiseTargetDialog({
 
   return (
     <Dialog open={open}>
-      <DialogContent showCloseButton={false} className="sm:max-w-md">
+      <DialogContent showCloseButton={false} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>What do you want to advertise?</DialogTitle>
           <DialogDescription>
