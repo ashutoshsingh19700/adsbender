@@ -151,13 +151,13 @@
   display: inline-flex;
   border-radius: 9999px;
   padding: 4px;
-  border: 1px dashed var(--color-violet-300, oklch(0.811 0.111 293.571));
+  border: 1px dashed var(--color-orange-300, oklch(0.837 0.128 66.29));
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .btn-halo:hover {
   background-color: #ffffff;
-  border-color: var(--color-violet-400, oklch(0.702 0.183 293.541));
+  border-color: var(--color-orange-400, oklch(0.75 0.183 55.934));
 }
 
 .btn-shine {
@@ -187,14 +187,14 @@
   transform: translateX(120%);
 }
 
-/* Violet-tinted shine, for white/outline buttons where a pure white sweep
+/* Orange-tinted shine, for white/outline buttons where a pure white sweep
    would barely show up against the light background */
 .btn-shine-tint::after {
   background: linear-gradient(
     115deg,
     transparent 0%,
     transparent 35%,
-    rgba(139, 92, 246, 0.35) 50%,
+    rgba(249, 115, 22, 0.35) 50%,
     transparent 65%,
     transparent 100%
   );

@@ -41,7 +41,7 @@ export function SiteHeader() {
           </Link>
           <a
             href="mailto:support@adsbender.example"
-            className="text-sm font-medium tracking-wide text-muted-foreground hover:text-violet-600"
+            className="text-sm font-medium tracking-wide text-muted-foreground hover:text-orange-600"
           >
             CONTACT US
           </a>
@@ -91,7 +91,7 @@ export function SiteHeader() {
                   <Button
                     asChild
                     size="lg"
-                    className="btn-shine rounded-full bg-gradient-to-r from-violet-600 to-blue-500 px-6 text-white hover:from-violet-700 hover:to-blue-600"
+                    className="btn-shine rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-6 text-white hover:from-orange-600 hover:to-pink-600"
                   >
                     <Link href="/schedule-meeting">Schedule a meeting</Link>
                   </Button>
@@ -102,7 +102,7 @@ export function SiteHeader() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="btn-shine rounded-full border-violet-300 px-3 text-violet-600 hover:bg-white hover:text-violet-600 sm:px-6"
+                  className="btn-shine rounded-full border-orange-300 px-3 text-orange-600 hover:bg-white hover:text-orange-600 sm:px-6"
                 >
                   <Link href="/login">Log in</Link>
                 </Button>

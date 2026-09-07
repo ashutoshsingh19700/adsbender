@@ -158,22 +158,28 @@ export function CampaignWizard({
   const STEPS = [
     {
       title: "General",
-      fields: [
-        "campaignName",
-        "targetDevices",
-        "adFormat",
-        "pricingModel",
-      ] as const,
+      fields: ["campaignName", "targetDevices"] as const,
     },
     {
-      title: "Landing & targeting",
+      title: "Ad format",
+      fields: ["adFormat", "pricingModel"] as const,
+    },
+    {
+      title: "Landing & creative",
       fields: [
         "destinationUrl",
         "creativeType",
         "creativeUrl",
         "creativeHtml",
-        "targetCountries",
       ] as const,
+    },
+    {
+      title: "Countries",
+      fields: ["targetCountries"] as const,
+    },
+    {
+      title: "Locations & notes",
+      fields: [] as const,
     },
     {
       title: "Budget & schedule",
@@ -373,7 +379,7 @@ export function CampaignWizard({
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium",
                 i === step
-                  ? "border-primary bg-primary/5 text-foreground"
+                  ? "border-orange-500 bg-orange-500/5 text-foreground"
                   : i < step
                     ? "border-border text-foreground"
                     : "border-border text-muted-foreground"
@@ -383,7 +389,7 @@ export function CampaignWizard({
                 className={cn(
                   "flex size-4 items-center justify-center rounded-full text-[10px]",
                   i <= step
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-orange-500 text-white"
                     : "bg-muted text-muted-foreground"
                 )}
               >
@@ -449,7 +455,14 @@ export function CampaignWizard({
               />
             </SettingsRow>
 
-            <Separator />
+            </>
+            ) : null}
+
+            {step === 1 ? (
+            <>
+            <div>
+              <h3 className="text-base font-semibold">Ad format</h3>
+            </div>
 
             <SettingsRow
               label="Ad unit & Pricing type"
@@ -537,7 +550,7 @@ export function CampaignWizard({
             </>
             ) : null}
 
-            {step === 1 ? (
+            {step === 2 ? (
             <>
             <SettingsRow
               label="Landing URL & Preview"
@@ -662,9 +675,11 @@ export function CampaignWizard({
                 )}
               </div>
             </SettingsRow>
+            </>
+            ) : null}
 
-            <Separator />
-
+            {step === 3 ? (
+            <>
             <SettingsRow
               label="Countries"
               description="Pick a country — it lights up on the globe."
@@ -749,7 +764,7 @@ export function CampaignWizard({
             </>
             ) : null}
 
-            {step === 2 ? (
+            {step === 4 ? (
             <>
             <SettingsRow
               label="Locations"
@@ -815,6 +830,29 @@ export function CampaignWizard({
             </SettingsRow>
 
             <Separator />
+
+            <SettingsRow label="Notes" description="Internal notes for the review team.">
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+            </>
+            ) : null}
+
+            {step === 5 ? (
+            <>
+            <div>
+              <h3 className="text-base font-semibold">Budget & schedule</h3>
+            </div>
 
             <SettingsRow label="Total budget">
               <div className="space-y-4">
@@ -935,27 +973,6 @@ export function CampaignWizard({
                 />
               ) : null}
             </SettingsRow>
-
-            <Separator />
-
-            <div>
-              <h3 className="text-base font-semibold">Optional Settings</h3>
-            </div>
-
-            <SettingsRow label="Notes" description="Internal notes for the review team.">
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </SettingsRow>
             </>
             ) : null}
 
@@ -969,7 +986,11 @@ export function CampaignWizard({
                 Back
               </Button>
               {!isLastStep ? (
-                <Button type="button" onClick={goNext}>
+                <Button
+                  type="button"
+                  onClick={goNext}
+                  className="bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                >
                   Next
                 </Button>
               ) : null}
@@ -1063,7 +1084,7 @@ export function CampaignWizard({
                 {isLastStep ? (
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
                     disabled={form.formState.isSubmitting}
                   >
                     {form.formState.isSubmitting
@@ -1071,7 +1092,11 @@ export function CampaignWizard({
                       : "Proceed to review"}
                   </Button>
                 ) : (
-                  <Button type="button" className="w-full" onClick={goNext}>
+                  <Button
+                    type="button"
+                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                    onClick={goNext}
+                  >
                     Next
                   </Button>
                 )}
@@ -1128,7 +1153,7 @@ function OptionTile({
       className={cn(
         "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
-          ? "border-primary bg-primary/5 text-foreground"
+          ? "border-orange-500 bg-orange-500/5 text-foreground"
           : "border-border text-foreground hover:border-foreground/30"
       )}
     >
@@ -1164,7 +1189,7 @@ function AdUnitTile({
       className={cn(
         "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-md border p-4 text-center text-base font-medium transition-colors",
         selected
-          ? "border-primary bg-primary/5 text-foreground"
+          ? "border-orange-500 bg-orange-500/5 text-foreground"
           : "border-border text-foreground hover:border-foreground/30"
       )}
     >
@@ -1201,7 +1226,7 @@ function RadioPill({
       className={cn(
         "rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors",
         selected
-          ? "border-primary bg-primary text-primary-foreground"
+          ? "border-orange-500 bg-orange-500 text-white"
           : "border-border text-foreground hover:border-foreground/30"
       )}
     >
