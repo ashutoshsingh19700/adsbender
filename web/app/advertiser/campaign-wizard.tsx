@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import {
   BellRing,
+  Check,
   Code2,
   ImageIcon,
   Layers,
@@ -1151,12 +1152,17 @@ function OptionTile({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
+        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
-          ? "border-orange-500 bg-orange-500/5 text-foreground"
-          : "border-border text-foreground hover:border-foreground/30"
+          ? "border-blue-500 tile-shade text-foreground"
+          : "border-border text-foreground tile-hover hover:border-blue-500"
       )}
     >
+      {selected ? (
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+      ) : null}
       <Icon className="size-5" />
       {label}
     </button>
@@ -1189,14 +1195,19 @@ function AdUnitTile({
       className={cn(
         "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-md border p-4 text-center text-base font-medium transition-colors",
         selected
-          ? "border-orange-500 bg-orange-500/5 text-foreground"
-          : "border-border text-foreground hover:border-foreground/30"
+          ? "border-blue-500 tile-shade text-foreground"
+          : "border-border text-foreground tile-hover hover:border-blue-500"
       )}
     >
       {badge ? (
         <Badge className="absolute -top-2 right-2" variant="secondary">
           {badge}
         </Badge>
+      ) : null}
+      {selected ? (
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
+          <Check className="size-3" strokeWidth={3} />
+        </span>
       ) : null}
       <Icon className="size-6" />
       <span>{label}</span>

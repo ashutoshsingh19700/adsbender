@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Globe, Layers, Smartphone } from "lucide-react"
+import { Check, Globe, Layers, Smartphone } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -67,12 +67,17 @@ export function AdvertiseTargetDialog({
                 aria-pressed={target === option.value}
                 onClick={() => setTarget(option.value)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
+                  "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors",
                   target === option.value
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border text-foreground hover:border-foreground/30"
+                    ? "border-blue-500 tile-shade text-foreground"
+                    : "border-border text-foreground tile-hover hover:border-blue-500"
                 )}
               >
+                {target === option.value ? (
+                  <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                ) : null}
                 <option.icon className="size-5" />
                 {option.label}
               </button>
@@ -101,7 +106,11 @@ export function AdvertiseTargetDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" className="w-full sm:w-auto" onClick={handleNext}>
+          <Button
+            type="button"
+            className="w-full brand-gradient text-white sm:w-auto"
+            onClick={handleNext}
+          >
             Next
           </Button>
         </DialogFooter>
