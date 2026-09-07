@@ -254,6 +254,31 @@
   );
 }
 
+/* Dark indigo -> violet sidebar shell for the in-app advertiser shell
+   (advertiser-sidebar.tsx), matched to the "AdsBender" reference dashboard
+   mock. A soft magenta glow sits low-left, near the "Upgrade" card, same as
+   the reference. */
+.sidebar-shell {
+  background-color: #1a1533;
+  background-image:
+    radial-gradient(120% 60% at 0% 100%, rgba(190, 60, 190, 0.28) 0%, transparent 60%),
+    radial-gradient(90% 50% at 100% 0%, rgba(90, 70, 220, 0.25) 0%, transparent 60%),
+    linear-gradient(190deg, #1c1738 0%, #221a42 45%, #2a1f4d 100%);
+}
+
+/* Purple -> pink gradient used for the sidebar's active nav pill
+   ("New Campaign") and small accent chips throughout the redesigned
+   campaign wizard - a cooler counterpart to .brand-gradient's warm sweep. */
+.sidebar-pill-gradient {
+  background-image: linear-gradient(100deg, #8b5cf6 0%, #c026d3 55%, #ec4899 100%);
+}
+
+/* Two-stop warm chip, used for the "ADVERTISER" role badge in the app
+   topbar (advertiser-topbar.tsx). */
+.role-badge-gradient {
+  background-image: linear-gradient(100deg, #f97316 0%, #f0396a 100%);
+}
+
 /* iOS Safari draws its own play/pause "start playback" glyph and a
    picture-in-picture/AirPlay control overlay on <video> elements even
    without the `controls` attribute. Our looping background videos (hero

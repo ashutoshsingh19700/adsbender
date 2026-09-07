@@ -46,9 +46,20 @@ export function MobileSidebarTrigger() {
           <MenuIcon className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="flex w-72 flex-col p-0">
-        <SheetHeader className="border-b px-4 py-4">
-          <SheetTitle>Navigation</SheetTitle>
+      <SheetContent
+        side="left"
+        className={
+          isAdvertiser
+            ? "sidebar-shell flex w-72 flex-col border-none p-0 text-white"
+            : "flex w-72 flex-col p-0"
+        }
+      >
+        <SheetHeader
+          className={isAdvertiser ? "border-b border-white/10 px-4 py-4" : "border-b px-4 py-4"}
+        >
+          <SheetTitle className={isAdvertiser ? "text-white" : undefined}>
+            Navigation
+          </SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto">
           {isAdvertiser ? (
@@ -57,7 +68,7 @@ export function MobileSidebarTrigger() {
             <AppSidebarNav onNavigate={() => setOpen(false)} />
           )}
         </div>
-        <SidebarAccountFooter />
+        {!isAdvertiser ? <SidebarAccountFooter /> : null}
       </SheetContent>
     </Sheet>
   )

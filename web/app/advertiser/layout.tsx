@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { RequireRole } from "@/components/app/require-role"
 import { AdvertiserSidebar } from "@/components/app/advertiser-sidebar"
+import { AdvertiserTopbar } from "@/components/app/advertiser-topbar"
 
 // Authenticated account area — never a search result. robots.ts also
 // disallows crawling this prefix; this noindex is the belt to that
@@ -20,9 +21,12 @@ export default function AdvertiserLayout({
 }) {
   return (
     <RequireRole roles={["ADVERTISER"]}>
-      <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px]">
+      <div className="flex">
         <AdvertiserSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f6fb]">
+          <AdvertiserTopbar />
+          <div className="min-w-0 flex-1">{children}</div>
+        </div>
       </div>
     </RequireRole>
   )

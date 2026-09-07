@@ -10,23 +10,34 @@ import {
   ArrowRight,
   BellRing,
   Bot,
+  Calendar,
   Check,
+  CircleDollarSign,
+  Clock,
   Code2,
+  Coins,
   Eye,
+  FileText,
   Globe,
   ImageIcon,
   Info,
   Layers,
   LayoutTemplate,
+  MapPin,
   Monitor,
   MousePointerClick,
   Network,
+  PauseCircle,
+  Rocket,
   Signal,
   Smartphone,
+  Sparkles,
   Tablet,
+  Tag,
   Target,
   Terminal,
   Video,
+  Wallet,
   Wifi,
   X,
 } from "lucide-react"
@@ -135,6 +146,19 @@ const LEGACY_AD_FORMAT_DESCRIPTIONS: Record<string, string> = {
   SOCIAL_BAR: "Engage users with non-intrusive notifications.",
   NATIVE_BANNER: "Blend seamlessly with site content.",
   IN_PAGE_PUSH: "Deliver messages while users are on your site.",
+}
+
+const START_MODE_ICONS: Record<string, React.ElementType> = {
+  START_ONCE_VERIFIED: Rocket,
+  SCHEDULE: Calendar,
+  KEEP_INACTIVE: PauseCircle,
+}
+
+const START_MODE_DESCRIPTIONS: Record<string, string> = {
+  START_ONCE_VERIFIED:
+    "We'll launch your campaign after verification.",
+  SCHEDULE: "Pick a date and time for launch.",
+  KEEP_INACTIVE: "Save as draft and launch later.",
 }
 
 const PRICING_MODEL_META: Record<
@@ -478,55 +502,87 @@ export function CampaignWizard({
     )
   }
 
+  const STEP_DESCRIPTIONS = [
+    "Name your campaign and choose the devices you want to reach.",
+    "Choose the ad format and how it's billed.",
+    "Set the landing page and upload your creative.",
+    "Pick the countries you want to advertise in.",
+    "Fine-tune locations and leave notes for the review team.",
+    "Set your budget and choose when to start your campaign.",
+  ]
+
   return (
     <div className="mx-auto max-w-6xl">
       <AdvertiseTargetDialog open={showIntake} onSubmit={handleIntakeSubmit} />
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Create campaign
-        </h2>
-        <ol className="mt-4 flex flex-wrap overflow-hidden rounded-lg border sm:flex-nowrap">
+      <p className="text-sm text-muted-foreground">
+        Campaigns <span className="mx-1">›</span> New Campaign
+      </p>
+
+      <div className="relative mt-2 mb-8 overflow-hidden rounded-3xl border bg-gradient-to-br from-indigo-50 via-violet-50/60 to-white p-6 sm:p-8">
+        <div className="relative z-10 flex items-start gap-4">
+          <span className="sidebar-pill-gradient flex size-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg shadow-fuchsia-900/10">
+            <span className="block size-3.5 rotate-45 rounded-[3px] bg-white" />
+          </span>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              Create campaign
+            </h2>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              {STEP_DESCRIPTIONS[step]}
+            </p>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute right-6 top-6 hidden items-center gap-2 text-sm font-medium text-violet-500/70 sm:flex">
+          <span className="italic">Reach global audiences</span>
+          <MapPin className="size-4" />
+        </div>
+        <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-gradient-to-br from-violet-200/50 to-fuchsia-200/40 blur-2xl" />
+
+        <ol className="relative z-10 mt-7 flex flex-wrap items-center gap-x-1 gap-y-3 sm:flex-nowrap">
           {STEPS.map((s, i) => {
             const status = i < step ? "done" : i === step ? "active" : "upcoming"
             return (
-              <li
-                key={s.title}
-                className={cn(
-                  "flex flex-1 items-center gap-2 border-r px-3 py-2.5 text-sm font-medium last:border-r-0 sm:px-4",
-                  status === "active" &&
-                    "-my-px rounded-lg border border-orange-300 bg-orange-500/5"
-                )}
-              >
-                <span
+              <React.Fragment key={s.title}>
+                <li
                   className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-white",
-                    status === "active"
-                      ? "brand-gradient"
-                      : status === "done"
-                        ? "bg-gradient-to-br from-indigo-500 to-violet-500"
-                        : "bg-muted text-muted-foreground"
+                    "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium",
+                    status === "active" && "brand-gradient text-white shadow-sm"
                   )}
                 >
-                  {status === "done" ? (
-                    <Check className="size-3.5" strokeWidth={3} />
-                  ) : (
-                    i + 1
-                  )}
-                </span>
-                <span
-                  className={cn(
-                    "whitespace-nowrap",
-                    status === "active"
-                      ? "text-orange-600"
-                      : status === "done"
-                        ? "text-violet-600"
-                        : "text-muted-foreground"
-                  )}
-                >
-                  {s.title}
-                </span>
-              </li>
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                      status === "active"
+                        ? "bg-white/25 text-white"
+                        : status === "done"
+                          ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
+                          : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {status === "done" ? (
+                      <Check className="size-3.5" strokeWidth={3} />
+                    ) : (
+                      i + 1
+                    )}
+                  </span>
+                  <span
+                    className={cn(
+                      status === "active"
+                        ? "text-white"
+                        : status === "done"
+                          ? "text-violet-600"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    {s.title}
+                  </span>
+                </li>
+                {i < STEPS.length - 1 ? (
+                  <ArrowRight className="hidden size-3.5 shrink-0 text-muted-foreground/50 sm:block" />
+                ) : null}
+              </React.Fragment>
             )
           })}
         </ol>
@@ -1167,12 +1223,22 @@ export function CampaignWizard({
 
             {step === 5 ? (
             <>
-            <div>
-              <h3 className="text-base font-semibold">Budget & schedule</h3>
-            </div>
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+              <div className="flex items-start gap-3 border-b p-6 sm:p-7">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-600">
+                  <Coins className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">
+                    Budget settings
+                  </h3>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Set a budget that fits your goals.
+                  </p>
+                </div>
+              </div>
 
-            <SettingsRow label="Total budget">
-              <div className="space-y-4">
+              <div className="space-y-5 p-6 sm:p-7">
                 <FormField
                   control={form.control}
                   name="budgetUnlimited"
@@ -1181,7 +1247,7 @@ export function CampaignWizard({
                       <FormControl>
                         <input
                           type="checkbox"
-                          className="size-4"
+                          className="size-4 accent-violet-600"
                           checked={field.value}
                           onChange={(e) => field.onChange(e.target.checked)}
                         />
@@ -1198,14 +1264,20 @@ export function CampaignWizard({
                       name="totalBudget"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Total budget ($)</FormLabel>
+                          <FormLabel>Total budget (USD)</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...field}
-                              value={(field.value as number | string) ?? ""}
-                            />
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                className="pl-6"
+                                {...field}
+                                value={(field.value as number | string) ?? ""}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1216,14 +1288,20 @@ export function CampaignWizard({
                       name="dailyBudget"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Daily budget ($)</FormLabel>
+                          <FormLabel>Daily budget (USD)</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...field}
-                              value={(field.value as number | string) ?? ""}
-                            />
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                className="pl-6"
+                                {...field}
+                                value={(field.value as number | string) ?? ""}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1234,14 +1312,20 @@ export function CampaignWizard({
                       name="maxCpc"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Max CPC ($)</FormLabel>
+                          <FormLabel>Max CPC (USD)</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...field}
-                              value={(field.value as number | string) ?? ""}
-                            />
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                $
+                              </span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                className="pl-6"
+                                {...field}
+                                value={(field.value as number | string) ?? ""}
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1250,56 +1334,81 @@ export function CampaignWizard({
                   </div>
                 ) : null}
               </div>
-            </SettingsRow>
+            </div>
 
-            <Separator />
-
-            <SettingsRow
-              label="Choose a start time"
-              description="We will start the campaign right after its verification, which may take from 3 to 12 hours."
-            >
-              <div className="flex flex-wrap gap-2">
-                {START_MODES.map((mode) => (
-                  <RadioPill
-                    key={mode.value}
-                    label={mode.label}
-                    selected={startMode === mode.value}
-                    onClick={() =>
-                      form.setValue("startMode", mode.value, {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      })
-                    }
-                  />
-                ))}
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+              <div className="flex items-start gap-3 border-b p-6 sm:p-7">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-rose-100 text-orange-600">
+                  <Clock className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">
+                    Start time
+                  </h3>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Choose when you want your campaign to go live.
+                  </p>
+                </div>
               </div>
 
-              {startMode === "SCHEDULE" ? (
-                <FormField
-                  control={form.control}
-                  name="scheduledAt"
-                  render={({ field }) => (
-                    <FormItem className="mt-3 max-w-xs">
-                      <FormLabel>Scheduled for</FormLabel>
-                      <FormControl>
-                        <Input type="datetime-local" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : null}
-            </SettingsRow>
+              <div className="p-6 sm:p-7">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {START_MODES.map((mode) => (
+                    <StartModeCard
+                      key={mode.value}
+                      icon={START_MODE_ICONS[mode.value] ?? Rocket}
+                      label={mode.label}
+                      description={START_MODE_DESCRIPTIONS[mode.value]}
+                      selected={startMode === mode.value}
+                      onClick={() =>
+                        form.setValue("startMode", mode.value, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+
+                {startMode === "SCHEDULE" ? (
+                  <FormField
+                    control={form.control}
+                    name="scheduledAt"
+                    render={({ field }) => (
+                      <FormItem className="mt-4 max-w-xs">
+                        <FormLabel>Scheduled for</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+              </div>
+            </div>
             </>
             ) : null}
 
             <div className="flex items-center justify-between border-t pt-6">
               {step === 0 ? (
-                <Button type="button" variant="outline" onClick={onCancel}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  className="gap-1.5 rounded-full"
+                >
+                  <ArrowRight className="size-4 rotate-180" />
                   Cancel
                 </Button>
               ) : (
-                <Button type="button" variant="outline" onClick={goBack}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={goBack}
+                  className="gap-1.5 rounded-full"
+                >
+                  <ArrowRight className="size-4 rotate-180" />
                   Back
                 </Button>
               )}
@@ -1307,7 +1416,7 @@ export function CampaignWizard({
                 <Button
                   type="button"
                   onClick={goNext}
-                  className="brand-gradient gap-1.5 text-white"
+                  className="brand-gradient gap-1.5 rounded-full text-white"
                 >
                   Save &amp; Next
                   <ArrowRight className="size-4" />
@@ -1318,16 +1427,20 @@ export function CampaignWizard({
 
           {step === 5 ? (
           <aside className="lg:sticky lg:top-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Campaign summary</CardTitle>
+            <Card className="overflow-hidden rounded-2xl py-0">
+              <CardHeader className="gap-1 border-b bg-muted/30 py-5">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="size-4 text-violet-600" />
+                  Campaign summary
+                </CardTitle>
                 <CardDescription>
                   Review your settings before submitting.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 text-base">
+              <CardContent className="space-y-3 py-5 text-base">
                 {advertiseTarget ? (
                   <SummaryRow
+                    icon={Globe}
                     label="Advertising"
                     value={
                       advertiseTarget === "social_media"
@@ -1339,10 +1452,12 @@ export function CampaignWizard({
                   />
                 ) : null}
                 <SummaryRow
+                  icon={FileText}
                   label="Name"
                   value={campaignName || "Untitled campaign"}
                 />
                 <SummaryRow
+                  icon={Layers}
                   label="Ad unit"
                   value={
                     adFormat
@@ -1352,30 +1467,35 @@ export function CampaignWizard({
                   }
                 />
                 <SummaryRow
+                  icon={Tag}
                   label="Pricing type"
                   value={pricingModel ?? "CPM"}
                 />
                 <SummaryRow
-                  label="Budget"
+                  icon={Wallet}
+                  label="Total budget"
                   value={
                     budgetUnlimited
                       ? "Unlimited"
-                      : `$${Number(totalBudget || 0).toFixed(2)} total`
+                      : `$${Number(totalBudget || 0).toFixed(2)}`
                   }
                 />
                 {!budgetUnlimited ? (
                   <>
                     <SummaryRow
+                      icon={Coins}
                       label="Daily budget"
                       value={`$${Number(dailyBudget || 0).toFixed(2)}`}
                     />
                     <SummaryRow
+                      icon={CircleDollarSign}
                       label="Max CPC"
                       value={`$${Number(maxCpc || 0).toFixed(2)}`}
                     />
                   </>
                 ) : null}
                 <SummaryRow
+                  icon={Monitor}
                   label="Devices"
                   value={
                     targetDevices.length > 0
@@ -1384,6 +1504,7 @@ export function CampaignWizard({
                   }
                 />
                 <SummaryRow
+                  icon={MapPin}
                   label="Countries"
                   value={
                     targetCountries.length > 0
@@ -1392,6 +1513,7 @@ export function CampaignWizard({
                   }
                 />
                 <SummaryRow
+                  icon={Clock}
                   label="Start"
                   value={
                     START_MODES.find((m) => m.value === startMode)?.label ??
@@ -1399,12 +1521,24 @@ export function CampaignWizard({
                     "Start once verified"
                   }
                 />
+
+                <div className="mt-2 flex items-start gap-2.5 rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50 p-3.5">
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-fuchsia-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      You&apos;re almost there!
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Just a few more steps to launch your campaign.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
-              <CardFooter className="flex-col items-stretch gap-2">
+              <CardFooter className="flex-col items-stretch gap-2 border-t bg-muted/30 py-5">
                 {isLastStep ? (
                   <Button
                     type="submit"
-                    className="w-full brand-gradient text-white"
+                    className="w-full brand-gradient rounded-full text-white"
                     disabled={form.formState.isSubmitting}
                   >
                     {form.formState.isSubmitting
@@ -1414,7 +1548,7 @@ export function CampaignWizard({
                 ) : (
                   <Button
                     type="button"
-                    className="w-full brand-gradient text-white"
+                    className="w-full brand-gradient rounded-full text-white"
                     onClick={goNext}
                   >
                     Next
@@ -1559,6 +1693,48 @@ function AdUnitTile({
   )
 }
 
+function StartModeCard({
+  icon: Icon,
+  label,
+  description,
+  selected,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  description: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors",
+        selected
+          ? "border-orange-300 bg-orange-500/5"
+          : "border-border hover:border-orange-200 hover:bg-orange-500/5"
+      )}
+    >
+      {selected ? (
+        <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-orange-500 text-white">
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+      ) : null}
+      <Icon
+        className={cn(
+          "size-5",
+          selected ? "text-orange-600" : "text-muted-foreground"
+        )}
+      />
+      <p className="mt-1 text-sm font-semibold text-foreground">{label}</p>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </button>
+  )
+}
+
 function PricingCard({
   icon: Icon,
   label,
@@ -1621,36 +1797,21 @@ function PricingCard({
   )
 }
 
-function RadioPill({
+function SummaryRow({
+  icon: Icon,
   label,
-  selected,
-  onClick,
+  value,
 }: {
+  icon?: React.ElementType
   label: string
-  selected: boolean
-  onClick: () => void
+  value: string
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(
-        "rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors",
-        selected
-          ? "border-orange-500 bg-orange-500 text-white"
-          : "border-border text-foreground hover:border-orange-300 hover:bg-orange-500/5"
-      )}
-    >
-      {label}
-    </button>
-  )
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-foreground">{label}</span>
+      <span className="flex items-center gap-2 text-foreground">
+        {Icon ? <Icon className="size-3.5 text-muted-foreground" /> : null}
+        {label}
+      </span>
       <span className="max-w-[60%] truncate text-right font-semibold">
         {value}
       </span>
