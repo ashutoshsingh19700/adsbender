@@ -70,7 +70,7 @@ function withArticle(role: AudienceRole) {
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { refresh } = useAuth()
+  const { setUser } = useAuth()
 
   const [mode, setMode] = React.useState<"login" | "register">(
     searchParams.get("tab") === "register" ? "register" : "login"
@@ -139,10 +139,16 @@ export function LoginForm() {
     })
   }
 
-  async function afterAuth(userRole: UserRole) {
-    await refresh()
+  // The login/register/phone/Google responses already carry the full
+  // authenticated user, so this sets auth state from that directly rather
+  // than issuing a follow-up GET /auth/profile — that call re-validates the
+  // token against Supabase's Auth API (a second external round trip on top
+  // of the one login() just made) purely to fetch data already in hand,
+  // which was adding a very noticeable extra delay before the redirect.
+  function afterAuth(user: AuthUser) {
+    setUser(user)
     const next = searchParams.get("next")
-    router.push(next && next.startsWith("/") ? next : ROLE_HOME[userRole])
+    router.push(next && next.startsWith("/") ? next : ROLE_HOME[user.role])
     router.refresh()
   }
 
@@ -150,8 +156,8 @@ export function LoginForm() {
   // return an already-authenticated user (the session cookie is set by the
   // backend as part of that same request) rather than needing a follow-up
   // login() call like register() does.
-  async function handleExternalAuthSuccess(user: AuthUser) {
-    await afterAuth(user.role)
+  function handleExternalAuthSuccess(user: AuthUser) {
+    afterAuth(user)
   }
 
   async function onLogin(values: z.infer<typeof loginSchema>) {
@@ -163,7 +169,7 @@ export function LoginForm() {
     try {
       const { user } = await login({ ...values, captchaToken })
       toast.success(`Signed in as ${user.email}`)
-      await afterAuth(user.role)
+      afterAuth(user)
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Login failed")
       resetCaptcha()
@@ -196,7 +202,7 @@ export function LoginForm() {
         password: values.password,
         captchaToken: nextToken,
       })
-      await afterAuth(user.role)
+      afterAuth(user)
     } catch {
       toast.error(
         "Account created, but automatic sign-in failed — please log in below."
