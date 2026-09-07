@@ -58,8 +58,8 @@ const ADS_TXT_GUIDES: {
     value: "wordpress",
     label: "WordPress",
     steps: (token) => [
-      <>Log in to your host's control panel (cPanel, Hostinger, Bluehost, SiteGround, etc.) and open <b>File Manager</b>.</>,
-      <>Open the <code className="rounded bg-muted px-1 py-0.5 text-xs">public_html</code> folder — this is your site's root.</>,
+      <>Log in to your host&apos;s control panel (cPanel, Hostinger, Bluehost, SiteGround, etc.) and open <b>File Manager</b>.</>,
+      <>Open the <code className="rounded bg-muted px-1 py-0.5 text-xs">public_html</code> folder — this is your site&apos;s root.</>,
       <>Create a new file named exactly <code className="rounded bg-muted px-1 py-0.5 text-xs">ads.txt</code> (if one already exists, open it instead).</>,
       <>Add this line on its own, then save: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
     ],
@@ -77,16 +77,16 @@ const ADS_TXT_GUIDES: {
     value: "shopify",
     label: "Shopify",
     steps: () => [
-      <>Shopify doesn't expose a plain ads.txt editor — you'll need a small theme edit.</>,
-      <>Search the Shopify App Store for a free "ads.txt" app, or ask whoever built your theme to add it for you.</>,
-      <>If you'd rather do it yourself, our support team can walk you through the <code className="rounded bg-muted px-1 py-0.5 text-xs">templates/ads.txt.liquid</code> approach — just reach out.</>,
+      <>Shopify doesn&apos;t expose a plain ads.txt editor — you&apos;ll need a small theme edit.</>,
+      <>Search the Shopify App Store for a free &quot;ads.txt&quot; app, or ask whoever built your theme to add it for you.</>,
+      <>If you&apos;d rather do it yourself, our support team can walk you through the <code className="rounded bg-muted px-1 py-0.5 text-xs">templates/ads.txt.liquid</code> approach — just reach out.</>,
     ],
   },
   {
     value: "hosting",
     label: "GoDaddy / cPanel",
     steps: (token) => [
-      <>Log in to your hosting account and open <b>File Manager</b> (in GoDaddy, this is under "Web Hosting → Manage → File Manager").</>,
+      <>Log in to your hosting account and open <b>File Manager</b> (in GoDaddy, this is under &quot;Web Hosting → Manage → File Manager&quot;).</>,
       <>Go to the root folder of your site (often <code className="rounded bg-muted px-1 py-0.5 text-xs">public_html</code>).</>,
       <>Create or open a file named <code className="rounded bg-muted px-1 py-0.5 text-xs">ads.txt</code>.</>,
       <>Add this line and save: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{token}</code></>,
@@ -385,7 +385,7 @@ export function PublisherDashboard() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Only needed if you'd rather use your own code instead
+                        Only needed if you&apos;d rather use your own code instead
                         of the one above.
                       </FormDescription>
                       <FormMessage />

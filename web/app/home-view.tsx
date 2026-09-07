@@ -126,6 +126,22 @@ export function HomeView() {
                   </Button>
                 </span>
               </div>
+              {/* Tertiary path off the advertiser-focused hero for the
+                  other half of the network. Goes straight to /login with
+                  role + next pre-set rather than "/publisher" itself, so it
+                  skips the proxy.ts redirect chain (see the comment above)
+                  and lands signed-out visitors on the right role tab
+                  immediately; next=/publisher carries them on to the
+                  dashboard once they've signed in. */}
+              <p className="mt-4 text-sm text-muted-foreground">
+                Have a website or app instead?{" "}
+                <Link
+                  href="/login?role=PUBLISHER&next=/publisher"
+                  className="font-medium text-violet-600 underline-offset-4 hover:underline"
+                >
+                  Join as a Publisher
+                </Link>
+              </p>
             </div>
           </div>
         </div>

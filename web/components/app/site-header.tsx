@@ -82,6 +82,18 @@ export function SiteHeader() {
                   `display` in globals.css outside Tailwind's utility
                   layer, so it always wins a same-element specificity tie
                   against the `hidden` utility. */}
+              {/* Same "dropped below sm to make room" treatment as
+                  "Schedule a meeting" below — a plain text link rather than
+                  a bordered pill so it doesn't compete with the Log in /
+                  Sign up CTAs for attention; it's a secondary path into the
+                  same /login flow, just role-preselected (see
+                  home-view.tsx's hero link for the matching entry point). */}
+              <Link
+                href="/login?role=PUBLISHER&next=/publisher"
+                className="hidden shrink-0 whitespace-nowrap text-sm font-medium text-muted-foreground hover:text-violet-600 md:inline"
+              >
+                For Publishers
+              </Link>
               <span className="hidden sm:inline-flex">
                 <span className="btn-halo">
                   <Button

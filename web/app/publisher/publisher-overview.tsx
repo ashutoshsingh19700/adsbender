@@ -44,8 +44,13 @@ export function PublisherOverview({ refreshToken }: { refreshToken: number }) {
 
   React.useEffect(() => {
     let cancelled = false
-    setLoading(true)
 
+    // Deliberately doesn't reset `loading` to true here: refreshToken bumps
+    // on every zone/site mutation, and resetting to the skeleton on each of
+    // those would flash the whole overview blank for a refetch that's
+    // usually near-instant. The initial `useState(true)` above covers first
+    // mount; after that, stale numbers stay on screen until the new ones
+    // land instead of flickering out.
     Promise.all([
       getWalletSummary(),
       listPublisherSites({ pageSize: 100 }),
