@@ -78,6 +78,7 @@ import {
   AD_FORMATS,
   CONNECTION_TYPES,
   COUNTRIES,
+  countryFlag,
   DEVICES,
   GROUPED_AD_FORMATS,
   OPERATING_SYSTEMS,
@@ -222,7 +223,7 @@ export function CampaignWizard({
   )
 
   const [countryToAdd, setCountryToAdd] = React.useState("")
-  const [priceToAdd, setPriceToAdd] = React.useState("")
+  const [priceToAdd, setPriceToAdd] = React.useState("0.05")
   const [locCountry, setLocCountry] = React.useState("")
   const [locRegion, setLocRegion] = React.useState("")
   const [locCity, setLocCity] = React.useState("")
@@ -384,6 +385,30 @@ export function CampaignWizard({
     const next = { ...countryPricing }
     delete next[code]
     form.setValue("countryPricing", next, { shouldDirty: true })
+  }
+
+  function clearAllCountries() {
+    form.setValue("targetCountries", [], { shouldValidate: true, shouldDirty: true })
+    form.setValue("countryPricing", {}, { shouldDirty: true })
+  }
+
+  // Clicking a pin directly on the globe toggles that country - lets the
+  // advertiser build up a target list without touching the dropdown at all.
+  function togglePinCountry(code: string) {
+    if (targetCountries.includes(code)) {
+      removeCountry(code)
+      return
+    }
+    form.setValue("targetCountries", [...targetCountries, code], {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    form.setValue(
+      "countryPricing",
+      { ...countryPricing, [code]: Number(priceToAdd || 0.05) },
+      { shouldDirty: true }
+    )
+    setCountryToAdd(code)
   }
 
   function addLocation() {
@@ -904,20 +929,31 @@ export function CampaignWizard({
 
             {step === 3 ? (
             <>
-            <SettingsRow
-              label="Countries"
-              description="Pick a country — it lights up on the globe."
-            >
-              <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_220px]">
-                <div>
-                  <div className="flex flex-wrap items-end gap-3">
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+              <div className="grid lg:grid-cols-[minmax(0,1fr)_440px]">
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-600">
+                      <Globe className="size-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-xl font-bold tracking-tight text-foreground">
+                        Countries
+                      </h3>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        Pick a country — it lights up on the globe.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
                     <div className="grid gap-1.5">
-                      <FormLabel>Countries</FormLabel>
+                      <FormLabel>Country</FormLabel>
                       <Select
                         value={countryToAdd}
                         onValueChange={setCountryToAdd}
                       >
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Choose a country" />
                         </SelectTrigger>
                         <SelectContent>
@@ -926,6 +962,9 @@ export function CampaignWizard({
                               key={country.value}
                               value={country.value}
                             >
+                              <span className="mr-1.5">
+                                {countryFlag(country.value)}
+                              </span>
                               {country.label}
                             </SelectItem>
                           ))}
@@ -933,58 +972,112 @@ export function CampaignWizard({
                       </Select>
                     </div>
                     <div className="grid gap-1.5">
-                      <FormLabel>Price</FormLabel>
+                      <FormLabel className="flex items-center gap-1">
+                        Price (USD)
+                        <Info className="size-3.5 text-muted-foreground" />
+                      </FormLabel>
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-28"
-                        placeholder="0.00"
+                        placeholder="0.05"
                         value={priceToAdd}
                         onChange={(e) => setPriceToAdd(e.target.value)}
                       />
                     </div>
-                    <Button type="button" variant="outline" onClick={addCountry}>
+                    <Button
+                      type="button"
+                      onClick={addCountry}
+                      className="brand-gradient text-white"
+                    >
                       Add country
                     </Button>
                   </div>
 
-                  {targetCountries.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {targetCountries.map((code) => {
-                        const label =
-                          COUNTRIES.find((c) => c.value === code)?.label ??
-                          code
-                        return (
-                          <Badge key={code} variant="outline" className="gap-1.5">
-                            {label}
-                            {countryPricing[code] !== undefined
-                              ? ` · $${countryPricing[code]}`
-                              : ""}
-                            <button
-                              type="button"
-                              onClick={() => removeCountry(code)}
-                              aria-label={`Remove ${label}`}
-                            >
-                              <X className="size-3" />
-                            </button>
-                          </Badge>
-                        )
-                      })}
+                  <div className="mt-7">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">
+                        Selected countries ({targetCountries.length})
+                      </p>
+                      {targetCountries.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={clearAllCountries}
+                          className="text-sm font-medium text-indigo-600 hover:underline"
+                        >
+                          Clear all
+                        </button>
+                      ) : null}
                     </div>
-                  ) : null}
-                  <FormField
-                    control={form.control}
-                    name="targetCountries"
-                    render={() => <FormMessage />}
-                  />
+
+                    {targetCountries.length > 0 ? (
+                      <div className="mt-2 divide-y overflow-hidden rounded-xl border">
+                        {targetCountries.map((code) => {
+                          const label =
+                            COUNTRIES.find((c) => c.value === code)?.label ??
+                            code
+                          return (
+                            <div
+                              key={code}
+                              className="flex items-center justify-between gap-3 px-4 py-3"
+                            >
+                              <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                <span className="text-lg leading-none">
+                                  {countryFlag(code)}
+                                </span>
+                                {label}
+                              </span>
+                              <span className="flex items-center gap-3">
+                                <span className="text-sm font-semibold text-foreground">
+                                  ${Number(countryPricing[code] ?? 0).toFixed(2)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeCountry(code)}
+                                  aria-label={`Remove ${label}`}
+                                  className="text-muted-foreground transition-colors hover:text-destructive"
+                                >
+                                  <X className="size-4" />
+                                </button>
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-2 rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        No countries selected yet.
+                      </p>
+                    )}
+                    <FormField
+                      control={form.control}
+                      name="targetCountries"
+                      render={() => <FormMessage className="mt-2" />}
+                    />
+                  </div>
+
+                  <div className="mt-7 flex gap-3 rounded-xl border border-sky-100 bg-sky-50 p-4">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-sky-600 shadow-sm">
+                      <Globe className="size-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Tip</p>
+                      <p className="text-sm text-muted-foreground">
+                        You can add multiple countries to target a global
+                        audience.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <CountryGlobe
-                  selectedCountries={targetCountries}
-                  highlightedCountry={countryToAdd || undefined}
-                />
+                <div className="flex items-center justify-center bg-gradient-to-br from-sky-50 via-indigo-50/30 to-white p-6 sm:p-8 lg:border-l">
+                  <CountryGlobe
+                    selectedCountries={targetCountries}
+                    highlightedCountry={countryToAdd || undefined}
+                    onToggleCountry={togglePinCountry}
+                  />
+                </div>
               </div>
-            </SettingsRow>
+            </div>
             </>
             ) : null}
 

@@ -14,6 +14,9 @@ import {
 import { useAuth } from "@/app/providers/auth-provider"
 import type { UserRole } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { ROLE_HOME } from "@/lib/roles"
+import { Logo } from "@/components/app/logo"
+import { SidebarAccountFooter } from "@/components/app/sidebar-account-footer"
 
 type SidebarLink = {
   href: string
@@ -87,8 +90,18 @@ export function AppSidebar() {
   if (!user) return null
 
   return (
-    <aside className="sticky top-24 hidden h-[calc(100vh-6rem)] w-56 shrink-0 border-r bg-background md:block">
-      <AppSidebarNav />
+    <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r bg-background md:flex">
+      <Link
+        href={ROLE_HOME[user.role]}
+        className="flex items-center gap-2 border-b px-4 py-4 text-lg font-semibold tracking-tight"
+      >
+        <Logo className="h-8" />
+        <span className="sr-only">AdsBender</span>
+      </Link>
+      <div className="flex-1 overflow-y-auto">
+        <AppSidebarNav />
+      </div>
+      <SidebarAccountFooter />
     </aside>
   )
 }

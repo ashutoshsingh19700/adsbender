@@ -1,29 +1,22 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 import { useAuth } from "@/app/providers/auth-provider"
 import { BARE_CHROME_PATHS, ROLE_HOME } from "@/lib/roles"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { SignUpDialog } from "@/components/app/signup-dialog"
 import { Logo } from "@/components/app/logo"
 import { MobileSidebarTrigger } from "@/components/app/mobile-sidebar"
 
-// Signed-in nav (Websites, Statistics, Earnings, Admin, etc.) lives in the
-// left sidebar now — see components/app/app-sidebar.tsx. This bar is just
-// the brand mark plus the account menu for every route, signed in or not.
+// Signed-in nav (Websites, Statistics, Earnings, Admin, etc.) and account
+// chrome (email, role, log out) live in the left sidebar now — see
+// app-sidebar.tsx / advertiser-sidebar.tsx / sidebar-account-footer.tsx.
+// This bar is only the brand mark plus the signed-out marketing CTAs.
 export function SiteHeader() {
-  const { user, loading, logout } = useAuth()
+  const { user, loading } = useAuth()
   const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleLogout() {
-    await logout()
-    router.push("/")
-    router.refresh()
-  }
 
   // The auth pages (login/register, forgot/reset password, either role) use
   // their own minimal bar — just the logo and a contact link, no nav or
@@ -50,13 +43,35 @@ export function SiteHeader() {
     )
   }
 
+  // Signed-in chrome (logo, email, role, log out) now lives at the foot of
+  // the in-app sidebar (see sidebar-account-footer.tsx) instead of up here,
+  // freeing the full header height for page content on desktop. This bar
+  // only survives for signed-in users at mobile widths, where there's no
+  // sidebar, purely to host the drawer trigger.
+  if (!loading && user) {
+    return (
+      <header className="border-b bg-background sticky top-0 z-40 md:hidden">
+        <div className="flex h-16 items-center gap-2 px-4 sm:px-6">
+          <MobileSidebarTrigger />
+          <Link
+            href={ROLE_HOME[user.role]}
+            className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+          >
+            <Logo className="h-8" />
+            <span className="sr-only">AdsBender</span>
+          </Link>
+        </div>
+      </header>
+    )
+  }
+
   return (
     <header className="border-b bg-background sticky top-0 z-40">
       <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         <div className="flex items-center gap-2 sm:gap-3">
           <MobileSidebarTrigger />
           <Link
-            href={user ? ROLE_HOME[user.role] : "/"}
+            href="/"
             className="flex items-center gap-2.5 text-lg font-semibold tracking-tight"
           >
             <Logo className="h-10 sm:h-14 md:h-20" />
@@ -65,17 +80,7 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {loading ? null : user ? (
-            <>
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                {user.email}
-              </span>
-              <Badge variant="outline">{user.role}</Badge>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Log out
-              </Button>
-            </>
-          ) : (
+          {loading ? null : (
             <>
               {/* Least essential of the three CTAs, and it has its own
                   dedicated page — dropped below sm so "Log in" / "Sign up"

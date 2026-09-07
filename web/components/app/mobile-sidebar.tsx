@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { AppSidebarNav } from "@/components/app/app-sidebar"
 import { AdvertiserSidebarNav } from "@/components/app/advertiser-sidebar"
+import { SidebarAccountFooter } from "@/components/app/sidebar-account-footer"
 
 // Below md, both AppSidebar and AdvertiserSidebar render nothing (they're
 // `hidden md:block`) — this is the phone/tablet stand-in: a hamburger button
@@ -45,15 +46,18 @@ export function MobileSidebarTrigger() {
           <MenuIcon className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0">
+      <SheetContent side="left" className="flex w-72 flex-col p-0">
         <SheetHeader className="border-b px-4 py-4">
           <SheetTitle>Navigation</SheetTitle>
         </SheetHeader>
-        {isAdvertiser ? (
-          <AdvertiserSidebarNav onNavigate={() => setOpen(false)} />
-        ) : (
-          <AppSidebarNav onNavigate={() => setOpen(false)} />
-        )}
+        <div className="flex-1 overflow-y-auto">
+          {isAdvertiser ? (
+            <AdvertiserSidebarNav onNavigate={() => setOpen(false)} />
+          ) : (
+            <AppSidebarNav onNavigate={() => setOpen(false)} />
+          )}
+        </div>
+        <SidebarAccountFooter />
       </SheetContent>
     </Sheet>
   )

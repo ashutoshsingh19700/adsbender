@@ -14,6 +14,8 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { Logo } from "@/components/app/logo"
+import { SidebarAccountFooter } from "@/components/app/sidebar-account-footer"
 
 type LeafItem = {
   href: string
@@ -75,7 +77,7 @@ export function AdvertiserSidebarNav({
     <nav
       className={cn(
         "flex flex-col gap-1 p-4",
-        sticky && "sticky top-20"
+        sticky && "sticky top-0"
       )}
     >
       {NAV.map((item) =>
@@ -144,8 +146,18 @@ export function AdvertiserSidebarNav({
 
 export function AdvertiserSidebar() {
   return (
-    <aside className="hidden w-60 shrink-0 border-r bg-muted/30 md:block">
-      <AdvertiserSidebarNav sticky />
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r bg-muted/30 md:flex">
+      <Link
+        href="/advertiser"
+        className="flex items-center gap-2 border-b px-4 py-4 text-lg font-semibold tracking-tight"
+      >
+        <Logo className="h-8" />
+        <span className="sr-only">AdsBender</span>
+      </Link>
+      <div className="flex-1 overflow-y-auto">
+        <AdvertiserSidebarNav />
+      </div>
+      <SidebarAccountFooter />
     </aside>
   )
 }

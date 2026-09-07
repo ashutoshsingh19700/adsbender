@@ -146,6 +146,21 @@
   animation-play-state: paused;
 }
 
+/* Pulsing halo behind a selected-country pin on the campaign wizard's
+   globe (country-globe.tsx) - built inline via innerHTML there (a real DOM
+   node handed to react-globe.gl's htmlElement), so the keyframe lives here
+   globally rather than in a CSS module. */
+@keyframes globe-pin-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
 /* Exact brand CTA gradient — orange → pink → blue, matched to the
    reference "Get Started" button. Used on every primary CTA so the
    sweep is identical pixel-for-pixel everywhere. */

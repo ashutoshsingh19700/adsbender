@@ -59,6 +59,15 @@ export const COUNTRIES = [
   { value: "NZ", label: "New Zealand", lat: -40.9, lng: 174.9 },
 ]
 
+// ISO 3166-1 alpha-2 -> flag emoji, by shifting each letter into the
+// Regional Indicator Symbol block (U+1F1E6 = 'A'). Used next to country
+// names in the wizard's country picker/selected-list and the globe pins.
+export function countryFlag(code: string): string {
+  return code
+    .toUpperCase()
+    .replace(/./g, (letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+}
+
 export const DEVICES = [
   { value: "mobile", label: "Mobile" },
   { value: "desktop", label: "Desktop" },
