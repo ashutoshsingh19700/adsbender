@@ -57,6 +57,10 @@ export function CampaignsPage() {
               setTab("campaigns")
               router.replace("/advertiser/campaigns")
             }}
+            onCancel={() => {
+              setTab("campaigns")
+              router.replace("/advertiser/campaigns")
+            }}
           />
         </TabsContent>
       </Tabs>

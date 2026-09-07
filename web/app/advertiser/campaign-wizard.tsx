@@ -5,15 +5,28 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import {
+  AppWindow,
+  Apple,
+  ArrowRight,
   BellRing,
+  Bot,
   Check,
   Code2,
+  Eye,
+  Globe,
   ImageIcon,
+  Info,
   Layers,
   LayoutTemplate,
   Monitor,
+  MousePointerClick,
+  Network,
+  Signal,
   Smartphone,
   Tablet,
+  Target,
+  Terminal,
+  Wifi,
   X,
 } from "lucide-react"
 
@@ -56,9 +69,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   AD_FORMATS,
+  CONNECTION_TYPES,
   COUNTRIES,
   DEVICES,
   GROUPED_AD_FORMATS,
+  OPERATING_SYSTEMS,
   PRICING_MODELS,
   START_MODES,
   campaignSchema,
@@ -70,6 +85,20 @@ const DEVICE_ICONS: Record<string, React.ElementType> = {
   desktop: Monitor,
   mobile: Smartphone,
   tablet: Tablet,
+}
+
+const OS_ICONS: Record<string, React.ElementType> = {
+  IOS: Apple,
+  ANDROID: Bot,
+  WINDOWS: AppWindow,
+  LINUX: Terminal,
+  OTHER: Globe,
+}
+
+const CONNECTION_ICONS: Record<string, React.ElementType> = {
+  WIFI: Wifi,
+  MOBILE_DATA: Signal,
+  ALL: Network,
 }
 
 // Icons for the three pre-catalog legacy formats (see LEGACY_AD_FORMATS in
@@ -91,10 +120,30 @@ const AD_FORMAT_BADGE: Record<string, string> = {
   SOCIAL_BAR: "Best choice",
 }
 
+// getAdFormat() only knows the shared catalog, so the three legacy formats
+// (predate it — see LEGACY_AD_FORMATS in campaign-fields.ts) need their own
+// description copy for the ad-unit tiles below.
+const LEGACY_AD_FORMAT_DESCRIPTIONS: Record<string, string> = {
+  SOCIAL_BAR: "Engage users with non-intrusive notifications.",
+  NATIVE_BANNER: "Blend seamlessly with site content.",
+  IN_PAGE_PUSH: "Deliver messages while users are on your site.",
+}
+
+const PRICING_MODEL_META: Record<
+  (typeof PRICING_MODELS)[number],
+  { icon: React.ElementType; description: string }
+> = {
+  CPM: { icon: Eye, description: "Cost per 1,000 impressions" },
+  CPA: { icon: Target, description: "Cost per acquisition" },
+  CPC: { icon: MousePointerClick, description: "Cost per click" },
+}
+
 export function CampaignWizard({
   onCreated,
+  onCancel,
 }: {
   onCreated?: (campaign: Campaign) => void
+  onCancel?: () => void
 } = {}) {
   const [result, setResult] = React.useState<Campaign | null>(null)
   const [uploading, setUploading] = React.useState(false)
@@ -112,6 +161,8 @@ export function CampaignWizard({
       maxCpc: 0.5,
       targetCountries: [],
       targetDevices: [],
+      targetOperatingSystems: [],
+      connectionType: "ALL",
       creativeType: "image",
       creativeUrl: "",
       creativeHtml: "",
@@ -133,6 +184,8 @@ export function CampaignWizard({
   const maxCpc = form.watch("maxCpc")
   const targetCountries = form.watch("targetCountries") ?? []
   const targetDevices = form.watch("targetDevices") ?? []
+  const targetOperatingSystems = form.watch("targetOperatingSystems") ?? []
+  const connectionType = form.watch("connectionType") ?? "ALL"
   const adFormat = form.watch("adFormat")
   const pricingModel = form.watch("pricingModel")
   const countryPricing = form.watch("countryPricing") ?? {}
@@ -269,6 +322,17 @@ export function CampaignWizard({
     )
   }
 
+  function toggleOs(value: string) {
+    const checked = targetOperatingSystems.includes(value)
+    form.setValue(
+      "targetOperatingSystems",
+      checked
+        ? targetOperatingSystems.filter((v) => v !== value)
+        : [...targetOperatingSystems, value],
+      { shouldDirty: true }
+    )
+  }
+
   function addCountry() {
     if (!countryToAdd) return
     const price = Number(priceToAdd || 0)
@@ -373,32 +437,49 @@ export function CampaignWizard({
         <h2 className="text-xl font-semibold tracking-tight">
           Create campaign
         </h2>
-        <ol className="mt-4 flex flex-wrap gap-2">
-          {STEPS.map((s, i) => (
-            <li
-              key={s.title}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium",
-                i === step
-                  ? "border-orange-500 bg-orange-500/5 text-foreground"
-                  : i < step
-                    ? "border-border text-foreground"
-                    : "border-border text-muted-foreground"
-              )}
-            >
-              <span
+        <ol className="mt-4 flex flex-wrap overflow-hidden rounded-lg border sm:flex-nowrap">
+          {STEPS.map((s, i) => {
+            const status = i < step ? "done" : i === step ? "active" : "upcoming"
+            return (
+              <li
+                key={s.title}
                 className={cn(
-                  "flex size-4 items-center justify-center rounded-full text-[10px]",
-                  i <= step
-                    ? "bg-orange-500 text-white"
-                    : "bg-muted text-muted-foreground"
+                  "flex flex-1 items-center gap-2 border-r px-3 py-2.5 text-sm font-medium last:border-r-0 sm:px-4",
+                  status === "active" &&
+                    "-my-px rounded-lg border border-orange-300 bg-orange-500/5"
                 )}
               >
-                {i + 1}
-              </span>
-              {s.title}
-            </li>
-          ))}
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-white",
+                    status === "active"
+                      ? "brand-gradient"
+                      : status === "done"
+                        ? "bg-gradient-to-br from-indigo-500 to-violet-500"
+                        : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {status === "done" ? (
+                    <Check className="size-3.5" strokeWidth={3} />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "whitespace-nowrap",
+                    status === "active"
+                      ? "text-orange-600"
+                      : status === "done"
+                        ? "text-violet-600"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {s.title}
+                </span>
+              </li>
+            )
+          })}
         </ol>
       </div>
 
@@ -410,10 +491,6 @@ export function CampaignWizard({
           <div className="space-y-10">
             {step === 0 ? (
             <>
-            <div>
-              <h3 className="text-base font-semibold">Required Settings*</h3>
-            </div>
-
             <SettingsRow label="General">
               <FormField
                 control={form.control}
@@ -456,36 +533,98 @@ export function CampaignWizard({
               />
             </SettingsRow>
 
+            <SettingsRow
+              label="Operating system"
+              description="Filter by operating system (optional)."
+            >
+              <FormField
+                control={form.control}
+                name="targetOperatingSystems"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
+                      {OPERATING_SYSTEMS.map((os) => (
+                        <OptionTile
+                          key={os.value}
+                          icon={OS_ICONS[os.value] ?? Globe}
+                          label={os.label}
+                          selected={targetOperatingSystems.includes(os.value)}
+                          onClick={() => toggleOs(os.value)}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              label="Connection type"
+              description="Target users by their internet connection."
+            >
+              <FormField
+                control={form.control}
+                name="connectionType"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 gap-2 sm:max-w-lg sm:gap-3">
+                      {CONNECTION_TYPES.map((conn) => (
+                        <OptionTile
+                          key={conn.value}
+                          icon={CONNECTION_ICONS[conn.value] ?? Network}
+                          label={conn.label}
+                          selected={connectionType === conn.value}
+                          onClick={() =>
+                            form.setValue("connectionType", conn.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+
             </>
             ) : null}
 
             {step === 1 ? (
             <>
-            <div>
-              <h3 className="text-base font-semibold">Ad format</h3>
-            </div>
+            <FormField
+              control={form.control}
+              name="adFormat"
+              render={() => {
+                const activeGroup =
+                  GROUPED_AD_FORMATS.find(
+                    (group) => group.category === adFormatCategory
+                  ) ?? GROUPED_AD_FORMATS[0]
 
-            <SettingsRow
-              label="Ad unit & Pricing type"
-              description="Pick the ad format and how it's billed."
-            >
-              <FormField
-                control={form.control}
-                name="adFormat"
-                render={() => {
-                  const activeGroup =
-                    GROUPED_AD_FORMATS.find(
-                      (group) => group.category === adFormatCategory
-                    ) ?? GROUPED_AD_FORMATS[0]
-
-                  return (
-                    <FormItem>
-                      <div className="space-y-4">
+                return (
+                  <FormItem>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-xl font-semibold tracking-tight">
+                          Ad format
+                        </h3>
+                        <p className="mt-1 text-sm text-foreground">
+                          Choose the ad format and how it&apos;s billed.
+                        </p>
+                      </div>
+                      <div className="grid gap-1.5">
+                        <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+                          Ad unit &amp; Pricing type
+                          <Info className="size-3.5 text-muted-foreground" />
+                        </span>
                         <Select
                           value={adFormatCategory}
                           onValueChange={setAdFormatCategory}
                         >
-                          <SelectTrigger className="w-full sm:w-64">
+                          <SelectTrigger className="w-full sm:w-52">
                             <SelectValue placeholder="Choose an ad type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -499,44 +638,55 @@ export function CampaignWizard({
                             ))}
                           </SelectContent>
                         </Select>
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                          {activeGroup.formats.map((format) => (
-                            <AdUnitTile
-                              key={format.value}
-                              icon={AD_FORMAT_ICONS[format.value] ?? Layers}
-                              label={format.label}
-                              sublabel={
-                                getAdFormat(format.value)
-                                  ? `${getAdFormat(format.value)!.recommendedWidth}×${
-                                      getAdFormat(format.value)!.recommendedHeight
-                                    }`
-                                  : undefined
-                              }
-                              description={getAdFormat(format.value)?.description}
-                              badge={AD_FORMAT_BADGE[format.value]}
-                              selected={adFormat === format.value}
-                              onClick={() =>
-                                form.setValue("adFormat", format.value, {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                })
-                              }
-                            />
-                          ))}
-                        </div>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )
-                }}
-              />
+                    </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {activeGroup.formats.map((format) => (
+                        <AdUnitTile
+                          key={format.value}
+                          icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                          label={format.label}
+                          sublabel={
+                            getAdFormat(format.value)
+                              ? `${getAdFormat(format.value)!.recommendedWidth}×${
+                                  getAdFormat(format.value)!.recommendedHeight
+                                }`
+                              : undefined
+                          }
+                          description={
+                            getAdFormat(format.value)?.description ??
+                            LEGACY_AD_FORMAT_DESCRIPTIONS[format.value]
+                          }
+                          badge={AD_FORMAT_BADGE[format.value]}
+                          selected={adFormat === format.value}
+                          onClick={() =>
+                            form.setValue("adFormat", format.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+
+            <div>
+              <h3 className="text-base font-semibold">Pricing type</h3>
+              <p className="mt-1 text-sm text-foreground">
+                Select how you want to be billed for this campaign.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {PRICING_MODELS.map((model) => (
-                  <RadioPill
+                  <PricingCard
                     key={model}
+                    icon={PRICING_MODEL_META[model].icon}
                     label={model}
+                    description={PRICING_MODEL_META[model].description}
                     selected={pricingModel === model}
                     onClick={() =>
                       form.setValue("pricingModel", model, {
@@ -547,7 +697,7 @@ export function CampaignWizard({
                   />
                 ))}
               </div>
-            </SettingsRow>
+            </div>
             </>
             ) : null}
 
@@ -978,21 +1128,23 @@ export function CampaignWizard({
             ) : null}
 
             <div className="flex items-center justify-between border-t pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={goBack}
-                disabled={step === 0}
-              >
-                Back
-              </Button>
+              {step === 0 ? (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={goBack}>
+                  Back
+                </Button>
+              )}
               {!isLastStep ? (
                 <Button
                   type="button"
                   onClick={goNext}
-                  className="brand-gradient text-white"
+                  className="brand-gradient gap-1.5 text-white"
                 >
-                  Next
+                  Save &amp; Next
+                  <ArrowRight className="size-4" />
                 </Button>
               ) : null}
             </div>
@@ -1154,12 +1306,12 @@ function OptionTile({
       className={cn(
         "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
-          ? "border-blue-500 tile-shade text-foreground"
-          : "border-border text-foreground tile-hover hover:border-blue-500"
+          ? "border-rose-400 bg-rose-50 text-rose-600 dark:bg-rose-950/20"
+          : "border-border text-foreground hover:border-rose-300 hover:bg-rose-50/40 dark:hover:bg-rose-950/10"
       )}
     >
       {selected ? (
-        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-rose-500 text-white">
           <Check className="size-3" strokeWidth={3} />
         </span>
       ) : null}
@@ -1191,31 +1343,91 @@ function AdUnitTile({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      title={description}
       className={cn(
-        "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-md border p-4 text-center text-base font-medium transition-colors",
+        "relative flex min-h-[190px] flex-col items-start gap-3 rounded-lg border p-5 text-left transition-colors",
         selected
-          ? "border-blue-500 tile-shade text-foreground"
-          : "border-border text-foreground tile-hover hover:border-blue-500"
+          ? "border-blue-500 tile-shade"
+          : "border-border tile-hover hover:border-blue-300"
       )}
     >
-      {badge ? (
-        <Badge className="absolute -top-2 right-2" variant="secondary">
-          {badge}
-        </Badge>
+      {badge || selected ? (
+        <div className="absolute right-4 top-4 flex items-center gap-1.5">
+          {badge ? (
+            <Badge className="border-transparent bg-violet-100 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/20 dark:text-violet-300">
+              {badge}
+            </Badge>
+          ) : null}
+          {selected ? (
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+              <Check className="size-3" strokeWidth={3} />
+            </span>
+          ) : null}
+        </div>
       ) : null}
-      {selected ? (
-        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
-          <Check className="size-3" strokeWidth={3} />
-        </span>
-      ) : null}
-      <Icon className="size-6" />
-      <span>{label}</span>
-      {sublabel ? (
-        <span className="text-sm font-normal text-foreground">
-          {sublabel}
-        </span>
-      ) : null}
+      <Icon className="size-6 text-foreground" />
+      <div>
+        <p className="text-base font-semibold text-foreground">
+          {label}
+          {sublabel ? (
+            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+              {sublabel}
+            </span>
+          ) : null}
+        </p>
+        {description ? (
+          <p className="mt-1 text-sm text-foreground">{description}</p>
+        ) : null}
+      </div>
+    </button>
+  )
+}
+
+function PricingCard({
+  icon: Icon,
+  label,
+  description,
+  selected,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  description: string
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border p-4 text-left transition-colors",
+        selected
+          ? "border-orange-400 bg-orange-500/5"
+          : "border-border hover:border-orange-300 hover:bg-orange-500/5"
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-full",
+          selected
+            ? "brand-gradient text-white"
+            : "bg-muted text-muted-foreground"
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <div>
+        <p
+          className={cn(
+            "text-base font-semibold",
+            selected ? "text-orange-600" : "text-foreground"
+          )}
+        >
+          {label}
+        </p>
+        <p className="text-sm text-foreground">{description}</p>
+      </div>
     </button>
   )
 }
@@ -1238,7 +1450,7 @@ function RadioPill({
         "rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors",
         selected
           ? "border-orange-500 bg-orange-500 text-white"
-          : "border-border text-foreground hover:border-foreground/30"
+          : "border-border text-foreground hover:border-orange-300 hover:bg-orange-500/5"
       )}
     >
       {label}

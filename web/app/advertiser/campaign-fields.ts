@@ -65,6 +65,20 @@ export const DEVICES = [
   { value: "tablet", label: "Tablet" },
 ]
 
+export const OPERATING_SYSTEMS = [
+  { value: "IOS", label: "iOS" },
+  { value: "ANDROID", label: "Android" },
+  { value: "WINDOWS", label: "Windows" },
+  { value: "LINUX", label: "Linux" },
+  { value: "OTHER", label: "Other" },
+]
+
+export const CONNECTION_TYPES = [
+  { value: "WIFI", label: "Wi-Fi" },
+  { value: "MOBILE_DATA", label: "Mobile Data" },
+  { value: "ALL", label: "All Connections" },
+] as const
+
 // Mirrors CampaignAdFormat in schema.prisma. Stored on the campaign but not
 // yet read by AdEngineController's serving logic - see the comment there.
 // The three formats below (Social Bar, Native Banner, In-Page Push) predate
@@ -136,6 +150,13 @@ export const campaignSchema = z
       .array(z.string())
       .min(1, "Select at least one country"),
     targetDevices: z.array(z.string()).min(1, "Select at least one device"),
+    // Optional refinements — narrow delivery further within the selected
+    // devices/countries. Unlike targetDevices, an empty array here means
+    // "no OS filter" rather than "select at least one".
+    targetOperatingSystems: z.array(z.string()).default([]),
+    connectionType: z
+      .enum(["WIFI", "MOBILE_DATA", "ALL"])
+      .default("ALL"),
     creativeType: z.enum(["image", "html"]),
     creativeUrl: z.string().optional(),
     creativeHtml: z.string().optional(),
