@@ -157,7 +157,7 @@ export const campaignSchema = z
     connectionType: z
       .enum(["WIFI", "MOBILE_DATA", "ALL"])
       .default("ALL"),
-    creativeType: z.enum(["image", "html"]),
+    creativeType: z.enum(["image", "video", "html"]),
     creativeUrl: z.string().optional(),
     creativeHtml: z.string().optional(),
     // Required + auto-wrapped for creativeType "image" (AdEngineController
@@ -204,7 +204,7 @@ export const campaignSchema = z
       })
     }
     if (
-      data.creativeType === "image" &&
+      (data.creativeType === "image" || data.creativeType === "video") &&
       (!data.creativeUrl || data.creativeUrl.length < 8)
     ) {
       ctx.addIssue({
@@ -223,7 +223,7 @@ export const campaignSchema = z
         message: "Creative HTML is required (min 8 characters)",
       })
     }
-    if (data.creativeType === "image") {
+    if (data.creativeType === "image" || data.creativeType === "video") {
       if (!data.destinationUrl) {
         ctx.addIssue({
           code: "custom",

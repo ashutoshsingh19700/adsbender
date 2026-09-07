@@ -20,7 +20,7 @@ import { AdvertiserService } from './advertiser.service';
 import {
   ALLOWED_CREATIVE_MIME_TYPES,
   CreativeUploadService,
-  MAX_CREATIVE_UPLOAD_BYTES,
+  MAX_VIDEO_CREATIVE_UPLOAD_BYTES,
 } from './creative-upload.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
@@ -43,7 +43,9 @@ export class AdvertiserController {
   @Post('creatives/upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: MAX_CREATIVE_UPLOAD_BYTES },
+      // Upper bound covers the largest allowed type (video); the service
+      // enforces the tighter per-type limit once it knows the mimetype.
+      limits: { fileSize: MAX_VIDEO_CREATIVE_UPLOAD_BYTES },
       fileFilter: (_req, file, callback) => {
         if (!ALLOWED_CREATIVE_MIME_TYPES.includes(file.mimetype)) {
           callback(

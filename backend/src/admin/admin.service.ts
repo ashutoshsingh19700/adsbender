@@ -217,6 +217,23 @@ export class AdminService {
     return { platformFeeBps, platformFeePercent: platformFeeBps / 100 };
   }
 
+  async getAdFormatPricing() {
+    return this.platformSettingsService.getAdFormatPricing();
+  }
+
+  async updateAdFormatPricing(dto: {
+    adFormat: string;
+    cpm: number;
+    cpa: number;
+    cpc: number;
+  }) {
+    return this.platformSettingsService.updateAdFormatPricing(dto.adFormat, {
+      cpm: dto.cpm,
+      cpa: dto.cpa,
+      cpc: dto.cpc,
+    });
+  }
+
   async updatePlatformFee(platformFeeBps: number) {
     const updated =
       await this.platformSettingsService.updatePlatformFeeBps(platformFeeBps);

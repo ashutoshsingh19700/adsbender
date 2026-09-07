@@ -59,7 +59,10 @@ export class AdvertiserService {
       throw new BadRequestException('DAILY_BUDGET_EXCEEDS_TOTAL_BUDGET');
     }
 
-    if (dto.creativeType === 'image' && !dto.creativeUrl) {
+    if (
+      (dto.creativeType === 'image' || dto.creativeType === 'video') &&
+      !dto.creativeUrl
+    ) {
       throw new BadRequestException('CREATIVE_URL_REQUIRED');
     }
 
@@ -67,7 +70,10 @@ export class AdvertiserService {
       throw new BadRequestException('CREATIVE_HTML_REQUIRED');
     }
 
-    if (dto.creativeType === 'image' && !dto.destinationUrl) {
+    if (
+      (dto.creativeType === 'image' || dto.creativeType === 'video') &&
+      !dto.destinationUrl
+    ) {
       throw new BadRequestException('DESTINATION_URL_REQUIRED');
     }
 

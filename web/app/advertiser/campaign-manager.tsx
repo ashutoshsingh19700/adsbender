@@ -768,6 +768,7 @@ function CampaignEditDialog({
   // Mirrors campaign-wizard.tsx's handleFileSelected — see the comment
   // there for why the size check is duplicated from the backend.
   const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+  const MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024
 
   async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -775,8 +776,12 @@ function CampaignEditDialog({
 
     if (!file) return
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error("Image is too large (max 5 MB)")
+    const isVideo = file.type.startsWith("video/")
+    const maxBytes = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_UPLOAD_BYTES
+    if (file.size > maxBytes) {
+      toast.error(
+        `${isVideo ? "Video" : "Image"} is too large (max ${maxBytes / (1024 * 1024)} MB)`
+      )
       return
     }
 
@@ -787,7 +792,7 @@ function CampaignEditDialog({
         shouldValidate: true,
         shouldDirty: true,
       })
-      toast.success("Image uploaded")
+      toast.success(isVideo ? "Video uploaded" : "Image uploaded")
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Upload failed")
     } finally {
@@ -989,6 +994,7 @@ function CampaignEditDialog({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="image">Image</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
                       <SelectItem value="html">HTML</SelectItem>
                     </SelectContent>
                   </Select>
@@ -997,20 +1003,28 @@ function CampaignEditDialog({
               )}
             />
 
-            {creativeType === "image" ? (
+            {creativeType === "image" || creativeType === "video" ? (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <FormLabel>Upload image</FormLabel>
+                  <FormLabel>
+                    {creativeType === "video" ? "Upload video" : "Upload image"}
+                  </FormLabel>
                   <Input
                     type="file"
-                    accept="image/png,image/jpeg,image/gif,image/webp"
+                    accept={
+                      creativeType === "video"
+                        ? "video/mp4,video/webm"
+                        : "image/png,image/jpeg,image/gif,image/webp"
+                    }
                     disabled={uploading}
                     onChange={handleFileSelected}
                   />
                   <p className="text-sm text-muted-foreground">
                     {uploading
                       ? "Uploading..."
-                      : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                      : creativeType === "video"
+                        ? "MP4 or WEBM, up to 50 MB. Fills the URL below automatically — or paste one yourself."
+                        : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
                   </p>
                 </div>
 

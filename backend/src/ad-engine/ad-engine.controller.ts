@@ -192,6 +192,16 @@ export class AdEngineController {
       return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${image}</a>`;
     }
 
+    if (campaign.creativeType === 'video' && campaign.creativeUrl) {
+      const video = `<video src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" autoplay muted loop playsinline style="display:block;max-width:100%;height:auto;"></video>`;
+
+      if (!campaign.destinationUrl) {
+        return video;
+      }
+
+      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${video}</a>`;
+    }
+
     return `<a href="/api/v1/trap" style="display:none !important;"></a>`;
   }
 

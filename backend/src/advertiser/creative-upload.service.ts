@@ -16,6 +16,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 export const CREATIVES_BUCKET = 'campaign-creatives';
 
 export const MAX_CREATIVE_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_VIDEO_CREATIVE_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
 
 // Extension is derived from the (allowlisted) mimetype rather than trusted
 // from the client-supplied filename, which could carry anything.
@@ -24,7 +25,11 @@ const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
   'image/webp': 'webp',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
 };
+
+const VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/webm']);
 
 export const ALLOWED_CREATIVE_MIME_TYPES = Object.keys(EXTENSION_BY_MIME_TYPE);
 
@@ -47,6 +52,14 @@ export class CreativeUploadService {
     if (!extension) {
       throw new BadRequestException(
         `Unsupported file type "${file.mimetype}". Allowed: ${ALLOWED_CREATIVE_MIME_TYPES.join(', ')}`,
+      );
+    }
+
+    const isVideo = VIDEO_MIME_TYPES.has(file.mimetype);
+    const maxBytes = isVideo ? MAX_VIDEO_CREATIVE_UPLOAD_BYTES : MAX_CREATIVE_UPLOAD_BYTES;
+    if (file.size > maxBytes) {
+      throw new BadRequestException(
+        `File is too large (max ${Math.floor(maxBytes / (1024 * 1024))} MB)`,
       );
     }
 
@@ -94,7 +107,7 @@ export class CreativeUploadService {
         CREATIVES_BUCKET,
         {
           public: true,
-          fileSizeLimit: MAX_CREATIVE_UPLOAD_BYTES,
+          fileSizeLimit: MAX_VIDEO_CREATIVE_UPLOAD_BYTES,
         },
       );
 

@@ -372,6 +372,16 @@ export function uploadCreativeFile(file: File) {
   })
 }
 
+export type AdFormatRate = { cpm: number; cpa: number; cpc: number }
+export type AdFormatPricing = Record<string, AdFormatRate>
+
+// Admin-editable rate card for every ad format - see the "Pricing" tab of
+// the admin dashboard. Any authenticated role can read it; only admins can
+// write it (adminUpdateAdFormatPricing below).
+export function getAdFormatPricing() {
+  return apiFetch<AdFormatPricing>("/api/v1/config/ad-format-pricing")
+}
+
 export function createCampaign(input: CreateCampaignInput) {
   return apiFetch<{ message: string; campaign: Campaign }>(
     "/api/v1/advertiser/campaigns",
@@ -559,6 +569,22 @@ export function getAdvertiserTrafficQuality(params: {
 
 export function adminGetRevenueSummary() {
   return apiFetch<RevenueSummary>("/api/v1/admin/revenue/summary")
+}
+
+// --- Admin: ad format pricing ---
+
+export function adminGetAdFormatPricing() {
+  return apiFetch<AdFormatPricing>("/api/v1/admin/settings/ad-format-pricing")
+}
+
+export function adminUpdateAdFormatPricing(
+  adFormat: string,
+  rate: AdFormatRate
+) {
+  return apiFetch<AdFormatPricing>(
+    "/api/v1/admin/settings/ad-format-pricing",
+    { method: "PATCH", body: JSON.stringify({ adFormat, ...rate }) }
+  )
 }
 
 // --- Admin: campaign review, users, publisher sites ---

@@ -25,7 +25,7 @@ export type CampaignStatus =
   | "COMPLETED"
   | "ARCHIVED"
 
-export type CreativeType = "image" | "html"
+export type CreativeType = "image" | "video" | "html"
 
 // Mirrors CampaignAdFormat in schema.prisma - kept as `string` rather than a
 // literal union since the full set of values lives in one place,

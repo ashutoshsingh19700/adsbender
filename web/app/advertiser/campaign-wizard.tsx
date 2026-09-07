@@ -26,11 +26,18 @@ import {
   Tablet,
   Target,
   Terminal,
+  Video,
   Wifi,
   X,
 } from "lucide-react"
 
-import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
+import {
+  ApiError,
+  createCampaign,
+  getAdFormatPricing,
+  uploadCreativeFile,
+  type AdFormatPricing,
+} from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
@@ -151,6 +158,17 @@ export function CampaignWizard({
   const [advertiseTarget, setAdvertiseTarget] =
     React.useState<AdvertiseTarget | null>(null)
   const [step, setStep] = React.useState(0)
+  const [adFormatPricing, setAdFormatPricing] =
+    React.useState<AdFormatPricing>({})
+
+  React.useEffect(() => {
+    getAdFormatPricing()
+      .then(setAdFormatPricing)
+      .catch(() => {
+        // Non-fatal - the wizard still works without rate previews, they
+        // just won't render until this succeeds.
+      })
+  }, [])
 
   const form = useForm<CampaignFormInput, unknown, CampaignFormOutput>({
     resolver: zodResolver(campaignSchema),
@@ -267,10 +285,12 @@ export function CampaignWizard({
   }
 
   // Mirrors the backend's ALLOWED_CREATIVE_MIME_TYPES /
-  // MAX_CREATIVE_UPLOAD_BYTES (see creative-upload.service.ts) — checked
-  // here too so the advertiser gets instant feedback instead of waiting on
-  // a round trip for a file the server will reject anyway.
+  // MAX_CREATIVE_UPLOAD_BYTES / MAX_VIDEO_CREATIVE_UPLOAD_BYTES (see
+  // creative-upload.service.ts) — checked here too so the advertiser gets
+  // instant feedback instead of waiting on a round trip for a file the
+  // server will reject anyway.
   const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+  const MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024
 
   async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -278,8 +298,12 @@ export function CampaignWizard({
 
     if (!file) return
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error("Image is too large (max 5 MB)")
+    const isVideo = file.type.startsWith("video/")
+    const maxBytes = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_UPLOAD_BYTES
+    if (file.size > maxBytes) {
+      toast.error(
+        `${isVideo ? "Video" : "Image"} is too large (max ${maxBytes / (1024 * 1024)} MB)`
+      )
       return
     }
 
@@ -290,7 +314,7 @@ export function CampaignWizard({
         shouldValidate: true,
         shouldDirty: true,
       })
-      toast.success("Image uploaded")
+      toast.success(isVideo ? "Video uploaded" : "Image uploaded")
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Upload failed")
     } finally {
@@ -486,7 +510,10 @@ export function CampaignWizard({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+          className={cn(
+            "grid gap-8 lg:items-start",
+            step === 5 ? "lg:grid-cols-[minmax(0,1fr)_320px]" : "lg:grid-cols-1",
+          )}
         >
           <div className="space-y-10">
             {step === 0 ? (
@@ -659,6 +686,7 @@ export function CampaignWizard({
                             LEGACY_AD_FORMAT_DESCRIPTIONS[format.value]
                           }
                           badge={AD_FORMAT_BADGE[format.value]}
+                          rate={adFormatPricing[format.value]}
                           selected={adFormat === format.value}
                           onClick={() =>
                             form.setValue("adFormat", format.value, {
@@ -687,6 +715,13 @@ export function CampaignWizard({
                     icon={PRICING_MODEL_META[model].icon}
                     label={model}
                     description={PRICING_MODEL_META[model].description}
+                    price={
+                      adFormat
+                        ? adFormatPricing[adFormat]?.[
+                            model.toLowerCase() as "cpm" | "cpa" | "cpc"
+                          ]
+                        : undefined
+                    }
                     selected={pricingModel === model}
                     onClick={() =>
                       form.setValue("pricingModel", model, {
@@ -731,13 +766,24 @@ export function CampaignWizard({
                   render={() => (
                     <FormItem>
                       <FormLabel>Creative type</FormLabel>
-                      <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+                      <div className="grid grid-cols-3 gap-3 sm:max-w-md">
                         <OptionTile
                           icon={ImageIcon}
                           label="Image"
                           selected={creativeType === "image"}
                           onClick={() =>
                             form.setValue("creativeType", "image", {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                        <OptionTile
+                          icon={Video}
+                          label="Video"
+                          selected={creativeType === "video"}
+                          onClick={() =>
+                            form.setValue("creativeType", "video", {
                               shouldValidate: true,
                               shouldDirty: true,
                             })
@@ -760,20 +806,28 @@ export function CampaignWizard({
                   )}
                 />
 
-                {creativeType === "image" ? (
+                {creativeType === "image" || creativeType === "video" ? (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <FormLabel>Upload image</FormLabel>
+                      <FormLabel>
+                        {creativeType === "video" ? "Upload video" : "Upload image"}
+                      </FormLabel>
                       <Input
                         type="file"
-                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        accept={
+                          creativeType === "video"
+                            ? "video/mp4,video/webm"
+                            : "image/png,image/jpeg,image/gif,image/webp"
+                        }
                         disabled={uploading}
                         onChange={handleFileSelected}
                       />
                       <p className="text-base text-foreground">
                         {uploading
                           ? "Uploading..."
-                          : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                          : creativeType === "video"
+                            ? "MP4 or WEBM, up to 50 MB. Fills the URL below automatically — or paste one yourself."
+                            : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
                       </p>
                     </div>
 
@@ -785,7 +839,11 @@ export function CampaignWizard({
                           <FormLabel>Creative URL</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="https://cdn.example.com/creative.png"
+                              placeholder={
+                                creativeType === "video"
+                                  ? "https://cdn.example.com/creative.mp4"
+                                  : "https://cdn.example.com/creative.png"
+                              }
                               {...field}
                             />
                           </FormControl>
@@ -795,18 +853,33 @@ export function CampaignWizard({
                     />
 
                     {form.watch("creativeUrl") ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
-                      <img
-                        src={form.watch("creativeUrl")}
-                        alt="Creative preview"
-                        className="max-h-48 rounded-md border object-contain"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none"
-                        }}
-                        onLoad={(event) => {
-                          event.currentTarget.style.display = "block"
-                        }}
-                      />
+                      creativeType === "video" ? (
+                        <video
+                          src={form.watch("creativeUrl")}
+                          controls
+                          muted
+                          className="max-h-48 rounded-md border"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none"
+                          }}
+                          onLoadedData={(event) => {
+                            event.currentTarget.style.display = "block"
+                          }}
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
+                        <img
+                          src={form.watch("creativeUrl")}
+                          alt="Creative preview"
+                          className="max-h-48 rounded-md border object-contain"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none"
+                          }}
+                          onLoad={(event) => {
+                            event.currentTarget.style.display = "block"
+                          }}
+                        />
+                      )
                     ) : null}
                   </div>
                 ) : (
@@ -1150,6 +1223,7 @@ export function CampaignWizard({
             </div>
           </div>
 
+          {step === 5 ? (
           <aside className="lg:sticky lg:top-6">
             <Card>
               <CardHeader>
@@ -1259,6 +1333,7 @@ export function CampaignWizard({
               </CardFooter>
             </Card>
           </aside>
+          ) : null}
         </form>
       </Form>
     </div>
@@ -1327,6 +1402,7 @@ function AdUnitTile({
   sublabel,
   description,
   badge,
+  rate,
   selected,
   onClick,
 }: {
@@ -1335,6 +1411,7 @@ function AdUnitTile({
   sublabel?: string
   description?: string
   badge?: string
+  rate?: { cpm: number; cpa: number; cpc: number }
   selected: boolean
   onClick: () => void
 }) {
@@ -1345,9 +1422,7 @@ function AdUnitTile({
       onClick={onClick}
       className={cn(
         "relative flex min-h-[190px] flex-col items-start gap-3 rounded-lg border p-5 text-left transition-colors",
-        selected
-          ? "border-blue-500 tile-shade"
-          : "border-border tile-hover hover:border-blue-300"
+        selected ? "tile-shade" : "border-border tile-hover"
       )}
     >
       {badge || selected ? (
@@ -1358,7 +1433,7 @@ function AdUnitTile({
             </Badge>
           ) : null}
           {selected ? (
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
               <Check className="size-3" strokeWidth={3} />
             </span>
           ) : null}
@@ -1378,6 +1453,15 @@ function AdUnitTile({
           <p className="mt-1 text-sm text-foreground">{description}</p>
         ) : null}
       </div>
+      {rate ? (
+        <p className="mt-auto text-xs text-muted-foreground">
+          From{" "}
+          <span className="font-semibold text-foreground">
+            ${rate.cpm.toFixed(2)}
+          </span>{" "}
+          CPM · ${rate.cpa.toFixed(2)} CPA · ${rate.cpc.toFixed(2)} CPC
+        </p>
+      ) : null}
     </button>
   )
 }
@@ -1386,12 +1470,14 @@ function PricingCard({
   icon: Icon,
   label,
   description,
+  price,
   selected,
   onClick,
 }: {
   icon: React.ElementType
   label: string
   description: string
+  price?: number
   selected: boolean
   onClick: () => void
 }) {
@@ -1428,6 +1514,16 @@ function PricingCard({
         </p>
         <p className="text-sm text-foreground">{description}</p>
       </div>
+      {price !== undefined ? (
+        <p
+          className={cn(
+            "ml-auto shrink-0 text-base font-semibold",
+            selected ? "text-orange-600" : "text-foreground"
+          )}
+        >
+          ${price.toFixed(2)}
+        </p>
+      ) : null}
     </button>
   )
 }

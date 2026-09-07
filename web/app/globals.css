@@ -166,19 +166,23 @@
   );
 }
 
-/* Selected/hover shade for the wizard's option & ad-unit tiles — a soft
-   blue → lavender → pink wash, matched to the reference "Social Bar" card.
-   .tile-shade paints it on the selected tile; .tile-hover previews the
-   same wash when hovering an unselected tile. Pairs with a blue outline
-   (border-blue-500) applied via Tailwind on the tiles themselves. */
+/* Selected/hover look for the wizard's ad-unit tiles — a soft blue →
+   lavender → pink wash fill plus the same orange → pink → blue sweep as
+   .brand-gradient painted as the border (double-background trick: the wash
+   clipped to padding-box as the interior fill, the brand gradient clipped
+   to border-box behind it so it reads as a gradient ring). Matched to the
+   reference "Social Bar" card. .tile-shade paints it on the selected tile;
+   .tile-hover previews the identical look when hovering ANY unselected
+   tile, not just Social Bar. */
 .tile-shade,
 .tile-hover:hover {
-  background-image: linear-gradient(
-    150deg,
-    #eaf2ff 0%,
-    #f0ecfd 52%,
-    #fdeef6 100%
-  );
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  background-image:
+    linear-gradient(150deg, #eaf2ff 0%, #f0ecfd 52%, #fdeef6 100%),
+    linear-gradient(95deg, #f97a24 0%, #f23d6e 52%, #4a6ef5 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 
 /* Pill-button halo + shine, used on header CTAs */

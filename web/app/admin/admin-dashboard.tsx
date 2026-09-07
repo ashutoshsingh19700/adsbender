@@ -8,6 +8,7 @@ import { AdminOverview } from "./admin-overview"
 import { BlacklistPanel } from "./blacklist-panel"
 import { CampaignReviewPanel } from "./campaign-review-panel"
 import { PayoutsPanel } from "./payouts-panel"
+import { PricingPanel } from "./pricing-panel"
 import { RevenuePanel } from "./revenue-panel"
 import { SitesPanel } from "./sites-panel"
 import { AdminTrafficQualityPanel } from "./traffic-quality-panel"
@@ -35,6 +36,7 @@ export function AdminDashboard() {
         <TabsList>
           <TabsTrigger value="campaigns">Campaign Review</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="payouts">Payouts</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="sites">Sites</TabsTrigger>
@@ -49,6 +51,9 @@ export function AdminDashboard() {
         </TabsContent>
         <TabsContent value="revenue" className="pt-4">
           <RevenuePanel />
+        </TabsContent>
+        <TabsContent value="pricing" className="pt-4">
+          <PricingPanel />
         </TabsContent>
         <TabsContent value="payouts" className="pt-4">
           <PayoutsPanel />
