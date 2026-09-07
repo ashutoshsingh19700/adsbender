@@ -989,7 +989,7 @@ export function CampaignWizard({
                 <Button
                   type="button"
                   onClick={goNext}
-                  className="bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                  className="brand-gradient text-white"
                 >
                   Next
                 </Button>
@@ -1084,7 +1084,7 @@ export function CampaignWizard({
                 {isLastStep ? (
                   <Button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                    className="w-full brand-gradient text-white"
                     disabled={form.formState.isSubmitting}
                   >
                     {form.formState.isSubmitting
@@ -1094,7 +1094,7 @@ export function CampaignWizard({
                 ) : (
                   <Button
                     type="button"
-                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                    className="w-full brand-gradient text-white"
                     onClick={goNext}
                   >
                     Next

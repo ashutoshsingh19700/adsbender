@@ -127,7 +127,7 @@ export function SignUpDialog() {
                 </ul>
                 <Button
                   asChild
-                  className="mt-3 w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600"
+                  className="mt-3 w-full brand-gradient text-white"
                 >
                   <Link
                     href={`/login?tab=register&role=${path.role}`}

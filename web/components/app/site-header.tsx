@@ -91,7 +91,7 @@ export function SiteHeader() {
                   <Button
                     asChild
                     size="lg"
-                    className="btn-shine rounded-full bg-gradient-to-r from-orange-500 to-pink-500 px-6 text-white hover:from-orange-600 hover:to-pink-600"
+                    className="btn-shine brand-gradient rounded-full px-6 text-white"
                   >
                     <Link href="/schedule-meeting">Schedule a meeting</Link>
                   </Button>
