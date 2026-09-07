@@ -5,21 +5,47 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import {
+  AppWindow,
+  Apple,
+  ArrowRight,
   BellRing,
+  Bot,
+  Check,
   Code2,
+  Eye,
+  Globe,
   ImageIcon,
+  Info,
   Layers,
   LayoutTemplate,
   Monitor,
+  MousePointerClick,
+  Network,
+  Signal,
   Smartphone,
   Tablet,
+  Target,
+  Terminal,
+  Video,
+  Wifi,
   X,
 } from "lucide-react"
 
-import { ApiError, createCampaign, uploadCreativeFile } from "@/lib/api"
+import {
+  ApiError,
+  createCampaign,
+  getAdFormatPricing,
+  uploadCreativeFile,
+  type AdFormatPricing,
+} from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
+import {
+  AdvertiseTargetDialog,
+  type AdvertiseTarget,
+} from "@/app/advertiser/advertise-target-dialog"
+import { CountryGlobe } from "@/app/advertiser/country-globe"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -50,9 +76,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   AD_FORMATS,
+  CONNECTION_TYPES,
   COUNTRIES,
+  countryFlag,
   DEVICES,
   GROUPED_AD_FORMATS,
+  OPERATING_SYSTEMS,
   PRICING_MODELS,
   START_MODES,
   campaignSchema,
@@ -64,6 +93,20 @@ const DEVICE_ICONS: Record<string, React.ElementType> = {
   desktop: Monitor,
   mobile: Smartphone,
   tablet: Tablet,
+}
+
+const OS_ICONS: Record<string, React.ElementType> = {
+  IOS: Apple,
+  ANDROID: Bot,
+  WINDOWS: AppWindow,
+  LINUX: Terminal,
+  OTHER: Globe,
+}
+
+const CONNECTION_ICONS: Record<string, React.ElementType> = {
+  WIFI: Wifi,
+  MOBILE_DATA: Signal,
+  ALL: Network,
 }
 
 // Icons for the three pre-catalog legacy formats (see LEGACY_AD_FORMATS in
@@ -85,13 +128,48 @@ const AD_FORMAT_BADGE: Record<string, string> = {
   SOCIAL_BAR: "Best choice",
 }
 
+// getAdFormat() only knows the shared catalog, so the three legacy formats
+// (predate it — see LEGACY_AD_FORMATS in campaign-fields.ts) need their own
+// description copy for the ad-unit tiles below.
+const LEGACY_AD_FORMAT_DESCRIPTIONS: Record<string, string> = {
+  SOCIAL_BAR: "Engage users with non-intrusive notifications.",
+  NATIVE_BANNER: "Blend seamlessly with site content.",
+  IN_PAGE_PUSH: "Deliver messages while users are on your site.",
+}
+
+const PRICING_MODEL_META: Record<
+  (typeof PRICING_MODELS)[number],
+  { icon: React.ElementType; description: string }
+> = {
+  CPM: { icon: Eye, description: "Cost per 1,000 impressions" },
+  CPA: { icon: Target, description: "Cost per acquisition" },
+  CPC: { icon: MousePointerClick, description: "Cost per click" },
+}
+
 export function CampaignWizard({
   onCreated,
+  onCancel,
 }: {
   onCreated?: (campaign: Campaign) => void
+  onCancel?: () => void
 } = {}) {
   const [result, setResult] = React.useState<Campaign | null>(null)
   const [uploading, setUploading] = React.useState(false)
+  const [showIntake, setShowIntake] = React.useState(true)
+  const [advertiseTarget, setAdvertiseTarget] =
+    React.useState<AdvertiseTarget | null>(null)
+  const [step, setStep] = React.useState(0)
+  const [adFormatPricing, setAdFormatPricing] =
+    React.useState<AdFormatPricing>({})
+
+  React.useEffect(() => {
+    getAdFormatPricing()
+      .then(setAdFormatPricing)
+      .catch(() => {
+        // Non-fatal - the wizard still works without rate previews, they
+        // just won't render until this succeeds.
+      })
+  }, [])
 
   const form = useForm<CampaignFormInput, unknown, CampaignFormOutput>({
     resolver: zodResolver(campaignSchema),
@@ -102,6 +180,8 @@ export function CampaignWizard({
       maxCpc: 0.5,
       targetCountries: [],
       targetDevices: [],
+      targetOperatingSystems: [],
+      connectionType: "ALL",
       creativeType: "image",
       creativeUrl: "",
       creativeHtml: "",
@@ -123,6 +203,8 @@ export function CampaignWizard({
   const maxCpc = form.watch("maxCpc")
   const targetCountries = form.watch("targetCountries") ?? []
   const targetDevices = form.watch("targetDevices") ?? []
+  const targetOperatingSystems = form.watch("targetOperatingSystems") ?? []
+  const connectionType = form.watch("connectionType") ?? "ALL"
   const adFormat = form.watch("adFormat")
   const pricingModel = form.watch("pricingModel")
   const countryPricing = form.watch("countryPricing") ?? {}
@@ -141,16 +223,75 @@ export function CampaignWizard({
   )
 
   const [countryToAdd, setCountryToAdd] = React.useState("")
-  const [priceToAdd, setPriceToAdd] = React.useState("")
+  const [priceToAdd, setPriceToAdd] = React.useState("0.05")
   const [locCountry, setLocCountry] = React.useState("")
   const [locRegion, setLocRegion] = React.useState("")
   const [locCity, setLocCity] = React.useState("")
 
+  const STEPS = [
+    {
+      title: "General",
+      fields: ["campaignName", "targetDevices"] as const,
+    },
+    {
+      title: "Ad format",
+      fields: ["adFormat", "pricingModel"] as const,
+    },
+    {
+      title: "Landing & creative",
+      fields: [
+        "destinationUrl",
+        "creativeType",
+        "creativeUrl",
+        "creativeHtml",
+      ] as const,
+    },
+    {
+      title: "Countries",
+      fields: ["targetCountries"] as const,
+    },
+    {
+      title: "Locations & notes",
+      fields: [] as const,
+    },
+    {
+      title: "Budget & schedule",
+      fields: [
+        "totalBudget",
+        "dailyBudget",
+        "maxCpc",
+        "startMode",
+        "scheduledAt",
+      ] as const,
+    },
+  ]
+  const isLastStep = step === STEPS.length - 1
+
+  async function goNext() {
+    const valid = await form.trigger(STEPS[step].fields)
+    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1))
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(s - 1, 0))
+  }
+
+  function handleIntakeSubmit(target: AdvertiseTarget, landingUrl: string) {
+    setAdvertiseTarget(target)
+    form.setValue("destinationUrl", landingUrl, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    setShowIntake(false)
+  }
+
   // Mirrors the backend's ALLOWED_CREATIVE_MIME_TYPES /
-  // MAX_CREATIVE_UPLOAD_BYTES (see creative-upload.service.ts) — checked
-  // here too so the advertiser gets instant feedback instead of waiting on
-  // a round trip for a file the server will reject anyway.
+  // MAX_CREATIVE_UPLOAD_BYTES / MAX_VIDEO_CREATIVE_UPLOAD_BYTES (see
+  // creative-upload.service.ts) — checked here too so the advertiser gets
+  // instant feedback instead of waiting on a round trip for a file the
+  // server will reject anyway.
   const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+  const MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024
 
   async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -158,8 +299,12 @@ export function CampaignWizard({
 
     if (!file) return
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast.error("Image is too large (max 5 MB)")
+    const isVideo = file.type.startsWith("video/")
+    const maxBytes = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_UPLOAD_BYTES
+    if (file.size > maxBytes) {
+      toast.error(
+        `${isVideo ? "Video" : "Image"} is too large (max ${maxBytes / (1024 * 1024)} MB)`
+      )
       return
     }
 
@@ -170,7 +315,7 @@ export function CampaignWizard({
         shouldValidate: true,
         shouldDirty: true,
       })
-      toast.success("Image uploaded")
+      toast.success(isVideo ? "Video uploaded" : "Image uploaded")
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Upload failed")
     } finally {
@@ -202,6 +347,17 @@ export function CampaignWizard({
     )
   }
 
+  function toggleOs(value: string) {
+    const checked = targetOperatingSystems.includes(value)
+    form.setValue(
+      "targetOperatingSystems",
+      checked
+        ? targetOperatingSystems.filter((v) => v !== value)
+        : [...targetOperatingSystems, value],
+      { shouldDirty: true }
+    )
+  }
+
   function addCountry() {
     if (!countryToAdd) return
     const price = Number(priceToAdd || 0)
@@ -229,6 +385,30 @@ export function CampaignWizard({
     const next = { ...countryPricing }
     delete next[code]
     form.setValue("countryPricing", next, { shouldDirty: true })
+  }
+
+  function clearAllCountries() {
+    form.setValue("targetCountries", [], { shouldValidate: true, shouldDirty: true })
+    form.setValue("countryPricing", {}, { shouldDirty: true })
+  }
+
+  // Clicking a pin directly on the globe toggles that country - lets the
+  // advertiser build up a target list without touching the dropdown at all.
+  function togglePinCountry(code: string) {
+    if (targetCountries.includes(code)) {
+      removeCountry(code)
+      return
+    }
+    form.setValue("targetCountries", [...targetCountries, code], {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    form.setValue(
+      "countryPricing",
+      { ...countryPricing, [code]: Number(priceToAdd || 0.05) },
+      { shouldDirty: true }
+    )
+    setCountryToAdd(code)
   }
 
   function addLocation() {
@@ -285,6 +465,9 @@ export function CampaignWizard({
               onClick={() => {
                 setResult(null)
                 form.reset()
+                setStep(0)
+                setAdvertiseTarget(null)
+                setShowIntake(true)
               }}
             >
               Create another campaign
@@ -297,22 +480,69 @@ export function CampaignWizard({
 
   return (
     <div className="mx-auto max-w-6xl">
+      <AdvertiseTargetDialog open={showIntake} onSubmit={handleIntakeSubmit} />
+
       <div className="mb-6">
         <h2 className="text-xl font-semibold tracking-tight">
           Create campaign
         </h2>
+        <ol className="mt-4 flex flex-wrap overflow-hidden rounded-lg border sm:flex-nowrap">
+          {STEPS.map((s, i) => {
+            const status = i < step ? "done" : i === step ? "active" : "upcoming"
+            return (
+              <li
+                key={s.title}
+                className={cn(
+                  "flex flex-1 items-center gap-2 border-r px-3 py-2.5 text-sm font-medium last:border-r-0 sm:px-4",
+                  status === "active" &&
+                    "-my-px rounded-lg border border-orange-300 bg-orange-500/5"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-white",
+                    status === "active"
+                      ? "brand-gradient"
+                      : status === "done"
+                        ? "bg-gradient-to-br from-indigo-500 to-violet-500"
+                        : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {status === "done" ? (
+                    <Check className="size-3.5" strokeWidth={3} />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "whitespace-nowrap",
+                    status === "active"
+                      ? "text-orange-600"
+                      : status === "done"
+                        ? "text-violet-600"
+                        : "text-muted-foreground"
+                  )}
+                >
+                  {s.title}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
       </div>
 
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+          className={cn(
+            "grid gap-8 lg:items-start",
+            step === 5 ? "lg:grid-cols-[minmax(0,1fr)_320px]" : "lg:grid-cols-1",
+          )}
         >
           <div className="space-y-10">
-            <div>
-              <h3 className="text-base font-semibold">Required Settings*</h3>
-            </div>
-
+            {step === 0 ? (
+            <>
             <SettingsRow label="General">
               <FormField
                 control={form.control}
@@ -338,7 +568,7 @@ export function CampaignWizard({
                 name="targetDevices"
                 render={() => (
                   <FormItem>
-                    <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+                    <div className="grid grid-cols-3 gap-2 sm:max-w-md sm:gap-3">
                       {DEVICES.map((device) => (
                         <OptionTile
                           key={device.value}
@@ -355,29 +585,98 @@ export function CampaignWizard({
               />
             </SettingsRow>
 
-            <Separator />
-
             <SettingsRow
-              label="Ad unit & Pricing type"
-              description="Pick the ad format and how it's billed."
+              label="Operating system"
+              description="Filter by operating system (optional)."
             >
               <FormField
                 control={form.control}
-                name="adFormat"
-                render={() => {
-                  const activeGroup =
-                    GROUPED_AD_FORMATS.find(
-                      (group) => group.category === adFormatCategory
-                    ) ?? GROUPED_AD_FORMATS[0]
+                name="targetOperatingSystems"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
+                      {OPERATING_SYSTEMS.map((os) => (
+                        <OptionTile
+                          key={os.value}
+                          icon={OS_ICONS[os.value] ?? Globe}
+                          label={os.label}
+                          selected={targetOperatingSystems.includes(os.value)}
+                          onClick={() => toggleOs(os.value)}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
 
-                  return (
-                    <FormItem>
-                      <div className="space-y-4">
+            <SettingsRow
+              label="Connection type"
+              description="Target users by their internet connection."
+            >
+              <FormField
+                control={form.control}
+                name="connectionType"
+                render={() => (
+                  <FormItem>
+                    <div className="grid grid-cols-3 gap-2 sm:max-w-lg sm:gap-3">
+                      {CONNECTION_TYPES.map((conn) => (
+                        <OptionTile
+                          key={conn.value}
+                          icon={CONNECTION_ICONS[conn.value] ?? Network}
+                          label={conn.label}
+                          selected={connectionType === conn.value}
+                          onClick={() =>
+                            form.setValue("connectionType", conn.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+
+            </>
+            ) : null}
+
+            {step === 1 ? (
+            <>
+            <FormField
+              control={form.control}
+              name="adFormat"
+              render={() => {
+                const activeGroup =
+                  GROUPED_AD_FORMATS.find(
+                    (group) => group.category === adFormatCategory
+                  ) ?? GROUPED_AD_FORMATS[0]
+
+                return (
+                  <FormItem>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-xl font-semibold tracking-tight">
+                          Ad format
+                        </h3>
+                        <p className="mt-1 text-sm text-foreground">
+                          Choose the ad format and how it&apos;s billed.
+                        </p>
+                      </div>
+                      <div className="grid gap-1.5">
+                        <span className="flex items-center gap-1 text-sm font-medium text-foreground">
+                          Ad unit &amp; Pricing type
+                          <Info className="size-3.5 text-muted-foreground" />
+                        </span>
                         <Select
                           value={adFormatCategory}
                           onValueChange={setAdFormatCategory}
                         >
-                          <SelectTrigger className="w-full sm:w-64">
+                          <SelectTrigger className="w-full sm:w-52">
                             <SelectValue placeholder="Choose an ad type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -391,44 +690,63 @@ export function CampaignWizard({
                             ))}
                           </SelectContent>
                         </Select>
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                          {activeGroup.formats.map((format) => (
-                            <AdUnitTile
-                              key={format.value}
-                              icon={AD_FORMAT_ICONS[format.value] ?? Layers}
-                              label={format.label}
-                              sublabel={
-                                getAdFormat(format.value)
-                                  ? `${getAdFormat(format.value)!.recommendedWidth}×${
-                                      getAdFormat(format.value)!.recommendedHeight
-                                    }`
-                                  : undefined
-                              }
-                              description={getAdFormat(format.value)?.description}
-                              badge={AD_FORMAT_BADGE[format.value]}
-                              selected={adFormat === format.value}
-                              onClick={() =>
-                                form.setValue("adFormat", format.value, {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                })
-                              }
-                            />
-                          ))}
-                        </div>
                       </div>
-                      <FormMessage />
-                    </FormItem>
-                  )
-                }}
-              />
+                    </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {activeGroup.formats.map((format) => (
+                        <AdUnitTile
+                          key={format.value}
+                          icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                          label={format.label}
+                          sublabel={
+                            getAdFormat(format.value)
+                              ? `${getAdFormat(format.value)!.recommendedWidth}×${
+                                  getAdFormat(format.value)!.recommendedHeight
+                                }`
+                              : undefined
+                          }
+                          description={
+                            getAdFormat(format.value)?.description ??
+                            LEGACY_AD_FORMAT_DESCRIPTIONS[format.value]
+                          }
+                          badge={AD_FORMAT_BADGE[format.value]}
+                          rate={adFormatPricing[format.value]}
+                          selected={adFormat === format.value}
+                          onClick={() =>
+                            form.setValue("adFormat", format.value, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+
+            <div>
+              <h3 className="text-base font-semibold">Pricing type</h3>
+              <p className="mt-1 text-sm text-foreground">
+                Select how you want to be billed for this campaign.
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {PRICING_MODELS.map((model) => (
-                  <RadioPill
+                  <PricingCard
                     key={model}
+                    icon={PRICING_MODEL_META[model].icon}
                     label={model}
+                    description={PRICING_MODEL_META[model].description}
+                    price={
+                      adFormat
+                        ? adFormatPricing[adFormat]?.[
+                            model.toLowerCase() as "cpm" | "cpa" | "cpc"
+                          ]
+                        : undefined
+                    }
                     selected={pricingModel === model}
                     onClick={() =>
                       form.setValue("pricingModel", model, {
@@ -439,10 +757,12 @@ export function CampaignWizard({
                   />
                 ))}
               </div>
-            </SettingsRow>
+            </div>
+            </>
+            ) : null}
 
-            <Separator />
-
+            {step === 2 ? (
+            <>
             <SettingsRow
               label="Landing URL & Preview"
               description="Where people land when they click this ad."
@@ -471,13 +791,24 @@ export function CampaignWizard({
                   render={() => (
                     <FormItem>
                       <FormLabel>Creative type</FormLabel>
-                      <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+                      <div className="grid grid-cols-3 gap-3 sm:max-w-md">
                         <OptionTile
                           icon={ImageIcon}
                           label="Image"
                           selected={creativeType === "image"}
                           onClick={() =>
                             form.setValue("creativeType", "image", {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                        <OptionTile
+                          icon={Video}
+                          label="Video"
+                          selected={creativeType === "video"}
+                          onClick={() =>
+                            form.setValue("creativeType", "video", {
                               shouldValidate: true,
                               shouldDirty: true,
                             })
@@ -500,20 +831,28 @@ export function CampaignWizard({
                   )}
                 />
 
-                {creativeType === "image" ? (
+                {creativeType === "image" || creativeType === "video" ? (
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <FormLabel>Upload image</FormLabel>
+                      <FormLabel>
+                        {creativeType === "video" ? "Upload video" : "Upload image"}
+                      </FormLabel>
                       <Input
                         type="file"
-                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        accept={
+                          creativeType === "video"
+                            ? "video/mp4,video/webm"
+                            : "image/png,image/jpeg,image/gif,image/webp"
+                        }
                         disabled={uploading}
                         onChange={handleFileSelected}
                       />
                       <p className="text-base text-foreground">
                         {uploading
                           ? "Uploading..."
-                          : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
+                          : creativeType === "video"
+                            ? "MP4 or WEBM, up to 50 MB. Fills the URL below automatically — or paste one yourself."
+                            : "PNG, JPEG, GIF or WEBP, up to 5 MB. Fills the URL below automatically — or paste one yourself."}
                       </p>
                     </div>
 
@@ -525,7 +864,11 @@ export function CampaignWizard({
                           <FormLabel>Creative URL</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="https://cdn.example.com/creative.png"
+                              placeholder={
+                                creativeType === "video"
+                                  ? "https://cdn.example.com/creative.mp4"
+                                  : "https://cdn.example.com/creative.png"
+                              }
                               {...field}
                             />
                           </FormControl>
@@ -535,18 +878,33 @@ export function CampaignWizard({
                     />
 
                     {form.watch("creativeUrl") ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
-                      <img
-                        src={form.watch("creativeUrl")}
-                        alt="Creative preview"
-                        className="max-h-48 rounded-md border object-contain"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none"
-                        }}
-                        onLoad={(event) => {
-                          event.currentTarget.style.display = "block"
-                        }}
-                      />
+                      creativeType === "video" ? (
+                        <video
+                          src={form.watch("creativeUrl")}
+                          controls
+                          muted
+                          className="max-h-48 rounded-md border"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none"
+                          }}
+                          onLoadedData={(event) => {
+                            event.currentTarget.style.display = "block"
+                          }}
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary external URL, not a static asset
+                        <img
+                          src={form.watch("creativeUrl")}
+                          alt="Creative preview"
+                          className="max-h-48 rounded-md border object-contain"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none"
+                          }}
+                          onLoad={(event) => {
+                            event.currentTarget.style.display = "block"
+                          }}
+                        />
+                      )
                     ) : null}
                   </div>
                 ) : (
@@ -566,74 +924,165 @@ export function CampaignWizard({
                 )}
               </div>
             </SettingsRow>
+            </>
+            ) : null}
 
-            <Separator />
+            {step === 3 ? (
+            <>
+            <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+              <div className="grid lg:grid-cols-[minmax(0,1fr)_440px]">
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-start gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-600">
+                      <Globe className="size-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-xl font-bold tracking-tight text-foreground">
+                        Countries
+                      </h3>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        Pick a country — it lights up on the globe.
+                      </p>
+                    </div>
+                  </div>
 
-            <SettingsRow label="Countries" description="By one country.">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="grid gap-1.5">
-                  <FormLabel>Countries</FormLabel>
-                  <Select value={countryToAdd} onValueChange={setCountryToAdd}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Choose a country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-1.5">
-                  <FormLabel>Price</FormLabel>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    className="w-28"
-                    placeholder="0.00"
-                    value={priceToAdd}
-                    onChange={(e) => setPriceToAdd(e.target.value)}
-                  />
-                </div>
-                <Button type="button" variant="outline" onClick={addCountry}>
-                  Add country
-                </Button>
-              </div>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
+                    <div className="grid gap-1.5">
+                      <FormLabel>Country</FormLabel>
+                      <Select
+                        value={countryToAdd}
+                        onValueChange={setCountryToAdd}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose a country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRIES.map((country) => (
+                            <SelectItem
+                              key={country.value}
+                              value={country.value}
+                            >
+                              <span className="mr-1.5">
+                                {countryFlag(country.value)}
+                              </span>
+                              {country.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <FormLabel className="flex items-center gap-1">
+                        Price (USD)
+                        <Info className="size-3.5 text-muted-foreground" />
+                      </FormLabel>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.05"
+                        value={priceToAdd}
+                        onChange={(e) => setPriceToAdd(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={addCountry}
+                      className="brand-gradient text-white"
+                    >
+                      Add country
+                    </Button>
+                  </div>
 
-              {targetCountries.length > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {targetCountries.map((code) => {
-                    const label =
-                      COUNTRIES.find((c) => c.value === code)?.label ?? code
-                    return (
-                      <Badge key={code} variant="outline" className="gap-1.5">
-                        {label}
-                        {countryPricing[code] !== undefined
-                          ? ` · $${countryPricing[code]}`
-                          : ""}
+                  <div className="mt-7">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">
+                        Selected countries ({targetCountries.length})
+                      </p>
+                      {targetCountries.length > 0 ? (
                         <button
                           type="button"
-                          onClick={() => removeCountry(code)}
-                          aria-label={`Remove ${label}`}
+                          onClick={clearAllCountries}
+                          className="text-sm font-medium text-indigo-600 hover:underline"
                         >
-                          <X className="size-3" />
+                          Clear all
                         </button>
-                      </Badge>
-                    )
-                  })}
+                      ) : null}
+                    </div>
+
+                    {targetCountries.length > 0 ? (
+                      <div className="mt-2 divide-y overflow-hidden rounded-xl border">
+                        {targetCountries.map((code) => {
+                          const label =
+                            COUNTRIES.find((c) => c.value === code)?.label ??
+                            code
+                          return (
+                            <div
+                              key={code}
+                              className="flex items-center justify-between gap-3 px-4 py-3"
+                            >
+                              <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                <span className="text-lg leading-none">
+                                  {countryFlag(code)}
+                                </span>
+                                {label}
+                              </span>
+                              <span className="flex items-center gap-3">
+                                <span className="text-sm font-semibold text-foreground">
+                                  ${Number(countryPricing[code] ?? 0).toFixed(2)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeCountry(code)}
+                                  aria-label={`Remove ${label}`}
+                                  className="text-muted-foreground transition-colors hover:text-destructive"
+                                >
+                                  <X className="size-4" />
+                                </button>
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mt-2 rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                        No countries selected yet.
+                      </p>
+                    )}
+                    <FormField
+                      control={form.control}
+                      name="targetCountries"
+                      render={() => <FormMessage className="mt-2" />}
+                    />
+                  </div>
+
+                  <div className="mt-7 flex gap-3 rounded-xl border border-sky-100 bg-sky-50 p-4">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-sky-600 shadow-sm">
+                      <Globe className="size-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Tip</p>
+                      <p className="text-sm text-muted-foreground">
+                        You can add multiple countries to target a global
+                        audience.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ) : null}
-              <FormField
-                control={form.control}
-                name="targetCountries"
-                render={() => <FormMessage />}
-              />
-            </SettingsRow>
 
-            <Separator />
+                <div className="flex items-center justify-center bg-gradient-to-br from-sky-50 via-indigo-50/30 to-white p-6 sm:p-8 lg:border-l">
+                  <CountryGlobe
+                    selectedCountries={targetCountries}
+                    highlightedCountry={countryToAdd || undefined}
+                    onToggleCountry={togglePinCountry}
+                  />
+                </div>
+              </div>
+            </div>
+            </>
+            ) : null}
 
+            {step === 4 ? (
+            <>
             <SettingsRow
               label="Locations"
               description="Include or exclude specific regions/cities."
@@ -698,6 +1147,29 @@ export function CampaignWizard({
             </SettingsRow>
 
             <Separator />
+
+            <SettingsRow label="Notes" description="Internal notes for the review team.">
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsRow>
+            </>
+            ) : null}
+
+            {step === 5 ? (
+            <>
+            <div>
+              <h3 className="text-base font-semibold">Budget & schedule</h3>
+            </div>
 
             <SettingsRow label="Total budget">
               <div className="space-y-4">
@@ -818,29 +1290,33 @@ export function CampaignWizard({
                 />
               ) : null}
             </SettingsRow>
+            </>
+            ) : null}
 
-            <Separator />
-
-            <div>
-              <h3 className="text-base font-semibold">Optional Settings</h3>
+            <div className="flex items-center justify-between border-t pt-6">
+              {step === 0 ? (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              ) : (
+                <Button type="button" variant="outline" onClick={goBack}>
+                  Back
+                </Button>
+              )}
+              {!isLastStep ? (
+                <Button
+                  type="button"
+                  onClick={goNext}
+                  className="brand-gradient gap-1.5 text-white"
+                >
+                  Save &amp; Next
+                  <ArrowRight className="size-4" />
+                </Button>
+              ) : null}
             </div>
-
-            <SettingsRow label="Notes" description="Internal notes for the review team.">
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </SettingsRow>
           </div>
 
+          {step === 5 ? (
           <aside className="lg:sticky lg:top-6">
             <Card>
               <CardHeader>
@@ -850,6 +1326,18 @@ export function CampaignWizard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-base">
+                {advertiseTarget ? (
+                  <SummaryRow
+                    label="Advertising"
+                    value={
+                      advertiseTarget === "social_media"
+                        ? "Social media"
+                        : advertiseTarget === "app"
+                          ? "App"
+                          : "Website"
+                    }
+                  />
+                ) : null}
                 <SummaryRow
                   label="Name"
                   value={campaignName || "Untitled campaign"}
@@ -913,21 +1401,32 @@ export function CampaignWizard({
                 />
               </CardContent>
               <CardFooter className="flex-col items-stretch gap-2">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting
-                    ? "Submitting..."
-                    : "Proceed to review"}
-                </Button>
+                {isLastStep ? (
+                  <Button
+                    type="submit"
+                    className="w-full brand-gradient text-white"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting
+                      ? "Submitting..."
+                      : "Proceed to review"}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    className="w-full brand-gradient text-white"
+                    onClick={goNext}
+                  >
+                    Next
+                  </Button>
+                )}
                 <p className="text-center text-sm text-foreground">
                   Submitted campaigns are reviewed before going live.
                 </p>
               </CardFooter>
             </Card>
           </aside>
+          ) : null}
         </form>
       </Form>
     </div>
@@ -973,12 +1472,17 @@ function OptionTile({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
+        "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
-          ? "border-primary bg-primary/5 text-foreground"
-          : "border-border text-foreground hover:border-foreground/30"
+          ? "border-rose-400 bg-rose-50 text-rose-600 dark:bg-rose-950/20"
+          : "border-border text-foreground hover:border-rose-300 hover:bg-rose-50/40 dark:hover:bg-rose-950/10"
       )}
     >
+      {selected ? (
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-rose-500 text-white">
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+      ) : null}
       <Icon className="size-5" />
       {label}
     </button>
@@ -991,6 +1495,7 @@ function AdUnitTile({
   sublabel,
   description,
   badge,
+  rate,
   selected,
   onClick,
 }: {
@@ -999,6 +1504,7 @@ function AdUnitTile({
   sublabel?: string
   description?: string
   badge?: string
+  rate?: { cpm: number; cpa: number; cpc: number }
   selected: boolean
   onClick: () => void
 }) {
@@ -1007,25 +1513,109 @@ function AdUnitTile({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      title={description}
       className={cn(
-        "relative aspect-square flex flex-col items-center justify-center gap-2 rounded-md border p-4 text-center text-base font-medium transition-colors",
-        selected
-          ? "border-primary bg-primary/5 text-foreground"
-          : "border-border text-foreground hover:border-foreground/30"
+        "relative flex min-h-[190px] flex-col items-start gap-3 rounded-lg border p-5 text-left transition-colors",
+        selected ? "tile-shade" : "border-border tile-hover"
       )}
     >
-      {badge ? (
-        <Badge className="absolute -top-2 right-2" variant="secondary">
-          {badge}
-        </Badge>
+      {badge || selected ? (
+        <div className="absolute right-4 top-4 flex items-center gap-1.5">
+          {badge ? (
+            <Badge className="border-transparent bg-violet-100 text-violet-700 hover:bg-violet-100 dark:bg-violet-500/20 dark:text-violet-300">
+              {badge}
+            </Badge>
+          ) : null}
+          {selected ? (
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-600 text-white">
+              <Check className="size-3" strokeWidth={3} />
+            </span>
+          ) : null}
+        </div>
       ) : null}
-      <Icon className="size-6" />
-      <span>{label}</span>
-      {sublabel ? (
-        <span className="text-sm font-normal text-foreground">
-          {sublabel}
-        </span>
+      <Icon className="size-6 text-foreground" />
+      <div>
+        <p className="text-base font-semibold text-foreground">
+          {label}
+          {sublabel ? (
+            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+              {sublabel}
+            </span>
+          ) : null}
+        </p>
+        {description ? (
+          <p className="mt-1 text-sm text-foreground">{description}</p>
+        ) : null}
+      </div>
+      {rate ? (
+        <p className="mt-auto text-xs text-muted-foreground">
+          From{" "}
+          <span className="font-semibold text-foreground">
+            ${rate.cpm.toFixed(2)}
+          </span>{" "}
+          CPM · ${rate.cpa.toFixed(2)} CPA · ${rate.cpc.toFixed(2)} CPC
+        </p>
+      ) : null}
+    </button>
+  )
+}
+
+function PricingCard({
+  icon: Icon,
+  label,
+  description,
+  price,
+  selected,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  description: string
+  price?: number
+  selected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border p-4 text-left transition-colors",
+        selected
+          ? "border-orange-400 bg-orange-500/5"
+          : "border-border hover:border-orange-300 hover:bg-orange-500/5"
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-full",
+          selected
+            ? "brand-gradient text-white"
+            : "bg-muted text-muted-foreground"
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <div>
+        <p
+          className={cn(
+            "text-base font-semibold",
+            selected ? "text-orange-600" : "text-foreground"
+          )}
+        >
+          {label}
+        </p>
+        <p className="text-sm text-foreground">{description}</p>
+      </div>
+      {price !== undefined ? (
+        <p
+          className={cn(
+            "ml-auto shrink-0 text-base font-semibold",
+            selected ? "text-orange-600" : "text-foreground"
+          )}
+        >
+          ${price.toFixed(2)}
+        </p>
       ) : null}
     </button>
   )
@@ -1048,8 +1638,8 @@ function RadioPill({
       className={cn(
         "rounded-full border px-3.5 py-1.5 text-base font-medium transition-colors",
         selected
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border text-foreground hover:border-foreground/30"
+          ? "border-orange-500 bg-orange-500 text-white"
+          : "border-border text-foreground hover:border-orange-300 hover:bg-orange-500/5"
       )}
     >
       {label}

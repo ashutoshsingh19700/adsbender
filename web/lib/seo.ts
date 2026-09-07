@@ -2,7 +2,7 @@
 // app should read from here instead of hardcoding the domain/name/socials —
 // one place to update when the domain, brand, or social handles change.
 
-export const SITE_URL = "https://adsbender.com"
+export const SITE_URL = "https://www.adsbender.com"
 export const SITE_NAME = "AdsBender"
 export const SITE_LOCALE = "en_US"
 

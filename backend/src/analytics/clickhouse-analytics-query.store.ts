@@ -7,6 +7,8 @@ import type {
   GroupedMetricsParams,
   GroupedMetricsRow,
   MetricsRow,
+  TrafficQualityParams,
+  TrafficQualityRow,
 } from './analytics-query.types';
 
 // Every id in this app is a Prisma-generated UUID. We build ClickHouse SQL
@@ -248,6 +250,65 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
           ctr: Number(row.ctr),
           spend: Number(row.spend),
           payout: Number(row.payout),
+        };
+      });
+  }
+
+  async getTrafficQuality(
+    params: TrafficQualityParams,
+  ): Promise<TrafficQualityRow[]> {
+    // A DEFINED-but-empty zoneIds/campaignIds means "this publisher/
+    // advertiser owns nothing" (e.g. a brand-new account) and must return
+    // NO rows - never fall through to the unscoped (platform-wide) query,
+    // which would leak every other tenant's fraud data. Only an OMITTED
+    // field (undefined) means "no restriction", which is what AdminService's
+    // platform-wide call relies on. Same `zone_id IN ()` is invalid SQL
+    // concern as getGroupedMetrics above.
+    if (params.zoneIds?.length === 0 || params.campaignIds?.length === 0) {
+      return [];
+    }
+
+    (params.zoneIds ?? []).forEach((id) => assertSafeId(id, 'zoneId'));
+    (params.campaignIds ?? []).forEach((id) => assertSafeId(id, 'campaignId'));
+
+    const scopeFilter = [
+      params.zoneIds
+        ? `AND zone_id IN (${params.zoneIds.map((id) => `'${id}'`).join(', ')})`
+        : '',
+      params.campaignIds
+        ? `AND campaign_id IN (${params.campaignIds.map((id) => `'${id}'`).join(', ')})`
+        : '',
+    ].join(' ');
+
+    const sql = `
+      SELECT
+        toString(toDate(event_time)) AS date,
+        stage,
+        outcome,
+        reason,
+        count() AS count
+      FROM ${this.options.database}.traffic_events
+      WHERE event_time >= parseDateTimeBestEffort('${params.startDate}')
+        AND event_time < parseDateTimeBestEffort('${params.endDate}') + INTERVAL 1 DAY
+        ${scopeFilter}
+      GROUP BY date, stage, outcome, reason
+      ORDER BY date ASC, count DESC
+      FORMAT JSONEachRow
+    `;
+    const response = await this.query(sql);
+
+    return response
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const row = JSON.parse(line) as TrafficQualityRow;
+
+        return {
+          date: row.date,
+          stage: row.stage,
+          outcome: row.outcome,
+          reason: row.reason,
+          count: Number(row.count),
         };
       });
   }

@@ -419,6 +419,12 @@ model PlatformSetting {
   // values like 0.1 + 0.2 - it's an exact integer 0-10000.
   platformFeeBps Int @default(2000)
 
+  // Admin-editable rate card, keyed by ad format value (see AD_FORMATS in
+  // common/ad-formats.ts): { [adFormat]: { cpm, cpa, cpc } } in dollars.
+  // Null/missing entries fall back to PlatformSettingsService's
+  // DEFAULT_AD_FORMAT_PRICING - see getAdFormatPricing().
+  adFormatPricing Json?
+
   updatedAt DateTime @updatedAt
 }
 

@@ -16,37 +16,78 @@ type ParsedResp = {
   nextOffset: number;
 };
 
+type PendingCommand = {
+  resolve: (value: RedisValue) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+};
+
+// Reuses ONE persistent, authenticated connection per client instance and
+// pipelines every command over it (write immediately, match replies back to
+// callers in FIFO order - Redis guarantees replies come back in the same
+// order commands were received), instead of opening a brand-new TCP
+// connection and redoing the AUTH handshake for every single command.
+//
+// Under real ad-serving load (a fraud-detection velocity check and a
+// campaign-cache lookup on every /serve, another on every /click, from each
+// of the four Redis-backed stores) the old one-socket-per-command version
+// meant every ad request opened several fresh sockets - each a full TCP (and
+// TLS, for a managed Redis provider) handshake plus a round trip just for
+// AUTH before the real command could even go out. At any real concurrency
+// that burns ephemeral ports and file descriptors faster than the OS
+// reclaims them (sockets sit in TIME_WAIT after close) and adds multiple RTTs
+// of latency to the hot path - exactly the kind of thing that works fine in
+// a demo and then falls over under production traffic. A single reused
+// connection removes both problems: one handshake total, and every command
+// after that is just a write + a queued read.
 export class RedisRespClient {
-  private readonly sockets = new Set<Socket | TLSSocket>();
+  private socket: Socket | TLSSocket | null = null;
+  private connecting: Promise<Socket | TLSSocket> | null = null;
+  private buffer = Buffer.alloc(0);
+  private parseOffset = 0;
+  private readonly pending: PendingCommand[] = [];
 
   constructor(private readonly options: RedisClientOptions) {}
 
   async command<T = RedisValue>(args: Array<string | number>): Promise<T> {
-    // AUTH and the real command must go down the SAME connection - Redis
-    // (and managed providers like Upstash) authenticate per-connection, not
-    // per-command. Sending them as separate send() calls would open a fresh,
-    // unauthenticated socket for the real command and get NOAUTH back.
-    const commands = this.options.password
-      ? [['AUTH', this.options.password], args]
-      : [args];
+    const socket = await this.getConnection();
 
-    const results = await this.sendSequence(commands);
+    return new Promise<RedisValue>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        // A command that never got a reply leaves the response stream at an
+        // unknown offset for whatever comes after it - there is no safe way
+        // to keep using this connection, so tear it down. Every other
+        // pending command on it fails too (via the 'close' handler below)
+        // and the next command lazily reconnects from scratch.
+        socket.destroy(new Error('Redis command timed out'));
+      }, this.options.timeoutMs ?? 3000);
 
-    return results[results.length - 1] as T;
+      this.pending.push({ resolve, reject, timeout });
+      socket.write(this.encode(args));
+    }) as Promise<T>;
   }
 
   destroy() {
-    for (const socket of this.sockets) {
-      socket.destroy();
-    }
-    this.sockets.clear();
+    this.failPending(new Error('Redis client destroyed'));
+    this.socket?.destroy();
+    this.socket = null;
+    this.connecting = null;
   }
 
-  // Opens a single connection, writes each command in order, and waits for
-  // each command's reply before writing the next one (required for AUTH to
-  // apply to the commands that follow it on the same socket).
-  private sendSequence(commandsList: Array<Array<string | number>>) {
-    return new Promise<RedisValue[]>((resolve, reject) => {
+  private async getConnection(): Promise<Socket | TLSSocket> {
+    if (this.socket && !this.socket.destroyed) {
+      return this.socket;
+    }
+
+    if (!this.connecting) {
+      this.connecting = this.connect();
+    }
+
+    return this.connecting;
+  }
+
+  private connect(): Promise<Socket | TLSSocket> {
+    return new Promise((resolve, reject) => {
       const socket: Socket | TLSSocket = this.options.tls
         ? tlsConnect({
             host: this.options.host,
@@ -54,63 +95,48 @@ export class RedisRespClient {
             servername: this.options.host,
           })
         : new Socket();
-      const timeout = setTimeout(() => {
-        socket.destroy();
-        reject(new Error('Redis command timed out'));
+
+      const connectTimeout = setTimeout(() => {
+        socket.destroy(new Error('Redis connection timed out'));
       }, this.options.timeoutMs ?? 3000);
-      let buffer = Buffer.alloc(0);
-      let parseOffset = 0;
-      let commandIndex = 0;
-      const results: RedisValue[] = [];
 
-      this.sockets.add(socket);
-
-      const cleanup = () => {
-        clearTimeout(timeout);
-        this.sockets.delete(socket);
-      };
-
-      const writeCommand = (index: number) => {
-        socket.write(this.encode(commandsList[index]));
-      };
-
-      socket.once('error', (error) => {
-        cleanup();
+      const onConnectError = (error: Error) => {
+        clearTimeout(connectTimeout);
+        this.connecting = null;
         reject(error);
-      });
+      };
 
-      socket.on('data', (chunk) => {
-        buffer = Buffer.concat([buffer, chunk]);
-
-        try {
-          while (commandIndex < commandsList.length) {
-            const parsed = this.parse(buffer, parseOffset);
-
-            if (!parsed) {
-              return;
-            }
-
-            results.push(parsed.value);
-            parseOffset = parsed.nextOffset;
-            commandIndex += 1;
-
-            if (commandIndex < commandsList.length) {
-              writeCommand(commandIndex);
-            }
-          }
-
-          cleanup();
-          socket.destroy();
-          resolve(results);
-        } catch (error) {
-          cleanup();
-          socket.destroy();
-          reject(error);
-        }
-      });
+      socket.once('error', onConnectError);
 
       const onReady = () => {
-        writeCommand(0);
+        clearTimeout(connectTimeout);
+        socket.removeListener('error', onConnectError);
+        this.attach(socket);
+
+        if (!this.options.password) {
+          this.connecting = null;
+          resolve(socket);
+          return;
+        }
+
+        // AUTH must be the first command on the freshly-opened connection -
+        // send it directly (bypassing the normal pending-queue write in
+        // command()) so it lands before anything else, then let the reply
+        // for it flow through the same parser/queue as every other reply.
+        this.pending.push({
+          resolve: () => {
+            this.connecting = null;
+            resolve(socket);
+          },
+          reject: (error) => {
+            this.connecting = null;
+            reject(error);
+          },
+          timeout: setTimeout(() => {
+            socket.destroy(new Error('Redis AUTH timed out'));
+          }, this.options.timeoutMs ?? 3000),
+        });
+        socket.write(this.encode(['AUTH', this.options.password as string]));
       };
 
       if (this.options.tls) {
@@ -119,6 +145,72 @@ export class RedisRespClient {
         socket.connect(this.options.port, this.options.host, onReady);
       }
     });
+  }
+
+  private attach(socket: Socket | TLSSocket) {
+    this.socket = socket;
+    this.buffer = Buffer.alloc(0);
+    this.parseOffset = 0;
+
+    socket.on('data', (chunk) => {
+      this.buffer = Buffer.concat([this.buffer, chunk]);
+      this.drain();
+    });
+
+    const onClose = (error?: Error) => {
+      if (this.socket === socket) {
+        this.socket = null;
+      }
+      this.failPending(error ?? new Error('Redis connection closed'));
+    };
+
+    socket.on('error', onClose);
+    socket.on('close', () => onClose());
+  }
+
+  // Parses as many complete replies as the buffer currently holds and
+  // resolves the corresponding pending command for each, in order.
+  private drain() {
+    while (this.pending.length > 0) {
+      let parsed: ParsedResp | null;
+
+      try {
+        parsed = this.parse(this.buffer, this.parseOffset);
+      } catch (error) {
+        const next = this.pending.shift();
+        if (next) {
+          clearTimeout(next.timeout);
+          next.reject(error as Error);
+        }
+        continue;
+      }
+
+      if (!parsed) {
+        return;
+      }
+
+      this.parseOffset = parsed.nextOffset;
+      const next = this.pending.shift() as PendingCommand;
+      clearTimeout(next.timeout);
+      next.resolve(parsed.value);
+    }
+
+    // Nothing left waiting on a reply - drop already-consumed bytes so the
+    // buffer doesn't grow unboundedly on a long-lived connection.
+    if (this.parseOffset > 0) {
+      this.buffer = this.buffer.subarray(this.parseOffset);
+      this.parseOffset = 0;
+    }
+  }
+
+  private failPending(error: Error) {
+    const failed = this.pending.splice(0, this.pending.length);
+    for (const command of failed) {
+      clearTimeout(command.timeout);
+      command.reject(error);
+    }
+    this.buffer = Buffer.alloc(0);
+    this.parseOffset = 0;
   }
 
   private encode(args: Array<string | number>) {

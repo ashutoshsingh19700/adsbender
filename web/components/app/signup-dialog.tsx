@@ -73,7 +73,7 @@ export function SignUpDialog() {
       <DialogTrigger asChild>
         <Button
           size="lg"
-          className="btn-shine rounded-full bg-violet-500 px-3 text-white hover:bg-violet-600 sm:px-6"
+          className="btn-shine rounded-full bg-orange-500 px-3 text-white hover:bg-orange-600 sm:px-6"
         >
           Sign up
         </Button>
@@ -111,7 +111,7 @@ export function SignUpDialog() {
                 />
                 <div>
                   <p className="text-lg font-semibold">
-                    {path.title} <span className="text-violet-500">{path.highlight}</span>
+                    {path.title} <span className="text-orange-500">{path.highlight}</span>
                   </p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     {path.description}
@@ -120,14 +120,14 @@ export function SignUpDialog() {
                 <ul className="mt-1 space-y-1.5 self-start text-left text-sm">
                   {path.perks.map((perk) => (
                     <li key={perk} className="flex items-center gap-2">
-                      <CheckCircle2 className="size-4 shrink-0 text-violet-500" />
+                      <CheckCircle2 className="size-4 shrink-0 text-orange-500" />
                       {perk}
                     </li>
                   ))}
                 </ul>
                 <Button
                   asChild
-                  className="mt-3 w-full bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
+                  className="mt-3 w-full brand-gradient text-white"
                 >
                   <Link
                     href={`/login?tab=register&role=${path.role}`}
@@ -142,7 +142,7 @@ export function SignUpDialog() {
           </div>
         </div>
 
-        <div className="grid gap-4 border-t bg-violet-50/60 px-6 py-6 sm:grid-cols-3 sm:px-10">
+        <div className="grid gap-4 border-t bg-orange-50/60 px-6 py-6 sm:grid-cols-3 sm:px-10">
           {TRUST_ITEMS.map((item) => (
             <div key={item.title} className="flex items-center gap-2.5">
               <item.icon className="size-5 shrink-0 text-foreground" />

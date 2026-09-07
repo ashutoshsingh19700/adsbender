@@ -7,6 +7,7 @@ import type {
   AdZoneStatus,
   AnalyticsResponse,
   AuthUser,
+  BlacklistedIp,
   Campaign,
   CampaignAdFormat,
   CampaignBudgetStatus,
@@ -26,6 +27,7 @@ import type {
   SiteStatus,
   StatisticsGroupBy,
   StatisticsResponse,
+  TrafficQualityResponse,
   TransactionType,
   UserRole,
   Wallet,
@@ -324,6 +326,16 @@ export function getPublisherStatistics(params: {
   )
 }
 
+export function getPublisherTrafficQuality(params: {
+  startDate: string
+  endDate: string
+  zoneId?: string
+}) {
+  return apiFetch<TrafficQualityResponse>(
+    `/api/v1/publisher/traffic-quality${toQueryString(params)}`
+  )
+}
+
 // --- Advertiser ---
 
 export type CreateCampaignInput = {
@@ -358,6 +370,16 @@ export function uploadCreativeFile(file: File) {
     method: "POST",
     body: formData,
   })
+}
+
+export type AdFormatRate = { cpm: number; cpa: number; cpc: number }
+export type AdFormatPricing = Record<string, AdFormatRate>
+
+// Admin-editable rate card for every ad format - see the "Pricing" tab of
+// the admin dashboard. Any authenticated role can read it; only admins can
+// write it (adminUpdateAdFormatPricing below).
+export function getAdFormatPricing() {
+  return apiFetch<AdFormatPricing>("/api/v1/config/ad-format-pricing")
 }
 
 export function createCampaign(input: CreateCampaignInput) {
@@ -533,10 +555,36 @@ export function adminFailPayout(payoutId: string, reason?: string) {
   })
 }
 
+export function getAdvertiserTrafficQuality(params: {
+  startDate: string
+  endDate: string
+  campaignId?: string
+}) {
+  return apiFetch<TrafficQualityResponse>(
+    `/api/v1/advertiser/traffic-quality${toQueryString(params)}`
+  )
+}
+
 // --- Admin: revenue ---
 
 export function adminGetRevenueSummary() {
   return apiFetch<RevenueSummary>("/api/v1/admin/revenue/summary")
+}
+
+// --- Admin: ad format pricing ---
+
+export function adminGetAdFormatPricing() {
+  return apiFetch<AdFormatPricing>("/api/v1/admin/settings/ad-format-pricing")
+}
+
+export function adminUpdateAdFormatPricing(
+  adFormat: string,
+  rate: AdFormatRate
+) {
+  return apiFetch<AdFormatPricing>(
+    "/api/v1/admin/settings/ad-format-pricing",
+    { method: "PATCH", body: JSON.stringify({ adFormat, ...rate }) }
+  )
 }
 
 // --- Admin: campaign review, users, publisher sites ---
@@ -601,6 +649,42 @@ export function adminUpdateSiteStatus(siteId: string, status: SiteStatus) {
   return apiFetch<PublisherSite>(`/api/v1/admin/sites/${siteId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  })
+}
+
+// --- Admin: traffic quality / fraud protection ---
+
+export function adminGetTrafficQuality(params: {
+  startDate: string
+  endDate: string
+}) {
+  return apiFetch<TrafficQualityResponse>(
+    `/api/v1/admin/traffic-quality${toQueryString(params)}`
+  )
+}
+
+export function adminListBlacklistedIps(params?: {
+  page?: number
+  pageSize?: number
+}) {
+  return apiFetch<Paginated<BlacklistedIp, "ips">>(
+    `/api/v1/admin/blacklist${toQueryString(params ?? {})}`
+  )
+}
+
+export function adminAddBlacklistedIp(input: {
+  ipAddress: string
+  reason: string
+}) {
+  return apiFetch<BlacklistedIp>("/api/v1/admin/blacklist", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function adminRemoveBlacklistedIp(id: string) {
+  return apiFetch<{ removed: boolean }>(`/api/v1/admin/blacklist/${id}`, {
+    method: "DELETE",
   })
 }
 

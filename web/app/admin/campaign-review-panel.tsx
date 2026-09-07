@@ -277,7 +277,7 @@ export function CampaignReviewPanel({
                       {campaign.status}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                     <div>
                       <p className="text-xs text-muted-foreground">Budget</p>
                       <p className="tabular-nums">

@@ -35,7 +35,28 @@ export type ClickEvent = {
   request: RequestContext;
 };
 
-export type AdEvent = ImpressionEvent | ClickEvent;
+// Every non-billable decision fraud detection makes about a /serve or
+// /click request - both a hard block (the request never got an ad / never
+// got tracked) and a soft flag (the request was allowed through, but looked
+// suspicious enough to record, e.g. a datacenter IP). This is the ONLY place
+// that traffic - the majority of what a bot generates - shows up at all: a
+// blocked request never becomes an ImpressionEvent/ClickEvent, so without
+// this type it would vanish with no analytics trail whatsoever. See
+// FraudDetectionService and AdEngineController.
+export type TrafficEvent = {
+  type: 'traffic';
+  // 'impression' = evaluated at /serve, 'click' = evaluated at /click.
+  stage: 'impression' | 'click';
+  outcome: 'blocked' | 'flagged';
+  reason: string;
+  zone: string;
+  campaign?: string;
+  advertiser?: string;
+  time: number;
+  request: RequestContext;
+};
+
+export type AdEvent = ImpressionEvent | ClickEvent | TrafficEvent;
 
 export interface MessageBrokerPublisher {
   publish(channel: string, payload: AdEvent): Promise<void>;
@@ -60,4 +81,5 @@ export interface AnalyticsEventStore {
   ensureSchema(): Promise<void>;
   insertImpressions(events: ImpressionEvent[]): Promise<void>;
   insertClicks(events: ClickEvent[]): Promise<void>;
+  insertTrafficEvents(events: TrafficEvent[]): Promise<void>;
 }

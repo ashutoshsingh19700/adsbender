@@ -6,6 +6,7 @@ import type {
   GroupedMetricsParams,
   GroupedMetricsRow,
   MetricsRow,
+  TrafficQualityParams,
 } from './analytics-query.types';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
@@ -50,6 +51,62 @@ export class AnalyticsService {
     return {
       rows,
       totals: this.calculateTotals(rows),
+    };
+  }
+
+  // Powers the "Traffic Quality" / fraud-protection panel on the admin,
+  // publisher, and advertiser dashboards - see PublisherService and
+  // AdvertiserService for the zone/campaign-scoped wrappers around this, and
+  // AdminService for the unscoped (platform-wide) call. Shaped for a UI to
+  // render directly: a reason breakdown (for a bar chart / table) and a
+  // by-date trend (for a line chart), plus a blocked/flagged total either
+  // can headline with.
+  async getTrafficQuality(params: TrafficQualityParams) {
+    const rows = await this.analyticsQueryStore.getTrafficQuality(params);
+
+    const totalBlocked = rows
+      .filter((row) => row.outcome === 'blocked')
+      .reduce((sum, row) => sum + row.count, 0);
+    const totalFlagged = rows
+      .filter((row) => row.outcome === 'flagged')
+      .reduce((sum, row) => sum + row.count, 0);
+
+    const byReasonMap = new Map<
+      string,
+      { reason: string; stage: string; blocked: number; flagged: number }
+    >();
+    for (const row of rows) {
+      const key = `${row.stage}:${row.reason}`;
+      const existing = byReasonMap.get(key) ?? {
+        reason: row.reason,
+        stage: row.stage,
+        blocked: 0,
+        flagged: 0,
+      };
+      existing[row.outcome] += row.count;
+      byReasonMap.set(key, existing);
+    }
+
+    const byDateMap = new Map<string, { date: string; blocked: number; flagged: number }>();
+    for (const row of rows) {
+      const existing = byDateMap.get(row.date) ?? {
+        date: row.date,
+        blocked: 0,
+        flagged: 0,
+      };
+      existing[row.outcome] += row.count;
+      byDateMap.set(row.date, existing);
+    }
+
+    return {
+      totalBlocked,
+      totalFlagged,
+      byReason: Array.from(byReasonMap.values()).sort(
+        (a, b) => b.blocked + b.flagged - (a.blocked + a.flagged),
+      ),
+      byDate: Array.from(byDateMap.values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
+      ),
     };
   }
 

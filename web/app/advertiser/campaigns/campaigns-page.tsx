@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 
 import { CampaignManager } from "../campaign-manager"
 import { CampaignWizard } from "../campaign-wizard"
@@ -41,11 +41,6 @@ export function CampaignsPage() {
           )
         }}
       >
-        <TabsList>
-          <TabsTrigger value="campaigns">My Campaigns</TabsTrigger>
-          <TabsTrigger value="new">New Campaign</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="campaigns" className="space-y-4 pt-2">
           <CampaignManager refreshToken={listVersion} />
         </TabsContent>
@@ -54,6 +49,10 @@ export function CampaignsPage() {
           <CampaignWizard
             onCreated={() => {
               setListVersion((v) => v + 1)
+              setTab("campaigns")
+              router.replace("/advertiser/campaigns")
+            }}
+            onCancel={() => {
               setTab("campaigns")
               router.replace("/advertiser/campaigns")
             }}

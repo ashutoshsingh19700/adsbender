@@ -92,10 +92,13 @@ export class CreateCampaignDto {
   targetDevices: string[];
 
   @IsString()
-  @IsIn(['image', 'html'])
+  @IsIn(['image', 'video', 'html'])
   creativeType: string;
 
-  @ValidateIf((dto: CreateCampaignDto) => dto.creativeType === 'image')
+  @ValidateIf(
+    (dto: CreateCampaignDto) =>
+      dto.creativeType === 'image' || dto.creativeType === 'video',
+  )
   @IsString()
   @MinLength(8)
   creativeUrl?: string;
@@ -106,9 +109,9 @@ export class CreateCampaignDto {
   @MaxLength(5000)
   creativeHtml?: string;
 
-  // Required for image creatives - AdEngineController wraps the rendered
-  // <img> in a click-tracked link to this address, and an image ad with
-  // nowhere to click is a UI bug, not a valid campaign. Optional for
+  // Required for image/video creatives - AdEngineController wraps the
+  // rendered <img>/<video> in a click-tracked link to this address, and an
+  // ad with nowhere to click is a UI bug, not a valid campaign. Optional for
   // 'html' (stored for reference only, never auto-wrapped: raw HTML often
   // already has its own <a>/<button>/<form> elements, and wrapping the
   // whole block in an outer anchor would produce invalid nested-interactive
@@ -116,6 +119,7 @@ export class CreateCampaignDto {
   @ValidateIf(
     (dto: CreateCampaignDto) =>
       dto.creativeType === 'image' ||
+      dto.creativeType === 'video' ||
       (dto.destinationUrl !== undefined && dto.destinationUrl !== ''),
   )
   @IsUrl({ require_protocol: true })

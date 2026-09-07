@@ -21,6 +21,7 @@ describe('AdvertiserService', () => {
   };
   const analyticsService = {
     getDailyMetrics: jest.fn(),
+    getTrafficQuality: jest.fn(),
   };
   const walletManager = {
     releaseCampaignReservation: jest.fn(),
@@ -250,5 +251,60 @@ describe('AdvertiserService', () => {
       '2026-08-13',
       { campaignId: 'campaign-1' },
     );
+  });
+
+  it('scopes traffic-quality to every campaign this advertiser owns', async () => {
+    prismaService.campaign.findMany.mockResolvedValue([
+      { id: 'campaign-1' },
+      { id: 'campaign-2' },
+    ]);
+    analyticsService.getTrafficQuality.mockResolvedValue({
+      totalBlocked: 4,
+      totalFlagged: 0,
+      byReason: [],
+      byDate: [],
+    });
+
+    await service.getTrafficQuality('advertiser-1', {
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+    });
+
+    expect(prismaService.campaign.findMany).toHaveBeenCalledWith({
+      where: { advertiserId: 'advertiser-1' },
+      select: { id: true },
+    });
+    expect(analyticsService.getTrafficQuality).toHaveBeenCalledWith({
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      campaignIds: ['campaign-1', 'campaign-2'],
+    });
+  });
+
+  it('scopes traffic-quality to a single owned campaign when campaignId is given', async () => {
+    prismaService.campaign.findUnique.mockResolvedValue({
+      id: 'campaign-1',
+      advertiserId: 'advertiser-1',
+      status: CampaignStatus.ACTIVE,
+    });
+    analyticsService.getTrafficQuality.mockResolvedValue({
+      totalBlocked: 0,
+      totalFlagged: 0,
+      byReason: [],
+      byDate: [],
+    });
+
+    await service.getTrafficQuality('advertiser-1', {
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      campaignId: 'campaign-1',
+    });
+
+    expect(prismaService.campaign.findMany).not.toHaveBeenCalled();
+    expect(analyticsService.getTrafficQuality).toHaveBeenCalledWith({
+      startDate: '2026-08-01',
+      endDate: '2026-08-13',
+      campaignIds: ['campaign-1'],
+    });
   });
 });

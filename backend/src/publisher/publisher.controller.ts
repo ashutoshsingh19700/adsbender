@@ -137,6 +137,19 @@ export class PublisherController {
     return this.publisherService.getStatistics(req.user.id, query);
   }
 
+  // Powers the "Traffic Quality" panel on the publisher Statistics screen -
+  // blocked/flagged bot & fraud traffic across every zone this publisher
+  // owns, so they can see the platform is protecting their ad revenue from
+  // invalid clicks/impressions (which never get billed, hence never earn
+  // them anything either - see FraudDetectionService).
+  @Get('traffic-quality')
+  getTrafficQuality(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: { startDate: string; endDate: string; zoneId?: string },
+  ) {
+    return this.publisherService.getTrafficQuality(req.user.id, query);
+  }
+
   @Get('ad-zones/:id/performance')
   getAdZonePerformance(
     @Req() req: AuthenticatedRequest,

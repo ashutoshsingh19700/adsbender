@@ -10,22 +10,31 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Response } from 'express';
 
 import { AdEventProducerService } from './ad-event-producer.service';
 import { AdTargetingService } from './ad-targeting.service';
+import { ClickIntegrityService } from './click-integrity.service';
 import { ConversionTrackingService } from './conversion-tracking.service';
 import { DeviceDetectorService } from './device-detector.service';
+import type { FraudDecision } from './fraud-detection.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
 import { adServerPublicOrigin } from '../config/env';
 
+// Real ad traffic, not app users - already policed by
+// FraudDetectionService/FrequencyCappingService's own velocity checks (see
+// ThrottlerModule.forRoot's comment in app.module.ts for why a flat
+// per-IP cap doesn't belong here too).
+@SkipThrottle()
 @Controller('api/v1')
 export class AdEngineController {
   constructor(
     private readonly adTargetingService: AdTargetingService,
     private readonly adEventProducerService: AdEventProducerService,
+    private readonly clickIntegrityService: ClickIntegrityService,
     private readonly conversionTrackingService: ConversionTrackingService,
     private readonly deviceDetectorService: DeviceDetectorService,
     private readonly fraudDetectionService: FraudDetectionService,
@@ -48,10 +57,24 @@ export class AdEngineController {
     @Headers('origin') originHeader: string,
     @Ip() ipAddress: string,
   ) {
+    const country = this.geoIpService.resolveCountry(ipAddress, countryHeader);
+    const device = this.deviceDetectorService.detect(
+      userAgent,
+      Number(viewportWidth),
+    );
     const fraudDecision = await this.fraudDetectionService.evaluateServeRequest(
       ipAddress,
       userAgent,
     );
+
+    if (fraudDecision.blocked || fraudDecision.flagged) {
+      this.publishTrafficEvent(
+        fraudDecision,
+        'impression',
+        { origin, path, country, device, ipAddress, userAgent },
+        { zoneId },
+      );
+    }
 
     if (fraudDecision.blocked) {
       throw new ForbiddenException(fraudDecision.reason);
@@ -70,11 +93,6 @@ export class AdEngineController {
 
     const numericViewportWidth = Number(viewportWidth);
     const numericViewportHeight = Number(viewportHeight);
-    const country = this.geoIpService.resolveCountry(ipAddress, countryHeader);
-    const device = this.deviceDetectorService.detect(
-      userAgent,
-      numericViewportWidth,
-    );
     const selectedCampaign = await this.adTargetingService.selectCampaign({
       zoneId,
       country,
@@ -174,6 +192,16 @@ export class AdEngineController {
       return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${image}</a>`;
     }
 
+    if (campaign.creativeType === 'video' && campaign.creativeUrl) {
+      const video = `<video src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" autoplay muted loop playsinline style="display:block;max-width:100%;height:auto;"></video>`;
+
+      if (!campaign.destinationUrl) {
+        return video;
+      }
+
+      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${video}</a>`;
+    }
+
     return `<a href="/api/v1/trap" style="display:none !important;"></a>`;
   }
 
@@ -216,6 +244,15 @@ export class AdEngineController {
     clickUrl.searchParams.set('origin', context.origin);
     clickUrl.searchParams.set('path', context.path);
     clickUrl.searchParams.set('target', campaign.destinationUrl as string);
+    // Proves at /click time that this exact click followed a real /serve
+    // response for this exact zone+campaign - see ClickIntegrityService and
+    // FraudDetectionService.evaluateClickRequest. `t` (not `token`) to keep
+    // the click URL compact - it's rendered into the page as a literal
+    // anchor href on every impression.
+    clickUrl.searchParams.set(
+      't',
+      this.clickIntegrityService.sign(context.zoneId, campaign.id),
+    );
 
     // Only a CPA campaign gets a click_id at all - it's the sole thing
     // that ties a later conversion postback back to this specific click
@@ -228,6 +265,39 @@ export class AdEngineController {
     }
 
     return clickUrl.toString();
+  }
+
+  // Records every non-billable fraud/traffic-quality decision - blocked or
+  // merely flagged - so it shows up in the traffic_events ClickHouse table
+  // and the fraud analytics dashboards (see AnalyticsService.getTrafficQuality
+  // and PublisherService/AdvertiserService/AdminService's own scoped
+  // wrappers around it). A blocked request never becomes an
+  // ImpressionEvent/ClickEvent, so without this call it would leave no
+  // trace anywhere - see TrafficEvent's doc comment in ad-event.types.ts.
+  private publishTrafficEvent(
+    decision: FraudDecision,
+    stage: 'impression' | 'click',
+    request: {
+      origin: string;
+      path: string;
+      country: string | null;
+      device: string;
+      ipAddress: string;
+      userAgent: string;
+    },
+    context?: { zoneId: string; campaignId?: string; advertiserId?: string },
+  ) {
+    this.adEventProducerService.publishTraffic({
+      type: 'traffic',
+      stage,
+      outcome: decision.blocked ? 'blocked' : 'flagged',
+      reason: decision.reason ?? 'UNKNOWN',
+      zone: context?.zoneId ?? '',
+      campaign: context?.campaignId,
+      advertiser: context?.advertiserId,
+      time: Math.floor(Date.now() / 1000),
+      request,
+    });
   }
 
   private escapeHtmlAttribute(value: string): string {
@@ -277,38 +347,43 @@ export class AdEngineController {
     @Query('path') path: string,
     @Query('target') target: string,
     @Query('clickId') clickId: string,
+    @Query('t') clickToken: string,
     @Headers('user-agent') userAgent: string,
     @Headers('x-geo-country') countryHeader: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
   ) {
+    const numericCost = Number(cost) || 0;
+    const country = this.geoIpService.resolveCountry(ipAddress, countryHeader);
+    const device = this.deviceDetectorService.detect(userAgent, 0);
+    const requestContext = { origin, path, country, device, ipAddress, userAgent };
+
     const fraudDecision = await this.fraudDetectionService.evaluateClickRequest(
       ipAddress,
       userAgent,
+      { zoneId, campaignId, clickToken, billable: numericCost > 0 },
     );
+
+    if (fraudDecision.blocked || fraudDecision.flagged) {
+      this.publishTrafficEvent(fraudDecision, 'click', requestContext, {
+        zoneId,
+        campaignId,
+        advertiserId,
+      });
+    }
 
     if (fraudDecision.blocked) {
       throw new ForbiddenException(fraudDecision.reason);
     }
-
-    const country = this.geoIpService.resolveCountry(ipAddress, countryHeader);
-    const device = this.deviceDetectorService.detect(userAgent, 0);
 
     this.adEventProducerService.publishClick({
       type: 'click',
       zone: zoneId,
       campaign: campaignId,
       advertiser: advertiserId,
-      cost: Number(cost) || 0,
+      cost: numericCost,
       time: Math.floor(Date.now() / 1000),
-      request: {
-        origin,
-        path,
-        country,
-        device,
-        ipAddress,
-        userAgent,
-      },
+      request: requestContext,
     });
 
     // Only present for a CPA-priced campaign (see buildClickUrl) - persists

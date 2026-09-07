@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdEventProducerService } from './ad-event-producer.service';
 import { AdEngineController } from './ad-engine.controller';
 import { AdTargetingService } from './ad-targeting.service';
+import { ClickIntegrityService } from './click-integrity.service';
 import { ConversionTrackingService } from './conversion-tracking.service';
 import { DeviceDetectorService } from './device-detector.service';
 import { FraudDetectionService } from './fraud-detection.service';
@@ -17,6 +18,7 @@ describe('AdEngineController', () => {
   const adEventProducerService = {
     publishImpression: jest.fn(),
     publishClick: jest.fn(),
+    publishTraffic: jest.fn(),
   };
   const conversionTrackingService = {
     recordClick: jest.fn(),
@@ -67,6 +69,7 @@ describe('AdEngineController', () => {
           provide: SiteAutoVerificationService,
           useValue: siteAutoVerificationService,
         },
+        ClickIntegrityService,
         DeviceDetectorService,
         GeoIpService,
       ],
@@ -254,8 +257,11 @@ describe('AdEngineController', () => {
       '127.0.0.1',
     );
 
-    expect(response.creative?.html).toBe(
-      '<a href="http://localhost:3000/api/v1/click?zoneId=42&amp;campaignId=campaign-image-2&amp;advertiserId=advertiser-2&amp;cost=1.25&amp;origin=https%3A%2F%2Fpublisher.test&amp;path=%2Farticle&amp;target=https%3A%2F%2Fadvertiser.example%2Flanding%3Fref%3Dad" target="_blank" rel="noopener noreferrer"><img src="https://cdn.example.com/creative.png" alt="" style="display:block;max-width:100%;height:auto;" /></a>',
+    // The click URL also carries a `t` (click-integrity token) param signed
+    // per-response - see ClickIntegrityService - so this asserts the
+    // structure/params rather than the whole string verbatim.
+    expect(response.creative?.html).toMatch(
+      /^<a href="http:\/\/localhost:3000\/api\/v1\/click\?zoneId=42&amp;campaignId=campaign-image-2&amp;advertiserId=advertiser-2&amp;cost=1\.25&amp;origin=https%3A%2F%2Fpublisher\.test&amp;path=%2Farticle&amp;target=https%3A%2F%2Fadvertiser\.example%2Flanding%3Fref%3Dad&amp;t=[\w-]+\.[\w-]+" target="_blank" rel="noopener noreferrer"><img src="https:\/\/cdn\.example\.com\/creative\.png" alt="" style="display:block;max-width:100%;height:auto;" \/><\/a>$/,
     );
 
     if (previousTagUrl === undefined) {
@@ -438,6 +444,7 @@ describe('AdEngineController', () => {
       '/article',
       'https://advertiser.example/landing',
       '',
+      'valid-token',
       'Mozilla/5.0 Mobile',
       'US',
       '127.0.0.1',
@@ -447,6 +454,12 @@ describe('AdEngineController', () => {
     expect(fraudDetectionService.evaluateClickRequest).toHaveBeenCalledWith(
       '127.0.0.1',
       'Mozilla/5.0 Mobile',
+      {
+        zoneId: '42',
+        campaignId: 'campaign-high',
+        clickToken: 'valid-token',
+        billable: true,
+      },
     );
     expect(adEventProducerService.publishClick).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -483,6 +496,7 @@ describe('AdEngineController', () => {
         '/article',
         '',
         '',
+        '',
         'Mozilla/5.0 Mobile',
         'US',
         '127.0.0.1',
@@ -509,6 +523,7 @@ describe('AdEngineController', () => {
         '/article',
         'https://advertiser.example/landing',
         '',
+        '',
         'Mozilla/5.0 Mobile',
         'US',
         '127.0.0.1',
@@ -531,6 +546,7 @@ describe('AdEngineController', () => {
       '/article',
       'https://advertiser.example/landing?ref=ad',
       'click-abc-123',
+      '',
       'Mozilla/5.0 Mobile',
       'US',
       '127.0.0.1',
@@ -560,6 +576,7 @@ describe('AdEngineController', () => {
       '/article',
       'not-a-valid-url',
       'click-abc-123',
+      '',
       'Mozilla/5.0 Mobile',
       'US',
       '127.0.0.1',

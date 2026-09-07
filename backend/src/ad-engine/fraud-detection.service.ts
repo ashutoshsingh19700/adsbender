@@ -1,11 +1,34 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
+import { BLACKLIST_CACHE_STORE } from './blacklist-cache-sync.service';
+import type { BlacklistCacheStore } from './blacklist-cache.types';
+import { ClickIntegrityService } from './click-integrity.service';
+import { DatacenterIpService } from './datacenter-ip.service';
 import { FrequencyCappingService } from './frequency-capping.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type FraudDecision = {
   blocked: boolean;
   reason?: string;
+  // Set when the request was allowed through but still looked suspicious
+  // enough to be worth recording for analytics (e.g. a datacenter IP on a
+  // non-billable impression) - see AdEngineController, which logs this to
+  // the traffic_events ClickHouse table either way.
+  flagged?: boolean;
+};
+
+export type ClickEvaluationContext = {
+  zoneId: string;
+  campaignId: string;
+  // The `t` query param AdEngineController.buildClickUrl signs into every
+  // creative's click URL at /serve time - see ClickIntegrityService.
+  clickToken?: string;
+  // Whether this click will actually cost the advertiser money (a CPC
+  // campaign) - see AdEngineController.isCpmCampaign/isCpaCampaign. A
+  // non-billable click (CPM/CPA) still gets the same checks recorded for
+  // analytics, but a failed check only BLOCKS the ones that would otherwise
+  // move money.
+  billable: boolean;
 };
 
 @Injectable()
@@ -20,9 +43,16 @@ export class FraudDetectionService {
     /puppeteer/i,
   ];
 
+  private readonly blockDatacenterIpClicks =
+    process.env.BLOCK_DATACENTER_IP_CLICKS !== 'false';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly frequencyCappingService: FrequencyCappingService,
+    private readonly clickIntegrityService: ClickIntegrityService,
+    private readonly datacenterIpService: DatacenterIpService,
+    @Inject(BLACKLIST_CACHE_STORE)
+    private readonly blacklistCacheStore: BlacklistCacheStore,
   ) {}
 
   async evaluateServeRequest(
@@ -49,6 +79,15 @@ export class FraudDetectionService {
       };
     }
 
+    // A datacenter/hosting IP never blocks an impression outright - plenty
+    // of real people browse through corporate VPNs and proxies that live in
+    // the same ranges, and refusing to even SHOW an ad there would cost a
+    // publisher legitimate revenue. It's still worth recording (see
+    // AdEngineController), and it feeds the click-time decision below.
+    if (this.datacenterIpService.isDatacenterIp(this.normalizeIp(ipAddress))) {
+      return { blocked: false, flagged: true, reason: 'DATACENTER_IP' };
+    }
+
     return {
       blocked: false,
     };
@@ -57,6 +96,7 @@ export class FraudDetectionService {
   async evaluateClickRequest(
     ipAddress: string,
     userAgent?: string,
+    context?: ClickEvaluationContext,
   ): Promise<FraudDecision> {
     const baseDecision = await this.evaluateBotAndBlacklist(
       ipAddress,
@@ -78,6 +118,37 @@ export class FraudDetectionService {
       };
     }
 
+    if (context) {
+      // Proves this click followed a real /serve response for this exact
+      // zone+campaign (see ClickIntegrityService) rather than a script
+      // hitting /api/v1/click directly with a guessed/replayed URL - the
+      // single most direct defense against "just click the ad a bunch of
+      // times to run up the advertiser's bill" abuse. Only enforced (i.e.
+      // BLOCKS) when the click is actually billable; a non-billable
+      // CPM/CPA click still gets the outcome recorded for analytics.
+      const tokenVerification = this.clickIntegrityService.verify(
+        context.clickToken,
+        context.zoneId,
+        context.campaignId,
+      );
+
+      if (!tokenVerification.valid) {
+        if (context.billable) {
+          return { blocked: true, reason: tokenVerification.reason };
+        }
+
+        return { blocked: false, flagged: true, reason: tokenVerification.reason };
+      }
+
+      if (this.datacenterIpService.isDatacenterIp(this.normalizeIp(ipAddress))) {
+        if (context.billable && this.blockDatacenterIpClicks) {
+          return { blocked: true, reason: 'DATACENTER_IP_CLICK' };
+        }
+
+        return { blocked: false, flagged: true, reason: 'DATACENTER_IP' };
+      }
+    }
+
     return {
       blocked: false,
     };
@@ -88,11 +159,16 @@ export class FraudDetectionService {
     userAgent?: string,
   ): Promise<FraudDecision> {
     const normalizedIp = this.normalizeIp(ipAddress);
-    const blacklistEntry = await this.prisma.blacklistedIp.findUnique({
-      where: { ipAddress: normalizedIp },
-    });
+    // Reads the Redis-cached blacklist set (see BlacklistCacheSyncService)
+    // instead of a Postgres lookup on every single /serve and /click
+    // request - this ran unconditionally on the hottest path in the app,
+    // for a check that's almost always a miss (most IPs are never
+    // blacklisted). recordHoneypotHit below still writes straight to
+    // Postgres; the cache picks it up on its next periodic sync.
+    const isBlacklisted =
+      await this.blacklistCacheStore.isBlacklisted(normalizedIp);
 
-    if (blacklistEntry) {
+    if (isBlacklisted) {
       return {
         blocked: true,
         reason: 'IP_BLACKLISTED',

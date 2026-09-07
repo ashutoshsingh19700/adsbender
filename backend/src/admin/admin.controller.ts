@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -11,6 +12,7 @@ import {
 
 import { AdminService } from './admin.service';
 import { RejectCampaignDto } from './dto/reject-campaign.dto';
+import { UpdateAdFormatPricingDto } from './dto/update-ad-format-pricing.dto';
 import { UpdatePlatformFeeDto } from './dto/update-platform-fee.dto';
 import { AdminUpdateSiteStatusDto } from './dto/update-site-status.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -54,6 +56,30 @@ export class AdminController {
     return this.adminService.getRevenueSummary();
   }
 
+  // --- Traffic quality / fraud protection ---
+
+  @Get('traffic-quality')
+  getTrafficQuality(@Query() query: { startDate: string; endDate: string }) {
+    return this.adminService.getTrafficQuality(query);
+  }
+
+  @Get('blacklist')
+  listBlacklistedIps(
+    @Query() query: { page?: string; pageSize?: string },
+  ) {
+    return this.adminService.listBlacklistedIps(query);
+  }
+
+  @Post('blacklist')
+  addBlacklistedIp(@Body() dto: { ipAddress: string; reason: string }) {
+    return this.adminService.addBlacklistedIp(dto.ipAddress, dto.reason);
+  }
+
+  @Delete('blacklist/:id')
+  removeBlacklistedIp(@Param('id') id: string) {
+    return this.adminService.removeBlacklistedIp(id);
+  }
+
   // --- Platform settings ---
 
   @Get('settings/platform-fee')
@@ -64,6 +90,16 @@ export class AdminController {
   @Patch('settings/platform-fee')
   updatePlatformFee(@Body() dto: UpdatePlatformFeeDto) {
     return this.adminService.updatePlatformFee(dto.platformFeeBps);
+  }
+
+  @Get('settings/ad-format-pricing')
+  getAdFormatPricing() {
+    return this.adminService.getAdFormatPricing();
+  }
+
+  @Patch('settings/ad-format-pricing')
+  updateAdFormatPricing(@Body() dto: UpdateAdFormatPricingDto) {
+    return this.adminService.updateAdFormatPricing(dto);
   }
 
   // --- Users ---

@@ -95,10 +95,13 @@ export class UpdateCampaignDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['image', 'html'])
+  @IsIn(['image', 'video', 'html'])
   creativeType?: string;
 
-  @ValidateIf((dto: UpdateCampaignDto) => dto.creativeType === 'image')
+  @ValidateIf(
+    (dto: UpdateCampaignDto) =>
+      dto.creativeType === 'image' || dto.creativeType === 'video',
+  )
   @IsString()
   @MinLength(8)
   creativeUrl?: string;
@@ -110,10 +113,11 @@ export class UpdateCampaignDto {
   creativeHtml?: string;
 
   // See CreateCampaignDto.destinationUrl - same rule: required+validated
-  // for 'image', format-checked-if-present but optional for 'html'.
+  // for 'image'/'video', format-checked-if-present but optional for 'html'.
   @ValidateIf(
     (dto: UpdateCampaignDto) =>
       dto.creativeType === 'image' ||
+      dto.creativeType === 'video' ||
       (dto.destinationUrl !== undefined && dto.destinationUrl !== ''),
   )
   @IsUrl({ require_protocol: true })

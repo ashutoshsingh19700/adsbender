@@ -8,9 +8,11 @@ import { COUNTRIES } from "@/app/advertiser/campaign-fields"
 import {
   ApiError,
   getPublisherStatistics,
+  getPublisherTrafficQuality,
   listAdZones,
   listPublisherSites,
 } from "@/lib/api"
+import { TrafficQualityPanel } from "@/components/app/traffic-quality-panel"
 import type {
   AdZone,
   PublisherSite,
@@ -509,6 +511,21 @@ export function PublisherStatisticsPage() {
           </div>
         </div>
       </Card>
+
+      <div className="space-y-3 pt-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Traffic Quality
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Bot and click-fraud protection across your ad zones.
+          </p>
+        </div>
+        <TrafficQualityPanel
+          description="Impressions and clicks blocked or flagged as invalid traffic across every ad zone you own - this traffic is never billed to advertisers, so it never earns you anything either."
+          fetchTrafficQuality={getPublisherTrafficQuality}
+        />
+      </div>
     </div>
   )
 }
