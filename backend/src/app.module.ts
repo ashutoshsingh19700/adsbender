@@ -14,6 +14,7 @@ import { PublisherModule } from './publisher/publisher.module';
 import { AdvertiserModule } from './advertiser/advertiser.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminModule } from './admin/admin.module';
+import { PaymentsModule } from './payments/payments.module';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 
 @Module({
@@ -47,6 +48,7 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter';
     AdvertiserModule,
     AnalyticsModule,
     AdminModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [

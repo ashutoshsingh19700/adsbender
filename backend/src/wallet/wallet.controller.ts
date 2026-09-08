@@ -12,7 +12,7 @@ import {
 
 import type { AuthenticatedRequest } from '../common/authenticated-request';
 import { WalletManager } from './wallet-manager.service';
-import { DepositDto } from './dto/deposit.dto';
+import { AdminDepositDto } from './dto/admin-deposit.dto';
 import { RequestPayoutDto } from './dto/request-payout.dto';
 import { CompletePayoutDto } from './dto/complete-payout.dto';
 import { FailPayoutDto } from './dto/fail-payout.dto';
@@ -47,11 +47,19 @@ export class WalletController {
     return this.walletManager.listTransactions(req.user.id, query);
   }
 
-  @Post('deposit')
-  @Roles('ADVERTISER')
-  deposit(@Req() req: AuthenticatedRequest, @Body() dto: DepositDto) {
-    return this.walletManager.deposit(req.user.id, dto.amount, {
+  // ADMIN-only manual credit (e.g. reconciling a bank transfer, a goodwill
+  // adjustment) - this used to be reachable by any ADVERTISER with a
+  // client-supplied amount and no payment behind it whatsoever, i.e. free
+  // money. Real advertiser top-ups now go through
+  // PaymentsController (POST /api/v1/payments/razorpay/order + webhook),
+  // which only ever credits an amount fixed server-side at order creation
+  // and only after Razorpay confirms the payment.
+  @Post('admin/deposit')
+  @Roles('ADMIN')
+  adminDeposit(@Body() dto: AdminDepositDto) {
+    return this.walletManager.deposit(dto.userId, dto.amount, {
       referenceId: dto.idempotencyKey,
+      description: dto.reason,
     });
   }
 

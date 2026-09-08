@@ -14,6 +14,7 @@ import { AdminService } from './admin.service';
 import { RejectCampaignDto } from './dto/reject-campaign.dto';
 import { UpdateAdFormatPricingDto } from './dto/update-ad-format-pricing.dto';
 import { UpdatePlatformFeeDto } from './dto/update-platform-fee.dto';
+import { UpdateUsdToInrRateDto } from './dto/update-usd-to-inr-rate.dto';
 import { AdminUpdateSiteStatusDto } from './dto/update-site-status.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -100,6 +101,16 @@ export class AdminController {
   @Patch('settings/ad-format-pricing')
   updateAdFormatPricing(@Body() dto: UpdateAdFormatPricingDto) {
     return this.adminService.updateAdFormatPricing(dto);
+  }
+
+  @Get('settings/usd-to-inr-rate')
+  getUsdToInrRate() {
+    return this.adminService.getUsdToInrRate();
+  }
+
+  @Patch('settings/usd-to-inr-rate')
+  updateUsdToInrRate(@Body() dto: UpdateUsdToInrRateDto) {
+    return this.adminService.updateUsdToInrRate(dto.usdToInrRate);
   }
 
   // --- Users ---

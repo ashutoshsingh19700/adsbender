@@ -1,6 +1,21 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+// supabase-js has no built-in request timeout, so a hiccup on Supabase's
+// side hangs the calling request (login, profile fetch, etc.) indefinitely
+// instead of failing fast. Wrap fetch with a hard deadline.
+const SUPABASE_FETCH_TIMEOUT_MS = 10_000;
+
+function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  return fetch(input, {
+    ...init,
+    signal: AbortSignal.timeout(SUPABASE_FETCH_TIMEOUT_MS),
+  });
+}
+
 // Two clients, deliberately kept separate:
 //
 // - `admin` uses the service_role key. It bypasses Row Level Security and
@@ -28,6 +43,7 @@ export class SupabaseService {
 
     this.admin = createClient(url, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: fetchWithTimeout },
     });
 
     // Falls back to the service role key only if no anon key is configured,
@@ -35,6 +51,7 @@ export class SupabaseService {
     // backend/.env - but prefer setting it for real deployments.
     this.anon = createClient(url, anonKey ?? serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: fetchWithTimeout },
     });
   }
 }

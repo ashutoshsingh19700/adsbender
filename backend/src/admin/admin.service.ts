@@ -244,6 +244,15 @@ export class AdminService {
     };
   }
 
+  async getUsdToInrRate() {
+    const rate = await this.platformSettingsService.getUsdToInrRate();
+    return { usdToInrRate: rate.toString() };
+  }
+
+  async updateUsdToInrRate(rate: number) {
+    return this.platformSettingsService.updateUsdToInrRate(rate);
+  }
+
   // --- Revenue (platform-wide financial rollup) ---
   // Lifetime totals pulled straight from the Postgres ledger (source of
   // truth for money), not ClickHouse - ClickHouse's spend/payout columns

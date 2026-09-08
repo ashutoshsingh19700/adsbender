@@ -192,6 +192,53 @@ export class PlatformSettingsService {
     return this.getAdFormatPricing();
   }
 
+  // USD->INR rate used to price a Razorpay top-up paid in INR (see
+  // PaymentsService.createTopupOrder). Falls back to USD_TO_INR_RATE if no
+  // admin override has ever been saved. Same short-TTL cache as the fields
+  // above - this is read once per top-up order creation, not a hot path,
+  // but there's no reason to hit Postgres on every "Add funds" click either.
+  private cachedFxRate: Prisma.Decimal | null = null;
+  private cachedFxRateAt = 0;
+
+  async getUsdToInrRate(): Promise<Prisma.Decimal> {
+    const now = Date.now();
+
+    if (this.cachedFxRate !== null && now - this.cachedFxRateAt < CACHE_TTL_MS) {
+      return this.cachedFxRate;
+    }
+
+    const setting = await this.prisma.platformSetting.findUnique({
+      where: { id: PLATFORM_SETTING_ID },
+    });
+    const rate = setting?.usdToInrRate
+      ? new Prisma.Decimal(setting.usdToInrRate)
+      : new Prisma.Decimal(process.env.USD_TO_INR_RATE ?? '90');
+
+    this.cachedFxRate = rate;
+    this.cachedFxRateAt = now;
+
+    return rate;
+  }
+
+  async updateUsdToInrRate(rate: number): Promise<{ usdToInrRate: string }> {
+    if (!Number.isFinite(rate) || rate <= 0 || rate > 1000) {
+      throw new BadRequestException(
+        'usdToInrRate must be a positive number no greater than 1000',
+      );
+    }
+
+    const updated = await this.prisma.platformSetting.upsert({
+      where: { id: PLATFORM_SETTING_ID },
+      update: { usdToInrRate: rate },
+      create: { id: PLATFORM_SETTING_ID, usdToInrRate: rate },
+    });
+
+    this.cachedFxRate = new Prisma.Decimal(updated.usdToInrRate!);
+    this.cachedFxRateAt = Date.now();
+
+    return { usdToInrRate: updated.usdToInrRate!.toString() };
+  }
+
   // Advertiser is always charged the full `amount` - this is only what the
   // PUBLISHER gets credited after the platform's cut. Rounded to 2dp
   // (half-up) because every amount that reaches WalletManager must be an

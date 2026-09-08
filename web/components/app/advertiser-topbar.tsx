@@ -1,6 +1,8 @@
 "use client"
 
-import { Bell, Mail, Search } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Bell, LogOut, Mail, Search } from "lucide-react"
 
 import { useAuth } from "@/app/providers/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -10,9 +12,30 @@ import { Button } from "@/components/ui/button"
 // (see advertiser/layout.tsx) - the sidebar itself no longer carries the
 // account footer now that this identity strip exists up top.
 export function AdvertiserTopbar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "A"
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [menuOpen])
+
+  async function handleLogout() {
+    setMenuOpen(false)
+    await logout()
+    router.push("/")
+    router.refresh()
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
@@ -50,9 +73,36 @@ export function AdvertiserTopbar() {
           <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-rose-500" />
         </Button>
 
-        <span className="sidebar-pill-gradient flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white">
-          {initial}
-        </span>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label="Account menu"
+            aria-expanded={menuOpen}
+            className="sidebar-pill-gradient flex size-9 items-center justify-center rounded-full text-sm font-semibold text-white"
+          >
+            {initial}
+          </button>
+
+          {menuOpen ? (
+            <div className="absolute right-0 top-full z-40 mt-2 w-56 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+              {user?.email ? (
+                <div className="border-b px-3 py-2">
+                  <p className="truncate text-sm font-medium">{user.email}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role ?? "ADVERTISER"}</p>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <LogOut className="size-4" />
+                Log out
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </header>
   )

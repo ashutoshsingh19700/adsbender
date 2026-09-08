@@ -161,6 +161,7 @@ model User {
   adZones        AdZone[]
   publisherSites PublisherSite[]
   wallet         Wallet?
+  paymentOrders  PaymentOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -425,7 +426,61 @@ model PlatformSetting {
   // DEFAULT_AD_FORMAT_PRICING - see getAdFormatPricing().
   adFormatPricing Json?
 
+  // USD->INR conversion rate used to price a Razorpay top-up order when an
+  // advertiser pays in INR (see PaymentsService.createTopupOrder). The USD
+  // amount actually credited to the wallet is locked in on PaymentOrder at
+  // order-creation time and never recomputed from a later/different rate -
+  // this only decides how many rupees Razorpay charges for that fixed USD
+  // credit. Null falls back to RazorpayService's env-configured default.
+  usdToInrRate Decimal? @db.Decimal(12, 4)
+
   updatedAt DateTime @updatedAt
+}
+
+enum PaymentOrderStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+// One row per advertiser top-up attempt via a payment gateway (currently
+// only Razorpay). Money is only ever credited to the wallet once this row
+// transitions CREATED -> PAID (see PaymentsService.confirmPayment) - the
+// conditional `status: CREATED` guard on that update is what makes crediting
+// exactly-once safe even if the client-side verify call and the Razorpay
+// webhook both arrive for the same payment.
+model PaymentOrder {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider String @default("razorpay")
+  // Razorpay's order_... id. Unique so a given gateway order can only ever
+  // back one PaymentOrder row.
+  providerOrderId String @unique
+  // Razorpay's pay_... id, set once the payment actually lands. Unique so
+  // the same captured payment can never be used to credit two orders.
+  providerPaymentId String? @unique
+
+  // What the advertiser actually paid, in the currency they paid it in.
+  payCurrency String
+  payAmount   Decimal @db.Decimal(12, 2)
+
+  // USD amount credited to the wallet on success - fixed at order creation
+  // (see PlatformSetting.usdToInrRate doc above), independent of payCurrency.
+  creditAmountUsd Decimal @db.Decimal(12, 2)
+  // usdToInrRate snapshot used to price this order, for reconciliation only
+  // (not re-read on confirm). Null when payCurrency is already USD.
+  fxRate Decimal? @db.Decimal(12, 6)
+
+  status        PaymentOrderStatus @default(CREATED)
+  failureReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 // One row per click on a CPA-priced campaign only (see

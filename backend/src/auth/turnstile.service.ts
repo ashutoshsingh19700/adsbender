@@ -31,7 +31,11 @@ export class TurnstileService {
         body.set('remoteip', remoteIp);
       }
 
-      const res = await fetch(VERIFY_URL, { method: 'POST', body });
+      const res = await fetch(VERIFY_URL, {
+        method: 'POST',
+        body,
+        signal: AbortSignal.timeout(5_000),
+      });
       const data = (await res.json()) as { success: boolean };
       return data.success === true;
     } catch (error) {

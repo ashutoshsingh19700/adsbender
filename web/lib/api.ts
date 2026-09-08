@@ -498,11 +498,40 @@ export function listWalletTransactions(params?: {
   )
 }
 
-export function depositFunds(input: { amount: number; idempotencyKey?: string }) {
-  return apiFetch<{ message: string; balance: string; amount: string }>(
-    "/api/v1/wallet/deposit",
-    { method: "POST", body: JSON.stringify(input) }
-  )
+// --- Razorpay top-ups ---
+// Advertiser "Add funds" flow: create an order, open Razorpay Checkout with
+// it, then verify the result. Wallet crediting only ever happens server-side
+// once Razorpay confirms the payment (see backend/src/payments) - nothing
+// here ever tells the backend "credit me $X" directly.
+
+export type CreateRazorpayOrderResult = {
+  paymentOrderId: string
+  razorpayOrderId: string
+  razorpayKeyId: string
+  payAmount: string
+  payCurrency: "INR" | "USD"
+  creditAmountUsd: string
+}
+
+export function createRazorpayOrder(input: {
+  amountUsd: number
+  payCurrency: "INR" | "USD"
+}) {
+  return apiFetch<CreateRazorpayOrderResult>("/api/v1/payments/razorpay/order", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function verifyRazorpayPayment(input: {
+  razorpayOrderId: string
+  razorpayPaymentId: string
+  razorpaySignature: string
+}) {
+  return apiFetch<{ status: "PAID" }>("/api/v1/payments/razorpay/verify", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
 }
 
 export function requestPayout(input: {

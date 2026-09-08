@@ -8,9 +8,10 @@ import { toast } from "sonner"
 
 import {
   ApiError,
-  depositFunds,
+  createRazorpayOrder,
   getWalletSummary,
   listWalletTransactions,
+  verifyRazorpayPayment,
 } from "@/lib/api"
 import type {
   AdvertiserWalletSummary,
@@ -18,6 +19,8 @@ import type {
   WalletTransaction,
 } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
+import { loadRazorpayCheckout, openRazorpayCheckout } from "@/lib/razorpay"
+import { useAuth } from "@/app/providers/auth-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +40,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -48,7 +58,8 @@ import {
 } from "@/components/ui/table"
 
 const depositSchema = z.object({
-  amount: z.coerce.number().min(0.01, "Enter an amount greater than 0"),
+  amount: z.coerce.number().min(1, "Enter an amount of at least $1"),
+  payCurrency: z.enum(["INR", "USD"]),
 })
 
 type DepositFormInput = z.input<typeof depositSchema>
@@ -69,6 +80,7 @@ const TRANSACTION_LABELS: Record<TransactionType, string> = {
 const CREDIT_TYPES: TransactionType[] = ["DEPOSIT", "REFUND"]
 
 export function AdvertiserWalletPage() {
+  const { user } = useAuth()
   const [summary, setSummary] = React.useState<AdvertiserWalletSummary | null>(
     null
   )
@@ -76,10 +88,11 @@ export function AdvertiserWalletPage() {
     []
   )
   const [loading, setLoading] = React.useState(true)
+  const [payingViaCheckout, setPayingViaCheckout] = React.useState(false)
 
   const form = useForm<DepositFormInput, unknown, DepositFormOutput>({
     resolver: zodResolver(depositSchema),
-    defaultValues: { amount: 50 },
+    defaultValues: { amount: 50, payCurrency: "INR" },
   })
 
   const load = React.useCallback(async () => {
@@ -107,15 +120,45 @@ export function AdvertiserWalletPage() {
   }, [])
 
   async function onDeposit(values: DepositFormOutput) {
+    setPayingViaCheckout(true)
     try {
-      const result = await depositFunds({ amount: values.amount })
-      toast.success(`Added ${formatCurrency(result.amount)} to your wallet`)
-      form.reset({ amount: 50 })
+      const order = await createRazorpayOrder({
+        amountUsd: values.amount,
+        payCurrency: values.payCurrency,
+      })
+
+      await loadRazorpayCheckout()
+
+      const result = await openRazorpayCheckout({
+        key: order.razorpayKeyId,
+        order_id: order.razorpayOrderId,
+        amount: Math.round(Number(order.payAmount) * 100),
+        currency: order.payCurrency,
+        name: "Ad Network",
+        description: "Wallet top-up",
+        prefill: { name: user?.name, email: user?.email },
+        theme: { color: "#0f172a" },
+      })
+
+      await verifyRazorpayPayment({
+        razorpayOrderId: result.razorpay_order_id,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpaySignature: result.razorpay_signature,
+      })
+
+      toast.success(`Added ${formatCurrency(order.creditAmountUsd)} to your wallet`)
+      form.reset({ amount: 50, payCurrency: values.payCurrency })
       await load()
     } catch (error) {
+      if (error instanceof Error && error.message === "DISMISSED") {
+        // User closed the Razorpay modal without paying - not an error.
+        return
+      }
       toast.error(
-        error instanceof ApiError ? error.message : "Deposit failed"
+        error instanceof ApiError ? error.message : "Payment failed"
       )
+    } finally {
+      setPayingViaCheckout(false)
     }
   }
 
@@ -165,7 +208,7 @@ export function AdvertiserWalletPage() {
           </CardHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onDeposit)}>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
                   name="amount"
@@ -176,7 +219,7 @@ export function AdvertiserWalletPage() {
                         <Input
                           type="number"
                           step="0.01"
-                          min="0.01"
+                          min="1"
                           {...field}
                           value={(field.value as number | string) ?? ""}
                         />
@@ -185,13 +228,39 @@ export function AdvertiserWalletPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="payCurrency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pay with</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="INR">
+                            Indian Rupee (INR)
+                          </SelectItem>
+                          <SelectItem value="USD">US Dollar (USD)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
               <CardFooter>
                 <Button
                   type="submit"
-                  disabled={form.formState.isSubmitting}
+                  disabled={form.formState.isSubmitting || payingViaCheckout}
                 >
-                  {form.formState.isSubmitting ? "Adding funds..." : "Add funds"}
+                  {payingViaCheckout ? "Processing payment..." : "Add funds"}
                 </Button>
               </CardFooter>
             </form>

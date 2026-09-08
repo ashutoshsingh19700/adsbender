@@ -47,16 +47,19 @@ describe('WalletController', () => {
     expect(walletManager.getWallet).toHaveBeenCalledWith('user-1');
   });
 
-  it('passes deposit amount and idempotency key through', async () => {
+  it('passes admin deposit fields through', async () => {
     walletManager.deposit.mockResolvedValue({ message: 'Deposit successful' });
 
-    await controller.deposit(
-      { user: { id: 'advertiser-1' } },
-      { amount: 50, idempotencyKey: 'key-1' },
-    );
+    await controller.adminDeposit({
+      userId: 'advertiser-1',
+      amount: 50,
+      reason: 'Bank transfer reconciliation',
+      idempotencyKey: 'key-1',
+    });
 
     expect(walletManager.deposit).toHaveBeenCalledWith('advertiser-1', 50, {
       referenceId: 'key-1',
+      description: 'Bank transfer reconciliation',
     });
   });
 
