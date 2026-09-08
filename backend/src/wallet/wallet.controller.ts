@@ -51,9 +51,9 @@ export class WalletController {
   // adjustment) - this used to be reachable by any ADVERTISER with a
   // client-supplied amount and no payment behind it whatsoever, i.e. free
   // money. Real advertiser top-ups now go through
-  // PaymentsController (POST /api/v1/payments/razorpay/order + webhook),
+  // PaymentsController (POST /api/v1/payments/paypal/order + webhook),
   // which only ever credits an amount fixed server-side at order creation
-  // and only after Razorpay confirms the payment.
+  // and only after PayPal confirms the payment.
   @Post('admin/deposit')
   @Roles('ADMIN')
   adminDeposit(@Body() dto: AdminDepositDto) {

@@ -45,19 +45,8 @@ async function bootstrap() {
   // approach the multi-MB range - capping it (default well above any real
   // payload, well below "someone can OOM the process with a giant body")
   // is a cheap guard against a request-body memory-exhaustion attempt.
-  // `verify` runs on the raw bytes before JSON-parsing and just stashes
-  // them on the request - cheap (the buffer is already in memory to parse
-  // anyway) but required for RazorpayController's webhook signature check,
-  // which must HMAC the exact bytes Razorpay sent rather than a
-  // re-serialization of the parsed body (whitespace/key-order would break
-  // the signature).
   const bodyLimit = process.env.MAX_REQUEST_BODY_SIZE ?? '2mb';
-  app.useBodyParser('json', {
-    limit: bodyLimit,
-    verify: (req: express.Request & { rawBody?: Buffer }, _res, buf) => {
-      req.rawBody = buf;
-    },
-  });
+  app.useBodyParser('json', { limit: bodyLimit });
   app.useBodyParser('urlencoded', { limit: bodyLimit, extended: true });
 
   // Compresses every response over Express's default 1KB threshold -

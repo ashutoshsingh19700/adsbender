@@ -8,10 +8,11 @@ import { toast } from "sonner"
 
 import {
   ApiError,
-  createRazorpayOrder,
+  capturePayPalPayment,
+  createPayPalOrder,
   getWalletSummary,
   listWalletTransactions,
-  verifyRazorpayPayment,
+  type CreatePayPalOrderResult,
 } from "@/lib/api"
 import type {
   AdvertiserWalletSummary,
@@ -19,8 +20,7 @@ import type {
   WalletTransaction,
 } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
-import { loadRazorpayCheckout, openRazorpayCheckout } from "@/lib/razorpay"
-import { useAuth } from "@/app/providers/auth-provider"
+import { loadPayPalSdk, renderPayPalButtons } from "@/lib/paypal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,13 +40,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -59,7 +52,6 @@ import {
 
 const depositSchema = z.object({
   amount: z.coerce.number().min(1, "Enter an amount of at least $1"),
-  payCurrency: z.enum(["INR", "USD"]),
 })
 
 type DepositFormInput = z.input<typeof depositSchema>
@@ -80,7 +72,6 @@ const TRANSACTION_LABELS: Record<TransactionType, string> = {
 const CREDIT_TYPES: TransactionType[] = ["DEPOSIT", "REFUND"]
 
 export function AdvertiserWalletPage() {
-  const { user } = useAuth()
   const [summary, setSummary] = React.useState<AdvertiserWalletSummary | null>(
     null
   )
@@ -88,11 +79,14 @@ export function AdvertiserWalletPage() {
     []
   )
   const [loading, setLoading] = React.useState(true)
-  const [payingViaCheckout, setPayingViaCheckout] = React.useState(false)
+  const [creatingOrder, setCreatingOrder] = React.useState(false)
+  const [pendingOrder, setPendingOrder] =
+    React.useState<CreatePayPalOrderResult | null>(null)
+  const buttonsContainerRef = React.useRef<HTMLDivElement>(null)
 
   const form = useForm<DepositFormInput, unknown, DepositFormOutput>({
     resolver: zodResolver(depositSchema),
-    defaultValues: { amount: 50, payCurrency: "INR" },
+    defaultValues: { amount: 50 },
   })
 
   const load = React.useCallback(async () => {
@@ -119,48 +113,89 @@ export function AdvertiserWalletPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Step 1: create the order server-side, then reveal the PayPal Buttons
+  // for it (see the effect below) - PayPal Buttons render inline into the
+  // page rather than opening a JS-triggered modal like Razorpay did, so
+  // there's no single "pay" click that does everything.
   async function onDeposit(values: DepositFormOutput) {
-    setPayingViaCheckout(true)
+    setCreatingOrder(true)
     try {
-      const order = await createRazorpayOrder({
-        amountUsd: values.amount,
-        payCurrency: values.payCurrency,
-      })
-
-      await loadRazorpayCheckout()
-
-      const result = await openRazorpayCheckout({
-        key: order.razorpayKeyId,
-        order_id: order.razorpayOrderId,
-        amount: Math.round(Number(order.payAmount) * 100),
-        currency: order.payCurrency,
-        name: "Ad Network",
-        description: "Wallet top-up",
-        prefill: { name: user?.name, email: user?.email },
-        theme: { color: "#0f172a" },
-      })
-
-      await verifyRazorpayPayment({
-        razorpayOrderId: result.razorpay_order_id,
-        razorpayPaymentId: result.razorpay_payment_id,
-        razorpaySignature: result.razorpay_signature,
-      })
-
-      toast.success(`Added ${formatCurrency(order.creditAmountUsd)} to your wallet`)
-      form.reset({ amount: 50, payCurrency: values.payCurrency })
-      await load()
+      const order = await createPayPalOrder({ amountUsd: values.amount })
+      setPendingOrder(order)
     } catch (error) {
-      if (error instanceof Error && error.message === "DISMISSED") {
-        // User closed the Razorpay modal without paying - not an error.
-        return
-      }
       toast.error(
-        error instanceof ApiError ? error.message : "Payment failed"
+        error instanceof ApiError ? error.message : "Could not start payment"
       )
     } finally {
-      setPayingViaCheckout(false)
+      setCreatingOrder(false)
     }
   }
+
+  function cancelPendingOrder() {
+    setPendingOrder(null)
+  }
+
+  // Step 2: once an order exists, load the PayPal SDK (if not already) and
+  // render its Buttons into the container below the form. `createOrder`
+  // just hands back the order id we already created - PayPal never re-prices
+  // anything client-side. `onApprove` calls our backend to capture the
+  // payment; the backend talks to PayPal directly, so nothing the browser
+  // sends here is trusted as proof of payment.
+  React.useEffect(() => {
+    if (!pendingOrder || !buttonsContainerRef.current) {
+      return
+    }
+
+    let cancelled = false
+    let instance: { close: () => Promise<void> } | undefined
+
+    loadPayPalSdk(pendingOrder.paypalClientId)
+      .then(() => {
+        if (cancelled || !buttonsContainerRef.current) {
+          return
+        }
+        instance = renderPayPalButtons(buttonsContainerRef.current, {
+          createOrder: () => Promise.resolve(pendingOrder.paypalOrderId),
+          onApprove: async (data) => {
+            try {
+              await capturePayPalPayment({ paypalOrderId: data.orderID })
+              toast.success(
+                `Added ${formatCurrency(pendingOrder.creditAmountUsd)} to your wallet`
+              )
+              setPendingOrder(null)
+              form.reset({ amount: 50 })
+              await load()
+            } catch (error) {
+              toast.error(
+                error instanceof ApiError ? error.message : "Payment failed"
+              )
+            }
+          },
+          onCancel: () => {
+            // Buyer closed the PayPal popup without paying - not an error,
+            // just let them retry.
+            setPendingOrder(null)
+          },
+          onError: (err) => {
+            console.error(err)
+            toast.error("PayPal Checkout failed to load")
+            setPendingOrder(null)
+          },
+        })
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          toast.error(error.message)
+          setPendingOrder(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+      instance?.close().catch(() => undefined)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingOrder])
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
@@ -206,65 +241,54 @@ export function AdvertiserWalletPage() {
               Top up your wallet to fund campaign budgets.
             </CardDescription>
           </CardHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onDeposit)}>
+          {pendingOrder ? (
+            <>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="1"
-                          {...field}
-                          value={(field.value as number | string) ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="payCurrency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pay with</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="INR">
-                            Indian Rupee (INR)
-                          </SelectItem>
-                          <SelectItem value="USD">US Dollar (USD)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <p className="text-sm text-muted-foreground">
+                  Pay {formatCurrency(pendingOrder.creditAmountUsd)} with
+                  PayPal to complete your top-up. Indian PayPal accounts see
+                  an INR estimate at checkout - the charge itself is in USD.
+                </p>
+                <div ref={buttonsContainerRef} />
               </CardContent>
               <CardFooter>
-                <Button
-                  type="submit"
-                  disabled={form.formState.isSubmitting || payingViaCheckout}
-                >
-                  {payingViaCheckout ? "Processing payment..." : "Add funds"}
+                <Button variant="outline" onClick={cancelPendingOrder}>
+                  Cancel
                 </Button>
               </CardFooter>
-            </form>
-          </Form>
+            </>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onDeposit)}>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount ($)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="1"
+                            {...field}
+                            value={(field.value as number | string) ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" disabled={creatingOrder}>
+                    {creatingOrder ? "Starting checkout..." : "Continue to PayPal"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
+          )}
         </Card>
 
         <Card>

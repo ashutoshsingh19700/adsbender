@@ -192,11 +192,12 @@ export class PlatformSettingsService {
     return this.getAdFormatPricing();
   }
 
-  // USD->INR rate used to price a Razorpay top-up paid in INR (see
-  // PaymentsService.createTopupOrder). Falls back to USD_TO_INR_RATE if no
-  // admin override has ever been saved. Same short-TTL cache as the fields
-  // above - this is read once per top-up order creation, not a hot path,
-  // but there's no reason to hit Postgres on every "Add funds" click either.
+  // USD->INR rate, previously used to price a Razorpay top-up paid in INR.
+  // PayPal top-ups (see PaymentsService.createTopupOrder) are always priced
+  // in USD, so nothing in the payments flow reads this anymore - it's kept
+  // only for the admin endpoint below, which may still be useful for
+  // reference/display elsewhere. Falls back to USD_TO_INR_RATE if no admin
+  // override has ever been saved.
   private cachedFxRate: Prisma.Decimal | null = null;
   private cachedFxRateAt = 0;
 

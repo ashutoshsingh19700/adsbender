@@ -498,37 +498,32 @@ export function listWalletTransactions(params?: {
   )
 }
 
-// --- Razorpay top-ups ---
-// Advertiser "Add funds" flow: create an order, open Razorpay Checkout with
-// it, then verify the result. Wallet crediting only ever happens server-side
-// once Razorpay confirms the payment (see backend/src/payments) - nothing
-// here ever tells the backend "credit me $X" directly.
+// --- PayPal top-ups ---
+// Advertiser "Add funds" flow: create an order, render PayPal Buttons for
+// it, then have the backend capture the result once the buyer approves.
+// Wallet crediting only ever happens server-side once PayPal confirms the
+// capture (see backend/src/payments) - nothing here ever tells the backend
+// "credit me $X" directly. Every order is priced in USD; PayPal shows
+// non-US buyers (including Indian ones) a local-currency estimate on its
+// own side.
 
-export type CreateRazorpayOrderResult = {
+export type CreatePayPalOrderResult = {
   paymentOrderId: string
-  razorpayOrderId: string
-  razorpayKeyId: string
-  payAmount: string
-  payCurrency: "INR" | "USD"
+  paypalOrderId: string
+  paypalClientId: string
   creditAmountUsd: string
+  currency: "USD"
 }
 
-export function createRazorpayOrder(input: {
-  amountUsd: number
-  payCurrency: "INR" | "USD"
-}) {
-  return apiFetch<CreateRazorpayOrderResult>("/api/v1/payments/razorpay/order", {
+export function createPayPalOrder(input: { amountUsd: number }) {
+  return apiFetch<CreatePayPalOrderResult>("/api/v1/payments/paypal/order", {
     method: "POST",
     body: JSON.stringify(input),
   })
 }
 
-export function verifyRazorpayPayment(input: {
-  razorpayOrderId: string
-  razorpayPaymentId: string
-  razorpaySignature: string
-}) {
-  return apiFetch<{ status: "PAID" }>("/api/v1/payments/razorpay/verify", {
+export function capturePayPalPayment(input: { paypalOrderId: string }) {
+  return apiFetch<{ status: "PAID" }>("/api/v1/payments/paypal/capture", {
     method: "POST",
     body: JSON.stringify(input),
   })

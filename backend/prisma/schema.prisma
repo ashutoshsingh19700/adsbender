@@ -444,33 +444,41 @@ enum PaymentOrderStatus {
 }
 
 // One row per advertiser top-up attempt via a payment gateway (currently
-// only Razorpay). Money is only ever credited to the wallet once this row
-// transitions CREATED -> PAID (see PaymentsService.confirmPayment) - the
-// conditional `status: CREATED` guard on that update is what makes crediting
-// exactly-once safe even if the client-side verify call and the Razorpay
-// webhook both arrive for the same payment.
+// PayPal; the "razorpay" default below is a historical leftover from
+// before the PayPal migration - every new row sets `provider` explicitly,
+// see PaymentsService.createTopupOrder). Money is only ever credited to the
+// wallet once this row transitions CREATED -> PAID (see
+// PaymentsService.markPaidAndCredit) - the conditional `status: CREATED`
+// guard on that update is what makes crediting exactly-once safe even if
+// the client-side confirm call and the PayPal webhook both arrive for the
+// same payment.
 model PaymentOrder {
   id     String @id @default(uuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   provider String @default("razorpay")
-  // Razorpay's order_... id. Unique so a given gateway order can only ever
-  // back one PaymentOrder row.
+  // PayPal's order id (was Razorpay's order_... id for older rows). Unique
+  // so a given gateway order can only ever back one PaymentOrder row.
   providerOrderId String @unique
-  // Razorpay's pay_... id, set once the payment actually lands. Unique so
-  // the same captured payment can never be used to credit two orders.
+  // PayPal's capture id (was Razorpay's pay_... id for older rows), set once
+  // the payment actually lands. Unique so the same captured payment can
+  // never be used to credit two orders.
   providerPaymentId String? @unique
 
   // What the advertiser actually paid, in the currency they paid it in.
+  // Always "USD" for PayPal orders - PayPal shows non-US buyers a
+  // local-currency estimate on its own side, so there's nothing to record
+  // here beyond USD. Older Razorpay rows may have "INR" instead.
   payCurrency String
   payAmount   Decimal @db.Decimal(12, 2)
 
-  // USD amount credited to the wallet on success - fixed at order creation
-  // (see PlatformSetting.usdToInrRate doc above), independent of payCurrency.
+  // USD amount credited to the wallet on success - fixed at order creation,
+  // independent of payCurrency.
   creditAmountUsd Decimal @db.Decimal(12, 2)
-  // usdToInrRate snapshot used to price this order, for reconciliation only
-  // (not re-read on confirm). Null when payCurrency is already USD.
+  // usdToInrRate snapshot used to price an older Razorpay INR order, for
+  // reconciliation only (not re-read on confirm). Always null for PayPal
+  // orders, which are always priced in USD.
   fxRate Decimal? @db.Decimal(12, 6)
 
   status        PaymentOrderStatus @default(CREATED)

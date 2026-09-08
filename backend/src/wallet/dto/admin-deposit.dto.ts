@@ -8,9 +8,9 @@ import {
 } from 'class-validator';
 
 // Manual, ADMIN-only wallet credit - NOT the advertiser top-up path (that's
-// PaymentsController, gated on a verified Razorpay payment). This is for
+// PaymentsController, gated on a verified PayPal payment). This is for
 // ops reconciling something outside the gateway (a bank transfer, a
-// goodwill credit), so unlike a Razorpay-sourced deposit it requires a
+// goodwill credit), so unlike a PayPal-sourced deposit it requires a
 // human-readable reason and an explicit target user.
 export class AdminDepositDto {
   @IsString()
