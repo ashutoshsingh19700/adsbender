@@ -8,9 +8,11 @@ import {
   Archive,
   BarChart3,
   Loader2,
+  Megaphone,
   Pause,
   Pencil,
   Play,
+  Search,
   Trash2,
   Wallet,
 } from "lucide-react"
@@ -58,6 +60,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { CampaignStatusBadge } from "@/components/app/campaign-status-badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -98,18 +101,6 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 
 type CampaignStatusValue = Campaign["status"]
-
-const STATUS_BADGE: Record<
-  CampaignStatusValue,
-  "default" | "outline" | "secondary"
-> = {
-  DRAFT: "outline",
-  PENDING_REVIEW: "outline",
-  ACTIVE: "default",
-  PAUSED: "outline",
-  COMPLETED: "secondary",
-  ARCHIVED: "secondary",
-}
 
 const STATUS_OPTIONS: CampaignStatusValue[] = [
   "DRAFT",
@@ -308,26 +299,40 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <div className="grid min-w-40 flex-1 gap-1.5">
-            <Label htmlFor="campaign-filter-search">Campaign</Label>
-            <Input
-              id="campaign-filter-search"
-              placeholder="Search by name"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+        <CardContent className="flex flex-wrap items-end gap-4 py-5">
+          <div className="grid min-w-48 flex-1 gap-1.5">
+            <Label
+              htmlFor="campaign-filter-search"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Campaign
+            </Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="campaign-filter-search"
+                placeholder="Search by name"
+                className="rounded-lg pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="campaign-filter-status">Status</Label>
+            <Label
+              htmlFor="campaign-filter-status"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Status
+            </Label>
             <Select
               value={statusFilter}
               onValueChange={(v) =>
                 setStatusFilter(v as CampaignStatusValue | "ALL")
               }
             >
-              <SelectTrigger id="campaign-filter-status" className="w-40">
+              <SelectTrigger id="campaign-filter-status" className="w-40 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -341,9 +346,14 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="campaign-filter-country">Country</Label>
+            <Label
+              htmlFor="campaign-filter-country"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Country
+            </Label>
             <Select value={countryFilter} onValueChange={setCountryFilter}>
-              <SelectTrigger id="campaign-filter-country" className="w-40">
+              <SelectTrigger id="campaign-filter-country" className="w-40 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -357,21 +367,31 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="campaign-filter-from">From</Label>
+            <Label
+              htmlFor="campaign-filter-from"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              From
+            </Label>
             <Input
               id="campaign-filter-from"
               type="date"
-              className="w-40"
+              className="w-40 rounded-lg"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="campaign-filter-to">To</Label>
+            <Label
+              htmlFor="campaign-filter-to"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              To
+            </Label>
             <Input
               id="campaign-filter-to"
               type="date"
-              className="w-40"
+              className="w-40 rounded-lg"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
             />
@@ -379,6 +399,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <Button
             type="button"
             variant="outline"
+            className="rounded-lg"
             onClick={resetFilters}
             disabled={!filtersActive}
           >
@@ -396,10 +417,10 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
       ) : (
         <div className="space-y-4">
       {/* Desktop / tablet: table */}
-      <Card className="hidden sm:block">
+      <Card className="hidden rounded-2xl border-none py-0 shadow-sm ring-1 ring-border sm:block">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase">
               <TableRow>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Status</TableHead>
@@ -413,13 +434,16 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
             <TableBody>
               {filteredCampaigns.map((campaign) => (
                 <TableRow key={campaign.id}>
-                  <TableCell className="font-medium">
-                    {campaign.campaignName}
+                  <TableCell className="font-semibold">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-50 via-violet-50 to-pink-50 text-violet-600">
+                        <Megaphone className="size-3.5" />
+                      </span>
+                      {campaign.campaignName}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_BADGE[campaign.status]}>
-                      {campaign.status}
-                    </Badge>
+                    <CampaignStatusBadge status={campaign.status} />
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(campaign.totalBudget)}
@@ -431,7 +455,10 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
                     {formatCurrency(campaign.maxCpc)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    <SpendCell spend={spendById[campaign.id]} />
+                    <SpendCell
+                      spend={spendById[campaign.id]}
+                      budget={campaign.totalBudget}
+                    />
                   </TableCell>
                   <TableCell>
                     <CampaignActions
@@ -467,10 +494,8 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <Card key={campaign.id}>
             <CardContent className="space-y-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-medium">{campaign.campaignName}</p>
-                <Badge variant={STATUS_BADGE[campaign.status]}>
-                  {campaign.status}
-                </Badge>
+                <p className="font-semibold">{campaign.campaignName}</p>
+                <CampaignStatusBadge status={campaign.status} />
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
@@ -494,7 +519,10 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
                 <div>
                   <p className="text-xs text-muted-foreground">Spend</p>
                   <div className="tabular-nums">
-                    <SpendCell spend={spendById[campaign.id]} />
+                    <SpendCell
+                      spend={spendById[campaign.id]}
+                      budget={campaign.totalBudget}
+                    />
                   </div>
                 </div>
               </div>
@@ -612,14 +640,31 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
   )
 }
 
-function SpendCell({ spend }: { spend: CampaignSpend | "error" | undefined }) {
+function SpendCell({
+  spend,
+  budget,
+}: {
+  spend: CampaignSpend | "error" | undefined
+  budget: number
+}) {
   if (spend === undefined) {
     return <Skeleton className="ml-auto h-4 w-14" />
   }
   if (spend === "error") {
     return <span className="text-muted-foreground">-</span>
   }
-  return <>{formatCurrency(spend.spendToDate)}</>
+  const pct = budget > 0 ? Math.min(100, (spend.spendToDate / budget) * 100) : 0
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <span>{formatCurrency(spend.spendToDate)}</span>
+      <span className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+        <span
+          className="block h-full rounded-full bg-violet-500"
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+    </div>
+  )
 }
 
 function CampaignActions({
@@ -662,19 +707,31 @@ function CampaignActions({
         wrap ? "flex flex-wrap gap-2" : "flex flex-wrap justify-end gap-1.5"
       }
     >
-      <Button variant="outline" size="sm" onClick={onPerformance}>
+      <Button variant="outline" size="sm" className="rounded-lg" onClick={onPerformance}>
         <BarChart3 className="size-3.5" /> Performance
       </Button>
-      <Button variant="outline" size="sm" onClick={onFinancials}>
+      <Button variant="outline" size="sm" className="rounded-lg" onClick={onFinancials}>
         <Wallet className="size-3.5" /> Financials
       </Button>
       {canEdit ? (
-        <Button variant="outline" size="sm" onClick={onEdit} disabled={isBusy}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg"
+          onClick={onEdit}
+          disabled={isBusy}
+        >
           <Pencil className="size-3.5" /> Edit
         </Button>
       ) : null}
       {campaign.status === "ACTIVE" ? (
-        <Button variant="outline" size="sm" onClick={onPause} disabled={isBusy}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg"
+          onClick={onPause}
+          disabled={isBusy}
+        >
           {actionState === "pause" ? (
             <Loader2 className="size-3.5 animate-spin" />
           ) : (
@@ -684,7 +741,13 @@ function CampaignActions({
         </Button>
       ) : null}
       {campaign.status === "PAUSED" ? (
-        <Button variant="outline" size="sm" onClick={onResume} disabled={isBusy}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg"
+          onClick={onResume}
+          disabled={isBusy}
+        >
           {actionState === "resume" ? (
             <Loader2 className="size-3.5 animate-spin" />
           ) : (
@@ -697,6 +760,7 @@ function CampaignActions({
         <Button
           variant="destructive"
           size="sm"
+          className="rounded-lg"
           onClick={onArchive}
           disabled={isBusy}
         >
@@ -707,6 +771,7 @@ function CampaignActions({
         <Button
           variant="destructive"
           size="sm"
+          className="rounded-lg"
           onClick={onDelete}
           disabled={isBusy}
         >

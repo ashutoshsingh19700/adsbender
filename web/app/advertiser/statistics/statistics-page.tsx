@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { Eye, MousePointerClick, Wallet } from "lucide-react"
 
 import {
   ApiError,
@@ -10,9 +11,9 @@ import {
   listCampaigns,
 } from "@/lib/api"
 import type { AnalyticsTotals, Campaign, CampaignStatus } from "@/lib/types"
-import { defaultDateRange, formatCurrency, formatPercent } from "@/lib/utils"
+import { cn, defaultDateRange, formatCurrency, formatPercent } from "@/lib/utils"
 import { TrafficQualityPanel } from "@/components/app/traffic-quality-panel"
-import { Badge } from "@/components/ui/badge"
+import { CampaignStatusBadge } from "@/components/app/campaign-status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -33,18 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-const STATUS_BADGE: Record<
-  CampaignStatus,
-  "default" | "outline" | "secondary"
-> = {
-  DRAFT: "outline",
-  PENDING_REVIEW: "outline",
-  ACTIVE: "default",
-  PAUSED: "outline",
-  COMPLETED: "secondary",
-  ARCHIVED: "secondary",
-}
 
 type Row = {
   campaign: Campaign
@@ -139,7 +128,7 @@ export function StatisticsPage() {
   return (
     <div className="space-y-6 px-4 py-10 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Statistics</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
         <p className="text-muted-foreground">
           Impressions, clicks, CTR, and spend per campaign for the selected
           date range.
@@ -147,15 +136,20 @@ export function StatisticsPage() {
       </div>
 
       {/* Filter bar */}
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-3">
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+        <CardContent className="flex flex-wrap items-end gap-4 py-5">
           <div className="grid gap-1.5">
-            <Label htmlFor="stats-from">Date range</Label>
+            <Label
+              htmlFor="stats-from"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Date range
+            </Label>
             <div className="flex items-center gap-2">
               <Input
                 id="stats-from"
                 type="date"
-                className="w-40"
+                className="w-40 rounded-lg"
                 value={range.startDate}
                 onChange={(e) =>
                   setRange((r) => ({ ...r, startDate: e.target.value }))
@@ -165,7 +159,7 @@ export function StatisticsPage() {
               <Input
                 id="stats-to"
                 type="date"
-                className="w-40"
+                className="w-40 rounded-lg"
                 value={range.endDate}
                 onChange={(e) =>
                   setRange((r) => ({ ...r, endDate: e.target.value }))
@@ -174,9 +168,14 @@ export function StatisticsPage() {
             </div>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="stats-country">Country</Label>
+            <Label
+              htmlFor="stats-country"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Country
+            </Label>
             <Select value={countryFilter} onValueChange={setCountryFilter}>
-              <SelectTrigger id="stats-country" className="w-40">
+              <SelectTrigger id="stats-country" className="w-40 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -190,12 +189,17 @@ export function StatisticsPage() {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="stats-status">Campaign status</Label>
+            <Label
+              htmlFor="stats-status"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Campaign status
+            </Label>
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as CampaignStatus | "ALL")}
             >
-              <SelectTrigger id="stats-status" className="w-44">
+              <SelectTrigger id="stats-status" className="w-44 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -220,6 +224,7 @@ export function StatisticsPage() {
           <Button
             onClick={() => load(range.startDate, range.endDate)}
             disabled={loading}
+            className="brand-gradient rounded-lg border-0 font-semibold text-white"
           >
             {loading ? "Applying..." : "Apply"}
           </Button>
@@ -229,17 +234,29 @@ export function StatisticsPage() {
       {/* Summary strip */}
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryTile
+          icon={Eye}
+          iconClassName="bg-indigo-50 text-indigo-600"
           label="Impressions"
           value={grandTotals.impressions.toLocaleString()}
         />
-        <SummaryTile label="Clicks" value={grandTotals.clicks.toLocaleString()} />
-        <SummaryTile label="Spent, $" value={formatCurrency(grandTotals.spend)} />
+        <SummaryTile
+          icon={MousePointerClick}
+          iconClassName="bg-pink-50 text-pink-600"
+          label="Clicks"
+          value={grandTotals.clicks.toLocaleString()}
+        />
+        <SummaryTile
+          icon={Wallet}
+          iconClassName="bg-orange-50 text-orange-600"
+          label="Spent, $"
+          value={formatCurrency(grandTotals.spend)}
+        />
       </div>
 
-      <Card>
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase">
               <TableRow>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Status</TableHead>
@@ -281,7 +298,7 @@ export function StatisticsPage() {
 
       <div className="space-y-3 pt-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-lg font-bold tracking-tight">
             Traffic Quality
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -304,9 +321,9 @@ function StatisticsRow({ row }: { row: Row }) {
   if (totals === undefined) {
     return (
       <TableRow>
-        <TableCell className="font-medium">{campaign.campaignName}</TableCell>
+        <TableCell className="font-semibold">{campaign.campaignName}</TableCell>
         <TableCell>
-          <Badge variant={STATUS_BADGE[campaign.status]}>{campaign.status}</Badge>
+          <CampaignStatusBadge status={campaign.status} />
         </TableCell>
         <TableCell colSpan={5}>
           <Skeleton className="ml-auto h-4 w-full" />
@@ -318,9 +335,9 @@ function StatisticsRow({ row }: { row: Row }) {
   if (totals === "error") {
     return (
       <TableRow>
-        <TableCell className="font-medium">{campaign.campaignName}</TableCell>
+        <TableCell className="font-semibold">{campaign.campaignName}</TableCell>
         <TableCell>
-          <Badge variant={STATUS_BADGE[campaign.status]}>{campaign.status}</Badge>
+          <CampaignStatusBadge status={campaign.status} />
         </TableCell>
         <TableCell colSpan={5} className="text-center text-muted-foreground">
           -
@@ -333,9 +350,9 @@ function StatisticsRow({ row }: { row: Row }) {
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{campaign.campaignName}</TableCell>
+      <TableCell className="font-semibold">{campaign.campaignName}</TableCell>
       <TableCell>
-        <Badge variant={STATUS_BADGE[campaign.status]}>{campaign.status}</Badge>
+        <CampaignStatusBadge status={campaign.status} />
       </TableCell>
       <TableCell className="text-right tabular-nums">
         {totals.impressions.toLocaleString()}
@@ -356,12 +373,32 @@ function StatisticsRow({ row }: { row: Row }) {
   )
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function SummaryTile({
+  label,
+  value,
+  icon: Icon,
+  iconClassName,
+}: {
+  label: string
+  value: string
+  icon: React.ComponentType<{ className?: string }>
+  iconClassName: string
+}) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
+    <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+      <CardContent className="flex items-start justify-between gap-3 py-5">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+        </div>
+        <span
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            iconClassName
+          )}
+        >
+          <Icon className="size-4.5" />
+        </span>
       </CardContent>
     </Card>
   )

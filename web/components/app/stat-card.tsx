@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils"
 // Compact metric tile used at the top of every dashboard (Advertiser
 // Studio, Publisher Portal, Admin Console) so the "how is this account
 // doing right now" summary always looks the same regardless of role.
+const TONE_ICON_STYLES: Record<"default" | "positive" | "warning", string> = {
+  default: "bg-blue-50 text-blue-600",
+  positive: "bg-emerald-50 text-emerald-600",
+  warning: "bg-amber-50 text-amber-600",
+}
+
 export function StatCard({
   label,
   value,
@@ -23,21 +29,19 @@ export function StatCard({
   tone?: "default" | "positive" | "warning"
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between gap-3 pt-6">
+    <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+      <CardContent className="flex items-start justify-between gap-3 py-5">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
           {loading ? (
             <Skeleton className="mt-1.5 h-7 w-20" />
           ) : (
-            <p className="mt-0.5 text-2xl font-semibold tabular-nums">
-              {value}
-            </p>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
           )}
           {hint ? (
             <p
               className={cn(
-                "mt-1 text-xs",
+                "mt-1 text-xs font-medium",
                 tone === "positive" && "text-emerald-600",
                 tone === "warning" && "text-amber-600",
                 tone === "default" && "text-muted-foreground"
@@ -48,7 +52,12 @@ export function StatCard({
           ) : null}
         </div>
         {Icon ? (
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+          <div
+            className={cn(
+              "flex size-9 shrink-0 items-center justify-center rounded-xl",
+              TONE_ICON_STYLES[tone]
+            )}
+          >
             <Icon className="size-4.5" />
           </div>
         ) : null}

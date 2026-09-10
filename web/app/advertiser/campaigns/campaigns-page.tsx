@@ -2,8 +2,10 @@
 
 import * as React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Plus } from "lucide-react"
 
 import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 
 import { CampaignManager } from "../campaign-manager"
 import { CampaignWizard } from "../campaign-wizard"
@@ -23,14 +25,28 @@ export function CampaignsPage() {
     setTab(searchParams.get("tab") === "new" ? "new" : "campaigns")
   }, [searchParams])
 
+  function openWizard() {
+    setTab("new")
+    router.replace("/advertiser/campaigns?tab=new")
+  }
+
   return (
     <div className="space-y-6 px-4 py-10 sm:px-6 lg:px-8">
       {tab === "new" ? null : (
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Campaigns</h1>
-          <p className="text-muted-foreground">
-            Manage your campaigns or submit a new one.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Campaigns</h1>
+            <p className="text-muted-foreground">
+              Manage your campaigns or submit a new one.
+            </p>
+          </div>
+          <Button
+            onClick={openWizard}
+            className="brand-gradient btn-shine gap-2 rounded-xl border-0 font-semibold text-white shadow-sm shadow-fuchsia-900/10"
+          >
+            <Plus className="size-4" />
+            New Campaign
+          </Button>
         </div>
       )}
 

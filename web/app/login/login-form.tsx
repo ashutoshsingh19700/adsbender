@@ -7,11 +7,12 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
 
 import { useAuth } from "@/app/providers/auth-provider"
 import { ApiError, login, register } from "@/lib/api"
 import { ROLE_HOME } from "@/lib/roles"
+import { cn } from "@/lib/utils"
 import type { AuthUser, UserRole } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +35,7 @@ import {
 import { GoogleSignInButton } from "@/components/app/google-sign-in-button"
 import { PhoneOtpForm } from "@/components/app/phone-otp-form"
 import { SignupBenefits } from "./signup-benefits"
+import { LoginHero } from "./login-hero"
 
 type AudienceRole = Extract<UserRole, "ADVERTISER" | "PUBLISHER">
 
@@ -212,8 +214,6 @@ export function LoginForm() {
     }
   }
 
-  const otherRole: AudienceRole = role === "PUBLISHER" ? "ADVERTISER" : "PUBLISHER"
-
   const passwordToggle = (
     <button
       type="button"
@@ -226,18 +226,65 @@ export function LoginForm() {
   )
 
   const card = (
-    <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+    <div className="w-full max-w-md rounded-3xl border bg-card p-5 shadow-lg shadow-black/[0.03] sm:p-6">
+      <div className="inline-flex rounded-full border bg-muted/50 p-1">
+        {(["ADVERTISER", "PUBLISHER"] as AudienceRole[]).map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setRole(option)}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-xs font-bold transition-colors",
+              role === option
+                ? "sidebar-pill-gradient text-white shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {ROLE_LABEL[option]}
+          </button>
+        ))}
+      </div>
+
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">
         {mode === "login" ? "Log in as " : "Sign up as "}
-        {withArticle(role)} <span className="text-violet-600">{ROLE_LABEL[role]}</span>
+        {withArticle(role)}{" "}
+        <span className="bg-gradient-to-r from-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
+          {ROLE_LABEL[role]}
+        </span>
       </h1>
-      <button
-        type="button"
-        onClick={() => setRole(otherRole)}
-        className="mt-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
-      >
-        I&apos;m {withArticle(otherRole)} {ROLE_LABEL[otherRole]}
-      </button>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        {mode === "login" ? (
+          <>
+            New here?{" "}
+            <button
+              type="button"
+              onClick={() => {
+                resetCaptcha()
+                setMode("register")
+              }}
+              className="font-medium text-violet-600 hover:underline"
+            >
+              Create an account
+            </button>{" "}
+            instead.
+          </>
+        ) : (
+          <>
+            Already {withArticle(role)} {ROLE_LABEL[role]}?{" "}
+            <button
+              type="button"
+              onClick={() => {
+                resetCaptcha()
+                setMode("login")
+              }}
+              className="font-medium text-violet-600 hover:underline"
+            >
+              Log in
+            </button>{" "}
+            instead.
+          </>
+        )}
+      </p>
 
       {method === "phone" ? (
         <div className="mt-6">
@@ -247,7 +294,7 @@ export function LoginForm() {
         <Form {...loginForm}>
           <form
             onSubmit={loginForm.handleSubmit(onLogin)}
-            className="mt-6 space-y-4"
+            className="mt-5 space-y-3"
           >
             <FormField
               control={loginForm.control}
@@ -256,13 +303,16 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel className="sr-only">Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="Login / Email *"
-                      className="h-12 rounded-xl px-4 text-base"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Email address"
+                        className="h-12 rounded-xl pl-11 pr-4 text-base"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -276,11 +326,12 @@ export function LoginForm() {
                   <FormLabel className="sr-only">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
+                      <Lock className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         type={showPassword ? "text" : "password"}
                         autoComplete="current-password"
-                        placeholder="Password *"
-                        className="h-12 rounded-xl px-4 pr-11 text-base"
+                        placeholder="Password"
+                        className="h-12 rounded-xl pl-11 pr-11 text-base"
                         {...field}
                       />
                       {passwordToggle}
@@ -293,23 +344,25 @@ export function LoginForm() {
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"
-                className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
+                className="text-sm font-medium text-muted-foreground hover:text-violet-600"
               >
-                Forgot Password?
+                Forgot password?
               </Link>
             </div>
             {/* Cloudflare Turnstile - blocks scripted login attempts */}
-            <TurnstileWidget
-              ref={turnstileRef}
-              onVerify={handleCaptchaVerify}
-              onExpire={() => {
-                captchaTokenRef.current = null
-                setCaptchaToken(null)
-              }}
-            />
+            <div className="rounded-2xl border bg-muted/30 p-2">
+              <TurnstileWidget
+                ref={turnstileRef}
+                onVerify={handleCaptchaVerify}
+                onExpire={() => {
+                  captchaTokenRef.current = null
+                  setCaptchaToken(null)
+                }}
+              />
+            </div>
             <Button
               type="submit"
-              className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
+              className="brand-gradient btn-shine h-12 w-full rounded-xl border-0 text-base font-semibold text-white"
               disabled={loginForm.formState.isSubmitting || !captchaToken}
             >
               {loginForm.formState.isSubmitting ? "Logging in..." : "Log in"}
@@ -320,7 +373,7 @@ export function LoginForm() {
         <Form {...registerForm}>
           <form
             onSubmit={registerForm.handleSubmit(onRegister)}
-            className="mt-6 space-y-4"
+            className="mt-5 space-y-3"
           >
             <FormField
               control={registerForm.control}
@@ -329,12 +382,15 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel className="sr-only">Name</FormLabel>
                   <FormControl>
-                    <Input
-                      autoComplete="name"
-                      placeholder="Full name *"
-                      className="h-12 rounded-xl px-4 text-base"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <User className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        autoComplete="name"
+                        placeholder="Full name"
+                        className="h-12 rounded-xl pl-11 pr-4 text-base"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -347,13 +403,16 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel className="sr-only">Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="Email *"
-                      className="h-12 rounded-xl px-4 text-base"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Email address"
+                        className="h-12 rounded-xl pl-11 pr-4 text-base"
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -367,11 +426,12 @@ export function LoginForm() {
                   <FormLabel className="sr-only">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
+                      <Lock className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         type={showPassword ? "text" : "password"}
                         autoComplete="new-password"
-                        placeholder="Password *"
-                        className="h-12 rounded-xl px-4 pr-11 text-base"
+                        placeholder="Password"
+                        className="h-12 rounded-xl pl-11 pr-11 text-base"
                         {...field}
                       />
                       {passwordToggle}
@@ -383,17 +443,19 @@ export function LoginForm() {
               )}
             />
             {/* Cloudflare Turnstile - blocks scripted/bot sign-ups */}
-            <TurnstileWidget
-              ref={turnstileRef}
-              onVerify={handleCaptchaVerify}
-              onExpire={() => {
-                captchaTokenRef.current = null
-                setCaptchaToken(null)
-              }}
-            />
+            <div className="rounded-2xl border bg-muted/30 p-2">
+              <TurnstileWidget
+                ref={turnstileRef}
+                onVerify={handleCaptchaVerify}
+                onExpire={() => {
+                  captchaTokenRef.current = null
+                  setCaptchaToken(null)
+                }}
+              />
+            </div>
             <Button
               type="submit"
-              className="h-12 w-full rounded-xl bg-violet-500 text-base font-semibold text-white hover:bg-violet-600"
+              className="brand-gradient btn-shine h-12 w-full rounded-xl border-0 text-base font-semibold text-white"
               disabled={registerForm.formState.isSubmitting || !captchaToken}
             >
               {registerForm.formState.isSubmitting
@@ -404,11 +466,11 @@ export function LoginForm() {
         </Form>
       )}
 
-      <div className="mt-4 text-center">
+      <div className="mt-3 text-center">
         <button
           type="button"
           onClick={() => setMethod(method === "email" ? "phone" : "email")}
-          className="text-sm text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-violet-600"
+          className="text-sm font-medium text-muted-foreground hover:text-violet-600"
         >
           {method === "email"
             ? "Use phone number instead"
@@ -416,12 +478,14 @@ export function LoginForm() {
         </button>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-4 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-xs uppercase text-muted-foreground">or</span>
+        <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+          or
+        </span>
         <div className="h-px flex-1 bg-border" />
       </div>
-      <div className="mt-4">
+      <div className="mt-3">
         <GoogleSignInButton
           role={role}
           mode={mode}
@@ -429,49 +493,23 @@ export function LoginForm() {
           onError={(message) => toast.error(message)}
         />
       </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        {mode === "login" ? (
-          <>
-            Don&apos;t have {withArticle(role)} {ROLE_LABEL[role]} account?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                resetCaptcha()
-                setMode("register")
-              }}
-              className="font-medium text-violet-600 hover:underline"
-            >
-              Sign up
-            </button>
-          </>
-        ) : (
-          <>
-            Already have an account?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                resetCaptcha()
-                setMode("login")
-              }}
-              className="font-medium text-violet-600 hover:underline"
-            >
-              Log in
-            </button>
-          </>
-        )}
-      </p>
     </div>
   )
 
   if (mode === "register") {
     return (
-      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-start">
+      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,26rem)_1fr] lg:items-stretch">
+        <LoginHero role={role} />
         {card}
         <SignupBenefits role={role} />
       </div>
     )
   }
 
-  return card
+  return (
+    <div className="grid w-full max-w-3xl gap-8 lg:max-w-4xl lg:grid-cols-[1fr_minmax(0,26rem)] lg:items-stretch">
+      <LoginHero role={role} />
+      {card}
+    </div>
+  )
 }

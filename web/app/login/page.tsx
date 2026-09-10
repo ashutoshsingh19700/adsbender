@@ -30,13 +30,13 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-16 sm:px-8">
+      <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-6 sm:px-8">
         <Suspense fallback={null}>
           <LoginForm />
         </Suspense>
       </div>
 
-      <div className="relative z-10 flex items-center justify-center gap-4 px-4 pb-8 text-sm text-muted-foreground sm:px-8">
+      <div className="relative z-10 flex items-center justify-center gap-4 px-4 pb-4 text-sm text-muted-foreground sm:px-8">
         <Link href="#" aria-label="Community" className="hover:text-violet-600">
           <MessageCircle className="size-4" />
         </Link>

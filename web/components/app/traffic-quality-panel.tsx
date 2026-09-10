@@ -28,18 +28,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 const chartConfig = {
-  blocked: { label: "Blocked (never billed)", color: "var(--chart-5)" },
-  flagged: { label: "Flagged (allowed, monitored)", color: "var(--chart-3)" },
+  blocked: { label: "Blocked (never billed)", color: "#f97a24" },
+  flagged: { label: "Flagged (allowed, monitored)", color: "#4a6ef5" },
 } satisfies ChartConfig
 
 // Human-readable label for each machine-readable reason code -
@@ -145,13 +137,19 @@ export function TrafficQualityPanel({
         />
       </div>
 
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-4 pt-6">
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+        <CardContent className="flex flex-wrap items-end gap-4 py-5">
           <div className="grid gap-1.5">
-            <Label htmlFor="traffic-quality-start">Start date</Label>
+            <Label
+              htmlFor="traffic-quality-start"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              Start date
+            </Label>
             <Input
               id="traffic-quality-start"
               type="date"
+              className="rounded-lg"
               value={range.startDate}
               onChange={(e) =>
                 setRange((r) => ({ ...r, startDate: e.target.value }))
@@ -159,10 +157,16 @@ export function TrafficQualityPanel({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="traffic-quality-end">End date</Label>
+            <Label
+              htmlFor="traffic-quality-end"
+              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
+              End date
+            </Label>
             <Input
               id="traffic-quality-end"
               type="date"
+              className="rounded-lg"
               value={range.endDate}
               onChange={(e) =>
                 setRange((r) => ({ ...r, endDate: e.target.value }))
@@ -172,20 +176,23 @@ export function TrafficQualityPanel({
           <Button
             onClick={() => load(range.startDate, range.endDate)}
             disabled={loading}
+            className="brand-gradient rounded-lg border-0 font-semibold text-white"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Blocked vs. flagged over time</CardTitle>
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+        <CardHeader className="pt-6">
+          <CardTitle className="text-base font-bold">
+            Blocked vs. flagged over time
+          </CardTitle>
           <CardDescription>
             Every bot/fraud decision recorded during ad serving and clicks.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pb-6">
           {loading && !data ? (
             <Skeleton className="h-72 w-full" />
           ) : chartData && chartData.length > 0 ? (
@@ -208,45 +215,61 @@ export function TrafficQualityPanel({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Breakdown by reason</CardTitle>
+      <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
+        <CardHeader className="pt-6">
+          <CardTitle className="text-base font-bold">Breakdown by reason</CardTitle>
           <CardDescription>
             What triggered each block/flag - see the ad-engine&apos;s fraud
             detection for how each check works.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pb-6">
           {loading && !data ? (
             <Skeleton className="h-40 w-full" />
           ) : data && data.byReason.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead className="text-right">Blocked</TableHead>
-                    <TableHead className="text-right">Flagged</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.byReason.map((row) => (
-                    <TableRow key={`${row.stage}:${row.reason}`}>
-                      <TableCell>{reasonLabel(row.reason)}</TableCell>
-                      <TableCell className="capitalize text-muted-foreground">
-                        {row.stage}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {row.blocked.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {row.flagged.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="flex flex-col gap-4">
+              {data.byReason.map((row) => {
+                const rowTotal = row.blocked + row.flagged
+                const maxTotal = Math.max(
+                  ...data.byReason.map((r) => r.blocked + r.flagged),
+                  1
+                )
+                const pct = (rowTotal / maxTotal) * 100
+                return (
+                  <div key={`${row.stage}:${row.reason}`}>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+                      <span className="font-semibold">
+                        {reasonLabel(row.reason)}{" "}
+                        <span className="font-normal text-muted-foreground capitalize">
+                          · {row.stage}
+                        </span>
+                      </span>
+                      <span className="tabular-nums text-muted-foreground">
+                        {row.blocked.toLocaleString()} blocked ·{" "}
+                        {row.flagged.toLocaleString()} flagged
+                      </span>
+                    </div>
+                    <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="h-full bg-[#f97a24]"
+                        style={{
+                          width: `${rowTotal > 0 ? (row.blocked / maxTotal) * 100 : 0}%`,
+                        }}
+                      />
+                      <span
+                        className="h-full bg-[#4a6ef5]"
+                        style={{
+                          width: `${rowTotal > 0 ? (row.flagged / maxTotal) * 100 : 0}%`,
+                        }}
+                      />
+                      <span
+                        className="h-full"
+                        style={{ width: `${100 - pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <p className="py-8 text-center text-sm text-muted-foreground">
