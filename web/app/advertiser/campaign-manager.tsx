@@ -457,7 +457,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
                   <TableCell className="text-right tabular-nums">
                     <SpendCell
                       spend={spendById[campaign.id]}
-                      budget={campaign.totalBudget}
+                      budget={Number(campaign.totalBudget)}
                     />
                   </TableCell>
                   <TableCell>
@@ -521,7 +521,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
                   <div className="tabular-nums">
                     <SpendCell
                       spend={spendById[campaign.id]}
-                      budget={campaign.totalBudget}
+                      budget={Number(campaign.totalBudget)}
                     />
                   </div>
                 </div>
