@@ -14,6 +14,17 @@ enum UserRole {
   PUBLISHER
 }
 
+// Only meaningful when role = ADMIN - narrows an admin login to one side of
+// the marketplace. MASTER sees/does everything (equivalent to today's
+// unscoped ADMIN); PUBLISHER and ADVERTISER are restricted to their side's
+// endpoints by AdminScopeGuard (see auth/guards/admin-scope). Left null for
+// non-admin users.
+enum AdminScope {
+  MASTER
+  PUBLISHER
+  ADVERTISER
+}
+
 enum CampaignStatus {
   DRAFT
   PENDING_REVIEW
@@ -155,6 +166,8 @@ model User {
   // same as email/password lives in Supabase rather than this table.
   phone       String?  @unique
   role        UserRole
+  // Only set (and only meaningful) when role = ADMIN - see AdminScope.
+  adminScope  AdminScope?
   balance_usd Decimal  @default(0) @db.Decimal(12, 2)
 
   campaigns      Campaign[]

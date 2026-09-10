@@ -23,6 +23,7 @@ import type {
   PayoutStatus,
   Profile,
   PublisherSite,
+  RevenueBreakdown,
   RevenueSummary,
   SiteStatus,
   StatisticsGroupBy,
@@ -593,6 +594,10 @@ export function getAdvertiserTrafficQuality(params: {
 
 export function adminGetRevenueSummary() {
   return apiFetch<RevenueSummary>("/api/v1/admin/revenue/summary")
+}
+
+export function adminGetRevenueBreakdown() {
+  return apiFetch<RevenueBreakdown>("/api/v1/admin/revenue/breakdown")
 }
 
 // --- Admin: ad format pricing ---

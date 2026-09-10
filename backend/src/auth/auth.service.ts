@@ -107,6 +107,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        adminScope: user.adminScope,
       },
     };
   }
@@ -237,6 +238,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        adminScope: user.adminScope,
       },
     };
   }
@@ -351,6 +353,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        adminScope: user.adminScope,
       },
     };
   }

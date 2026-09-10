@@ -50,6 +50,22 @@ const addWebsiteSchema = z.object({
 
 type AddWebsiteValues = z.infer<typeof addWebsiteSchema>
 
+const DOMAIN_VALIDATION_MESSAGES: Record<string, string> = {
+  DOMAIN_UNREACHABLE:
+    "We couldn't reach that website. Check the address and make sure the site is online.",
+  ADS_TXT_NOT_FOUND:
+    "We couldn't find an ads.txt file on that website. Add one at yoursite.com/ads.txt and try again.",
+  ADS_TXT_VERIFICATION_TEXT_MISSING:
+    "Your ads.txt file doesn't have the verification line yet. Add it, then try again.",
+}
+
+function describeValidationError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return DOMAIN_VALIDATION_MESSAGES[error.message] ?? error.message
+  }
+  return "Could not add website"
+}
+
 export function AddWebsiteDialog({
   open,
   onOpenChange,
@@ -116,9 +132,7 @@ export function AddWebsiteDialog({
       onCreated(site)
       onOpenChange(false)
     } catch (error) {
-      toast.error(
-        error instanceof ApiError ? error.message : "Could not add website"
-      )
+      toast.error(describeValidationError(error))
     }
   }
 

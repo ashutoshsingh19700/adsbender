@@ -16,7 +16,9 @@ import { AdminDepositDto } from './dto/admin-deposit.dto';
 import { RequestPayoutDto } from './dto/request-payout.dto';
 import { CompletePayoutDto } from './dto/complete-payout.dto';
 import { FailPayoutDto } from './dto/fail-payout.dto';
+import { AdminScopes } from '../auth/decorators/admin-scopes.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AdminScopeGuard } from '../auth/guards/admin-scope/admin-scope.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 
@@ -25,7 +27,7 @@ import { RolesGuard } from '../auth/guards/roles/roles.guard';
 // validated, role-guarded HTTP surface over it. No balance is ever read
 // from or written by anything the client sends.
 @Controller('api/v1/wallet')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, AdminScopeGuard)
 export class WalletController {
   constructor(private readonly walletManager: WalletManager) {}
 
@@ -54,8 +56,12 @@ export class WalletController {
   // PaymentsController (POST /api/v1/payments/paypal/order + webhook),
   // which only ever credits an amount fixed server-side at order creation
   // and only after PayPal confirms the payment.
+  // Manual balance credit for ANY user (advertiser or publisher) - kept
+  // MASTER-only regardless of the target's role, since it's an unchecked
+  // "create money" tool rather than something naturally scoped to one side.
   @Post('admin/deposit')
   @Roles('ADMIN')
+  @AdminScopes('MASTER')
   adminDeposit(@Body() dto: AdminDepositDto) {
     return this.walletManager.deposit(dto.userId, dto.amount, {
       referenceId: dto.idempotencyKey,
@@ -85,6 +91,7 @@ export class WalletController {
 
   @Get('payout/:id')
   @Roles('PUBLISHER', 'ADMIN')
+  @AdminScopes('MASTER', 'PUBLISHER')
   getPayout(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const role = (req.user as { role?: string }).role;
 
@@ -96,6 +103,7 @@ export class WalletController {
 
   @Get('admin/payouts')
   @Roles('ADMIN')
+  @AdminScopes('MASTER', 'PUBLISHER')
   adminListPayouts(
     @Query() query: { page?: string; pageSize?: string; status?: string },
   ) {
@@ -104,12 +112,14 @@ export class WalletController {
 
   @Patch('admin/payouts/:id/complete')
   @Roles('ADMIN')
+  @AdminScopes('MASTER', 'PUBLISHER')
   completePayout(@Param('id') id: string, @Body() dto: CompletePayoutDto) {
     return this.walletManager.completePayout(id, dto.providerRef);
   }
 
   @Patch('admin/payouts/:id/fail')
   @Roles('ADMIN')
+  @AdminScopes('MASTER', 'PUBLISHER')
   failPayout(@Param('id') id: string, @Body() dto: FailPayoutDto) {
     return this.walletManager.failPayout(id, dto.reason);
   }

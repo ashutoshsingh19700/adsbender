@@ -6,19 +6,34 @@
 // an admin - this script is the supported way to provision one instead.
 //
 // Usage:
-//   npm run create-admin -- admin@example.com "S0meStrongPassword!" "Ops Admin"
+//   npm run create-admin -- admin@example.com "S0meStrongPassword!" "Ops Admin" [MASTER|PUBLISHER|ADVERTISER]
+//
+// The scope argument is optional and defaults to MASTER (unrestricted,
+// same as every admin before AdminScope existed) - see prisma/schema.prisma
+// and AdminScopeGuard for what PUBLISHER/ADVERTISER restrict.
 //
 // Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to be set (see
 // backend/.env).
 
-import { PrismaClient } from '@prisma/client';
+import { AdminScope, PrismaClient } from '@prisma/client';
 import { createClient } from '@supabase/supabase-js';
 
+const VALID_SCOPES = Object.values(AdminScope);
+
 async function main() {
-  const [, , email, password, name] = process.argv;
+  const [, , email, password, name, scopeArg] = process.argv;
 
   if (!email || !password) {
-    console.error('Usage: npm run create-admin -- <email> <password> [name]');
+    console.error(
+      'Usage: npm run create-admin -- <email> <password> [name] [MASTER|PUBLISHER|ADVERTISER]',
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const adminScope = (scopeArg?.toUpperCase() || 'MASTER') as AdminScope;
+  if (!VALID_SCOPES.includes(adminScope)) {
+    console.error(`Scope must be one of: ${VALID_SCOPES.join(', ')}`);
     process.exitCode = 1;
     return;
   }
@@ -74,17 +89,20 @@ async function main() {
 
     const user = await prisma.user.upsert({
       where: { email },
-      update: { role: 'ADMIN' },
+      update: { role: 'ADMIN', adminScope },
       create: {
         id: userId,
         email,
         name: name ?? 'Admin',
         role: 'ADMIN',
+        adminScope,
         balance_usd: 0,
       },
     });
 
-    console.log(`Admin ready: ${user.email} (id: ${user.id})`);
+    console.log(
+      `Admin ready: ${user.email} (id: ${user.id}, scope: ${user.adminScope})`,
+    );
   } finally {
     await prisma.$disconnect();
   }

@@ -3,7 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CampaignStatus, Prisma, SiteStatus, UserRole } from '@prisma/client';
+import {
+  CampaignStatus,
+  Prisma,
+  SiteStatus,
+  TransactionType,
+  UserRole,
+} from '@prisma/client';
 
 import { AnalyticsService } from '../analytics/analytics.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -125,9 +131,19 @@ export class AdminService {
 
   // --- Users (read-only: no suspend/ban action exists on the backend yet) ---
 
-  async listUsers(query: { page?: string; pageSize?: string; role?: string }) {
+  // `callerAdminScope` pins the role filter for a scoped admin so a
+  // PUBLISHER-scoped admin can never page through advertiser accounts (or
+  // vice versa) regardless of what `?role=` was requested - MASTER (or a
+  // legacy admin with no scope set) is unrestricted, same as
+  // AdminScopeGuard's own MASTER bypass.
+  async listUsers(
+    query: { page?: string; pageSize?: string; role?: string },
+    callerAdminScope?: string | null,
+  ) {
     const { skip, take, page, pageSize } = parsePagination(query);
-    const role = this.parseRoleFilter(query.role);
+    const requestedRole = this.parseRoleFilter(query.role);
+    const pinnedRole = this.pinRoleToScope(callerAdminScope);
+    const role = pinnedRole ?? requestedRole;
     const where = role ? { role } : {};
 
     const [users, total] = await Promise.all([
@@ -144,7 +160,7 @@ export class AdminService {
     return { users, page, pageSize, total };
   }
 
-  async getUser(userId: string) {
+  async getUser(userId: string, callerAdminScope?: string | null) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: USER_ADMIN_SELECT,
@@ -154,7 +170,20 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
+    const pinnedRole = this.pinRoleToScope(callerAdminScope);
+    if (pinnedRole && user.role !== pinnedRole) {
+      throw new NotFoundException('User not found');
+    }
+
     return user;
+  }
+
+  private pinRoleToScope(
+    callerAdminScope?: string | null,
+  ): UserRole | undefined {
+    if (callerAdminScope === 'PUBLISHER') return UserRole.PUBLISHER;
+    if (callerAdminScope === 'ADVERTISER') return UserRole.ADVERTISER;
+    return undefined;
   }
 
   // --- Publisher sites (cross-publisher moderation) ---
@@ -320,6 +349,137 @@ export class AdminService {
       outstandingPublisherLiability,
       pendingPayoutCount: pendingPayouts._count,
       pendingPayoutAmount,
+    };
+  }
+
+  // --- Revenue breakdown ("how the cut works") ---
+  // Master-admin-only (see AdminController) - a plain-English + worked-
+  // example explanation of exactly how the platform fee is applied to every
+  // billed event, backed by real recent AD_SPEND/PUBLISHER_EARNING ledger
+  // pairs so it's not just a formula but visible proof of what actually
+  // happened. AD_SPEND and PUBLISHER_EARNING for the same billed event (one
+  // click, one CPM batch, one CPA conversion) always share a referenceId -
+  // see AdBillingService - so pairing on that column reconstructs exactly
+  // what the advertiser was charged, what the publisher was credited, and
+  // what the platform kept, per event.
+  async getRevenueBreakdown() {
+    const feeBps = await this.platformSettingsService.getPlatformFeeBps();
+    const feePercent = new Prisma.Decimal(feeBps).dividedBy(100);
+    const publisherPercent = new Prisma.Decimal(100).minus(feePercent);
+
+    const exampleAdvertiserCharge = new Prisma.Decimal(100);
+    const examplePublisherShare = this.platformSettingsService.publisherShareOf(
+      exampleAdvertiserCharge,
+      feeBps,
+    );
+    const examplePlatformCut = exampleAdvertiserCharge.minus(
+      examplePublisherShare,
+    );
+
+    const recentSpend = await this.prisma.walletTransaction.findMany({
+      where: { type: TransactionType.AD_SPEND },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+      select: {
+        id: true,
+        userId: true,
+        amount: true,
+        referenceId: true,
+        description: true,
+        createdAt: true,
+      },
+    });
+
+    const referenceIds = recentSpend
+      .map((tx) => tx.referenceId)
+      .filter((id): id is string => Boolean(id));
+
+    const matchingEarnings = referenceIds.length
+      ? await this.prisma.walletTransaction.findMany({
+          where: {
+            type: TransactionType.PUBLISHER_EARNING,
+            referenceId: { in: referenceIds },
+          },
+          select: { referenceId: true, amount: true, userId: true },
+        })
+      : [];
+
+    const earningByReferenceId = new Map(
+      matchingEarnings.map((tx) => [tx.referenceId, tx]),
+    );
+
+    // WalletTransaction only stores a bare userId (no relation) - batch-load
+    // the advertiser/publisher names for every user touched by these rows in
+    // one query rather than N+1ing it.
+    const involvedUserIds = Array.from(
+      new Set([
+        ...recentSpend.map((tx) => tx.userId),
+        ...matchingEarnings.map((tx) => tx.userId),
+      ]),
+    );
+    const involvedUsers = involvedUserIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: involvedUserIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+    const userById = new Map(involvedUsers.map((u) => [u.id, u]));
+
+    // Every row here is a real, already-settled billing event - each one
+    // proves advertiserCharged = publisherPaid + platformKept for that exact
+    // referenceId, not just the aggregate totals above.
+    const recentEvents = recentSpend.map((spend) => {
+      const earning = spend.referenceId
+        ? earningByReferenceId.get(spend.referenceId)
+        : undefined;
+      const advertiserCharged = new Prisma.Decimal(spend.amount);
+      const publisherPaid = earning
+        ? new Prisma.Decimal(earning.amount)
+        : null;
+      const platformKept = publisherPaid
+        ? advertiserCharged.minus(publisherPaid)
+        : null;
+      const advertiser = userById.get(spend.userId);
+      const publisher = earning ? userById.get(earning.userId) : undefined;
+
+      return {
+        referenceId: spend.referenceId,
+        description: spend.description,
+        occurredAt: spend.createdAt,
+        advertiser: advertiser
+          ? { name: advertiser.name, email: advertiser.email }
+          : null,
+        publisher: publisher
+          ? { name: publisher.name, email: publisher.email }
+          : null,
+        advertiserCharged,
+        publisherPaid,
+        platformKept,
+        // Null when the matching PUBLISHER_EARNING row hasn't been found
+        // (e.g. the publisher credit failed and is pending manual
+        // reconciliation - see AdBillingService.creditPublisherShare) rather
+        // than silently showing $0.
+        settled: publisherPaid !== null,
+      };
+    });
+
+    return {
+      platformFeeBps: feeBps,
+      platformFeePercent: feePercent,
+      publisherSharePercent: publisherPercent,
+      explanation:
+        `Every time an ad is billed (per click, per 1000 impressions, or per verified conversion, ` +
+        `depending on the campaign's pricing model), the advertiser's wallet is charged the FULL rate ` +
+        `card amount. The publisher who delivered it is then credited ${publisherPercent.toFixed(2)}% of ` +
+        `that amount into their pending earnings. The remaining ${feePercent.toFixed(2)}% is the ` +
+        `platform's cut and is never credited to anyone - it simply isn't paid out, so it stays the ` +
+        `difference between total ad spend and total publisher earnings.`,
+      worked_example: {
+        advertiserCharged: exampleAdvertiserCharge,
+        publisherPaid: examplePublisherShare,
+        platformKept: examplePlatformCut,
+      },
+      recentEvents,
     };
   }
 

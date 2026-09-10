@@ -1,10 +1,17 @@
 export type UserRole = "ADMIN" | "ADVERTISER" | "PUBLISHER"
 
+// Only meaningful when role === "ADMIN" - see backend AdminScope. MASTER
+// sees/does everything; PUBLISHER/ADVERTISER admins are scoped to their
+// side of the marketplace. null/undefined for a non-admin user, or a
+// legacy admin created before scopes existed (treated as MASTER).
+export type AdminScope = "MASTER" | "PUBLISHER" | "ADVERTISER" | null
+
 export type AuthUser = {
   id: string
   email: string
   role: UserRole
   name?: string
+  adminScope?: AdminScope
 }
 
 // Returned by GET /publisher/me and /advertiser/me.
@@ -327,6 +334,34 @@ export type RevenueSummary = {
   outstandingPublisherLiability: string
   pendingPayoutCount: number
   pendingPayoutAmount: string
+}
+
+// GET /admin/revenue/breakdown - master-admin-only. Explains + proves
+// exactly how a billed event splits between advertiser charge, publisher
+// payout, and the platform's own cut.
+export type RevenueBreakdownEvent = {
+  referenceId: string | null
+  description: string | null
+  occurredAt: string
+  advertiser: { name: string; email: string } | null
+  publisher: { name: string; email: string } | null
+  advertiserCharged: string
+  publisherPaid: string | null
+  platformKept: string | null
+  settled: boolean
+}
+
+export type RevenueBreakdown = {
+  platformFeeBps: number
+  platformFeePercent: string
+  publisherSharePercent: string
+  explanation: string
+  worked_example: {
+    advertiserCharged: string
+    publisherPaid: string
+    platformKept: string
+  }
+  recentEvents: RevenueBreakdownEvent[]
 }
 
 // --- Traffic quality / fraud protection ---
