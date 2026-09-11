@@ -35,7 +35,6 @@ import {
 import { GoogleSignInButton } from "@/components/app/google-sign-in-button"
 import { PhoneOtpForm } from "@/components/app/phone-otp-form"
 import { SignupBenefits } from "./signup-benefits"
-import { LoginHero } from "./login-hero"
 
 type AudienceRole = Extract<UserRole, "ADVERTISER" | "PUBLISHER">
 
@@ -498,8 +497,7 @@ export function LoginForm() {
 
   if (mode === "register") {
     return (
-      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,26rem)_1fr] lg:items-stretch">
-        <LoginHero role={role} />
+      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-stretch">
         {card}
         <SignupBenefits role={role} />
       </div>
@@ -507,9 +505,6 @@ export function LoginForm() {
   }
 
   return (
-    <div className="grid w-full max-w-3xl gap-8 lg:max-w-4xl lg:grid-cols-[1fr_minmax(0,26rem)] lg:items-stretch">
-      <LoginHero role={role} />
-      {card}
-    </div>
+    <div className="flex w-full max-w-md justify-center">{card}</div>
   )
 }
