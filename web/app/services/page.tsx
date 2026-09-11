@@ -142,10 +142,10 @@ export default function ServicesPage() {
               <p className="mt-2 flex-1 text-sm text-muted-foreground">
                 {service.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
+              {/* <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
                 Learn more
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              </span> */}
             </Link>
           ))}
         </div>
@@ -172,10 +172,10 @@ export default function ServicesPage() {
               <p className="mt-2 flex-1 text-sm text-muted-foreground">
                 {service.description}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
+              {/* <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
                 Learn more
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </span>
+              </span> */}
             </Link>
           ))}
         </div>
@@ -195,7 +195,7 @@ export default function ServicesPage() {
             <Button
               asChild
               size="lg"
-              className="bg-gradient-to-r from-violet-600 to-blue-500 text-white hover:from-violet-700 hover:to-blue-600"
+              className="btn-shine brand-gradient rounded-full px-6 text-white"
             >
               <Link href="/login?tab=register&role=ADVERTISER">
                 Launch a campaign
