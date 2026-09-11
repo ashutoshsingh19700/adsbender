@@ -120,6 +120,8 @@ describe('AdEngineController', () => {
         country: 'US',
         device: 'mobile',
       },
+      format: null,
+      renderFamily: 'inline',
       creative: {
         campaignId: 'campaign-high',
         advertiserId: 'advertiser-1',
@@ -383,6 +385,134 @@ describe('AdEngineController', () => {
     expect(response.creative?.html).toBe(
       '<a href="/api/v1/trap" style="display:none !important;"></a>',
     );
+  });
+
+  it('reports the winning campaign\'s format and render family on the response', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-popup',
+      advertiserId: 'advertiser-5',
+      campaignName: 'Popup Campaign',
+      maxCpc: 1,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>popup</div>',
+      adFormat: 'POPUP',
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.format).toBe('POPUP');
+    expect(response.renderFamily).toBe('popup');
+  });
+
+  it('wraps a native-format HTML creative with a visible "Sponsored" disclosure label', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-native',
+      advertiserId: 'advertiser-6',
+      campaignName: 'Native Campaign',
+      maxCpc: 1,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>native creative</div>',
+      adFormat: 'IN_FEED',
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.renderFamily).toBe('native');
+    expect(response.creative?.html).toContain('Sponsored');
+    expect(response.creative?.html).toContain('<div>native creative</div>');
+  });
+
+  it('renders a video-format creative with controls and a skip-after hint instead of a silent autoplay loop', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-preroll',
+      advertiserId: 'advertiser-7',
+      campaignName: 'Pre-roll Campaign',
+      maxCpc: 1,
+      creativeType: 'video',
+      creativeUrl: 'https://cdn.example.com/ad.mp4',
+      creativeHtml: null,
+      adFormat: 'PRE_ROLL',
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.renderFamily).toBe('video');
+    expect(response.creative?.html).toContain('controls');
+    expect(response.creative?.html).toContain('data-skip-after="5"');
+    expect(response.creative?.html).not.toContain('data-overlay');
+  });
+
+  it('positions a VIDEO_OVERLAY creative as a small bar instead of a full autoplay player', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-overlay',
+      advertiserId: 'advertiser-8',
+      campaignName: 'Video Overlay Campaign',
+      maxCpc: 1,
+      creativeType: 'video',
+      creativeUrl: 'https://cdn.example.com/overlay.mp4',
+      creativeHtml: null,
+      adFormat: 'VIDEO_OVERLAY',
+    });
+
+    const response = await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(response.renderFamily).toBe('video_overlay');
+    expect(response.creative?.html).toContain('data-overlay="true"');
+    expect(response.creative?.html).not.toContain('autoplay');
   });
 
   it('returns an empty creative when Redis targeting finds no match', async () => {

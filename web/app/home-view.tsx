@@ -152,7 +152,7 @@ export function HomeView() {
       </section>
 
       {/* Sign-up offer */}
-      <section className="bg-orange-50/40 border-y">
+      <section className="bg-background">
         <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -177,15 +177,15 @@ export function HomeView() {
                   className={cn(
                     "group relative rounded-2xl border bg-background p-6 text-center transition-colors",
                     isSelected
-                      ? "border-orange-500 ring-1 ring-orange-500"
-                      : "border-border hover:border-orange-300",
+                      ? "tile-select"
+                      : "border-border tile-select-hover",
                   )}
                 >
                   <span
                     className={cn(
                       "absolute right-4 top-4 flex size-5 items-center justify-center rounded-full border-2",
                       isSelected
-                        ? "border-orange-500 bg-orange-500 text-white"
+                        ? "border-black bg-black text-white"
                         : "border-muted-foreground/30",
                     )}
                   >

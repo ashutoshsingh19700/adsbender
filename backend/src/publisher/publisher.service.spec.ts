@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { ClickIntegrityService } from '../ad-engine/click-integrity.service';
 import { PublisherService } from './publisher.service';
 
 describe('PublisherService', () => {
@@ -23,11 +24,15 @@ describe('PublisherService', () => {
       findMany: jest.fn(),
       count: jest.fn(),
     },
+    $queryRaw: jest.fn(),
   };
   const analyticsService = {
     getDailyMetrics: jest.fn(),
     getGroupedMetrics: jest.fn(),
     getTrafficQuality: jest.fn(),
+  };
+  const clickIntegrityService = {
+    sign: jest.fn().mockReturnValue('signed-token'),
   };
 
   beforeEach(async () => {
@@ -36,12 +41,14 @@ describe('PublisherService', () => {
       ok: true,
       text: jest.fn().mockResolvedValue('adnetwork-verify=publisher-1'),
     } as any);
+    clickIntegrityService.sign.mockReturnValue('signed-token');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PublisherService,
         { provide: PrismaService, useValue: prismaService },
         { provide: AnalyticsService, useValue: analyticsService },
+        { provide: ClickIntegrityService, useValue: clickIntegrityService },
       ],
     }).compile();
 
@@ -99,7 +106,7 @@ describe('PublisherService', () => {
       zoneName: 'Homepage rectangle',
       width: 300,
       height: 250,
-      layoutType: 'rectangle',
+      layoutType: 'MEDIUM_RECTANGLE_300X250',
     });
 
     await expect(
@@ -107,7 +114,7 @@ describe('PublisherService', () => {
         zoneName: 'Homepage rectangle',
         width: 300,
         height: 250,
-        layoutType: 'rectangle',
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
       }),
     ).resolves.toEqual({
       zone: expect.objectContaining({ id: 'zone-42' }),
@@ -266,6 +273,68 @@ describe('PublisherService', () => {
       startDate: '2026-08-01',
       endDate: '2026-08-13',
       zoneIds: ['zone-1'],
+    });
+  });
+
+  describe('getNewsletterSnippet', () => {
+    it('rejects a zone that was not built for Newsletter Sponsorship', async () => {
+      prismaService.adZone.findUnique.mockResolvedValue({
+        id: 'zone-1',
+        publisherId: 'publisher-1',
+        status: AdZoneStatus.ACTIVE,
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
+      });
+
+      await expect(
+        service.getNewsletterSnippet('publisher-1', 'zone-1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('returns a placeholder comment when no campaign is currently sponsoring the newsletter', async () => {
+      prismaService.adZone.findUnique.mockResolvedValue({
+        id: 'zone-1',
+        publisherId: 'publisher-1',
+        status: AdZoneStatus.ACTIVE,
+        layoutType: 'NEWSLETTER_SPONSORSHIP',
+      });
+      prismaService.$queryRaw.mockResolvedValue([]);
+
+      const result = await service.getNewsletterSnippet('publisher-1', 'zone-1');
+
+      expect(result.snippet).toContain('No sponsor is currently live');
+    });
+
+    it('builds a static HTML snippet with a tracking pixel and a signed click link for the top-bidding campaign', async () => {
+      prismaService.adZone.findUnique.mockResolvedValue({
+        id: 'zone-1',
+        publisherId: 'publisher-1',
+        status: AdZoneStatus.ACTIVE,
+        layoutType: 'NEWSLETTER_SPONSORSHIP',
+      });
+      prismaService.$queryRaw.mockResolvedValue([
+        {
+          id: 'campaign-1',
+          advertiserId: 'advertiser-1',
+          creativeType: 'html',
+          creativeUrl: null,
+          creativeHtml: '<p>Buy our thing</p>',
+          destinationUrl: 'https://advertiser.example/landing',
+          maxCpc: '1.00',
+          maxCpm: null,
+        },
+      ]);
+
+      const result = await service.getNewsletterSnippet('publisher-1', 'zone-1');
+
+      expect(result.snippet).toContain('<p>Buy our thing</p>');
+      expect(result.snippet).toContain('/api/v1/click?');
+      expect(result.snippet).toContain('/api/v1/pixel?');
+      expect(result.snippet).toContain('campaignId=campaign-1');
+      expect(result.snippet).toContain('t=signed-token');
+      expect(clickIntegrityService.sign).toHaveBeenCalledWith(
+        'zone-1',
+        'campaign-1',
+      );
     });
   });
 });

@@ -180,6 +180,7 @@ describe('RedisCampaignCacheStore', () => {
         creativeUrl: null,
         creativeHtml: '<div>ad</div>',
         destinationUrl: null,
+        adFormat: null,
         frequencyCapImpressions: null,
         frequencyCapWindowSeconds: null,
       },

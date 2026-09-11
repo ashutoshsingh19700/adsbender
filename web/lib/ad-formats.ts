@@ -50,6 +50,24 @@ export type AdFormatCategory =
   | "Video Ads"
   | "Premium Inventory"
 
+// Mirrors RenderFamily in backend/src/common/ad-formats.ts - the actual
+// serving behavior this format gets (see AdEngineController + publisher_tag.js).
+// Used here only for UI copy/preview, never for serving itself.
+export type RenderFamily =
+  | "inline"
+  | "sticky"
+  | "floating"
+  | "native"
+  | "popup"
+  | "popunder"
+  | "exit_intent"
+  | "welcome_screen"
+  | "interstitial"
+  | "page_transition"
+  | "video"
+  | "video_overlay"
+  | "newsletter"
+
 export type AdFormatDefinition = {
   value: string
   label: string
@@ -58,6 +76,7 @@ export type AdFormatDefinition = {
   icon: LucideIcon
   recommendedWidth: number
   recommendedHeight: number
+  renderFamily: RenderFamily
 }
 
 export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
@@ -70,6 +89,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: RectangleHorizontal,
     recommendedWidth: 728,
     recommendedHeight: 90,
+    renderFamily: "inline",
   },
   {
     value: "LEADERBOARD",
@@ -79,6 +99,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: GalleryHorizontal,
     recommendedWidth: 970,
     recommendedHeight: 90,
+    renderFamily: "inline",
   },
   {
     value: "MEDIUM_RECTANGLE_300X250",
@@ -88,6 +109,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Square,
     recommendedWidth: 300,
     recommendedHeight: 250,
+    renderFamily: "inline",
   },
   {
     value: "LARGE_RECTANGLE_336X280",
@@ -97,6 +119,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Columns3,
     recommendedWidth: 336,
     recommendedHeight: 280,
+    renderFamily: "inline",
   },
   {
     value: "STICKY_BANNER",
@@ -106,6 +129,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Pin,
     recommendedWidth: 320,
     recommendedHeight: 50,
+    renderFamily: "sticky",
   },
 
   // --- Sidebar Ads ---
@@ -117,6 +141,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: RectangleVertical,
     recommendedWidth: 160,
     recommendedHeight: 600,
+    renderFamily: "inline",
   },
   {
     value: "WIDE_SKYSCRAPER_300X600",
@@ -126,6 +151,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: RectangleVertical,
     recommendedWidth: 300,
     recommendedHeight: 600,
+    renderFamily: "inline",
   },
   {
     value: "STICKY_SIDEBAR",
@@ -135,6 +161,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: PinOff,
     recommendedWidth: 300,
     recommendedHeight: 600,
+    renderFamily: "sticky",
   },
   {
     value: "FLOATING_SIDEBAR",
@@ -144,6 +171,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: PanelRight,
     recommendedWidth: 160,
     recommendedHeight: 600,
+    renderFamily: "floating",
   },
 
   // --- Native Ads ---
@@ -155,6 +183,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Newspaper,
     recommendedWidth: 728,
     recommendedHeight: 250,
+    renderFamily: "native",
   },
   {
     value: "IN_FEED",
@@ -164,6 +193,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Rss,
     recommendedWidth: 300,
     recommendedHeight: 250,
+    renderFamily: "native",
   },
   {
     value: "RECOMMENDED_CONTENT",
@@ -173,6 +203,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Sparkles,
     recommendedWidth: 300,
     recommendedHeight: 250,
+    renderFamily: "native",
   },
   {
     value: "SPONSORED_WIDGET",
@@ -182,6 +213,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: LayoutTemplate,
     recommendedWidth: 300,
     recommendedHeight: 300,
+    renderFamily: "native",
   },
 
   // --- Popup & Overlay Ads ---
@@ -193,6 +225,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: ExternalLink,
     recommendedWidth: 500,
     recommendedHeight: 400,
+    renderFamily: "popup",
   },
   {
     value: "POPUNDER",
@@ -202,6 +235,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Layers,
     recommendedWidth: 800,
     recommendedHeight: 600,
+    renderFamily: "popunder",
   },
   {
     value: "EXIT_INTENT_POPUP",
@@ -211,6 +245,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: ArrowUpRightFromSquare,
     recommendedWidth: 500,
     recommendedHeight: 400,
+    renderFamily: "exit_intent",
   },
   {
     value: "FLOATING_OVERLAY",
@@ -220,6 +255,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: MousePointer2,
     recommendedWidth: 300,
     recommendedHeight: 250,
+    renderFamily: "floating",
   },
   {
     value: "WELCOME_SCREEN",
@@ -229,6 +265,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Gift,
     recommendedWidth: 640,
     recommendedHeight: 480,
+    renderFamily: "welcome_screen",
   },
 
   // --- Interstitial Ads ---
@@ -240,6 +277,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Maximize2,
     recommendedWidth: 1024,
     recommendedHeight: 768,
+    renderFamily: "interstitial",
   },
   {
     value: "PAGE_TRANSITION_INTERSTITIAL",
@@ -249,6 +287,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Presentation,
     recommendedWidth: 1024,
     recommendedHeight: 768,
+    renderFamily: "page_transition",
   },
 
   // --- Video Ads ---
@@ -260,6 +299,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: SkipBack,
     recommendedWidth: 640,
     recommendedHeight: 360,
+    renderFamily: "video",
   },
   {
     value: "MID_ROLL",
@@ -269,6 +309,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: MonitorPlay,
     recommendedWidth: 640,
     recommendedHeight: 360,
+    renderFamily: "video",
   },
   {
     value: "POST_ROLL",
@@ -278,6 +319,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: SkipForward,
     recommendedWidth: 640,
     recommendedHeight: 360,
+    renderFamily: "video",
   },
   {
     value: "VIDEO_OVERLAY",
@@ -287,6 +329,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Video,
     recommendedWidth: 480,
     recommendedHeight: 70,
+    renderFamily: "video_overlay",
   },
 
   // --- Premium Inventory ---
@@ -298,6 +341,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Star,
     recommendedWidth: 1200,
     recommendedHeight: 400,
+    renderFamily: "inline",
   },
   {
     value: "NEWSLETTER_SPONSORSHIP",
@@ -307,6 +351,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Mail,
     recommendedWidth: 600,
     recommendedHeight: 200,
+    renderFamily: "newsletter",
   },
   {
     value: "SPONSORED_BLOG_POST",
@@ -316,6 +361,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: FileText,
     recommendedWidth: 728,
     recommendedHeight: 90,
+    renderFamily: "inline",
   },
   {
     value: "SPONSORED_SECTION",
@@ -325,6 +371,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Megaphone,
     recommendedWidth: 970,
     recommendedHeight: 250,
+    renderFamily: "inline",
   },
   {
     value: "STICKY_BOTTOM_BANNER",
@@ -334,6 +381,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: PanelBottom,
     recommendedWidth: 320,
     recommendedHeight: 50,
+    renderFamily: "floating",
   },
   {
     value: "FLOATING_CORNER_AD",
@@ -343,6 +391,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     icon: Crown,
     recommendedWidth: 250,
     recommendedHeight: 250,
+    renderFamily: "floating",
   },
 ]
 

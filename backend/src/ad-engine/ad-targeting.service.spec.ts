@@ -20,9 +20,10 @@ describe('AdTargetingService', () => {
     };
     zoneCacheStore = {
       replaceActiveZoneIds: jest.fn(),
-      // Defaults to an active zone so the existing campaign-targeting
-      // tests below don't each need to know about zone lookups.
-      isActiveZone: jest.fn().mockResolvedValue(true),
+      // Defaults to an active zone with no particular format so the
+      // existing campaign-targeting tests below don't each need to know
+      // about zone lookups or format matching.
+      getActiveZone: jest.fn().mockResolvedValue({ layoutType: '' }),
     };
     visitorFrequencyCapService = {
       // Defaults to "nothing is capped" so existing rotation/targeting
@@ -175,7 +176,7 @@ describe('AdTargetingService', () => {
   });
 
   it('never serves a campaign for a paused zone', async () => {
-    zoneCacheStore.isActiveZone.mockResolvedValue(false);
+    zoneCacheStore.getActiveZone.mockResolvedValue(null);
     campaignCacheStore.getActiveCampaigns.mockResolvedValue([
       {
         id: 'campaign-high',
@@ -206,7 +207,7 @@ describe('AdTargetingService', () => {
   });
 
   it('never serves a campaign for a zone that does not exist', async () => {
-    zoneCacheStore.isActiveZone.mockResolvedValue(false);
+    zoneCacheStore.getActiveZone.mockResolvedValue(null);
 
     await expect(
       service.selectCampaign({
@@ -223,7 +224,7 @@ describe('AdTargetingService', () => {
     // A malformed/nonexistent zoneId is simply never a member of the
     // cached ACTIVE-zone set - no special error handling needed the way a
     // direct Postgres uuid-cast failure used to require.
-    zoneCacheStore.isActiveZone.mockResolvedValue(false);
+    zoneCacheStore.getActiveZone.mockResolvedValue(null);
 
     await expect(
       service.selectCampaign({
@@ -616,6 +617,74 @@ describe('AdTargetingService', () => {
       // no floating-point noise (e.g. 0.30000000000000004) after the
       // round-trip through cents.
       expect(result?.maxCpm).toBe(0.3);
+    });
+  });
+
+  describe('ad-format matching', () => {
+    const request = {
+      zoneId: 'zone-popup',
+      country: 'US',
+      device: 'desktop',
+      visitorId: 'visitor-1',
+    } as const;
+    const baseCampaign = {
+      advertiserId: 'advertiser-1',
+      totalBudget: 100,
+      dailyBudget: 10,
+      maxCpc: 1,
+      targetCountries: [] as string[],
+      targetDevices: [] as string[],
+      status: 'ACTIVE',
+      advertiserBalanceUsd: 10,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>ad</div>',
+    };
+
+    it('never serves a campaign whose adFormat does not match the zone layoutType', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        {
+          ...baseCampaign,
+          id: 'campaign-banner',
+          campaignName: 'Banner',
+          adFormat: 'BANNER_728X90',
+        },
+      ]);
+
+      await expect(service.selectCampaign(request)).resolves.toBeNull();
+    });
+
+    it('serves a campaign whose adFormat matches the zone layoutType exactly', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        {
+          ...baseCampaign,
+          id: 'campaign-popup',
+          campaignName: 'Popup',
+          adFormat: 'POPUP',
+        },
+      ]);
+
+      const result = await service.selectCampaign(request);
+
+      expect(result?.id).toBe('campaign-popup');
+    });
+
+    it('treats a campaign with no adFormat as wildcard-eligible for any zone', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        {
+          ...baseCampaign,
+          id: 'campaign-legacy',
+          campaignName: 'Legacy',
+          adFormat: null,
+        },
+      ]);
+
+      const result = await service.selectCampaign(request);
+
+      expect(result?.id).toBe('campaign-legacy');
     });
   });
 });

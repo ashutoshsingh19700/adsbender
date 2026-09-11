@@ -23,6 +23,7 @@ import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
 import { adServerPublicOrigin } from '../config/env';
+import { renderFamilyForFormat } from '../common/ad-formats';
 
 // Real ad traffic, not app users - already policed by
 // FraudDetectionService/FrequencyCappingService's own velocity checks (see
@@ -140,6 +141,12 @@ export class AdEngineController {
         country,
         device,
       },
+      // The format/family actually served - see RENDER_FAMILY_BY_FORMAT.
+      // Null when nothing was served, or when the winning campaign predates
+      // adFormat entirely (renderFamilyForFormat falls back to 'inline',
+      // matching that campaign's only-ever behavior before this existed).
+      format: selectedCampaign?.adFormat ?? null,
+      renderFamily: renderFamilyForFormat(selectedCampaign?.adFormat),
       creative: selectedCampaign
         ? {
             campaignId: selectedCampaign.id,
@@ -172,37 +179,87 @@ export class AdEngineController {
       creativeUrl: string | null;
       creativeHtml: string | null;
       destinationUrl?: string | null;
+      adFormat?: string | null;
     },
     context: { zoneId: string; origin: string; path: string },
   ): string {
+    const renderFamily = renderFamilyForFormat(campaign.adFormat);
+
+    if (renderFamily === 'video' || renderFamily === 'video_overlay') {
+      if (campaign.creativeType === 'video' && campaign.creativeUrl) {
+        return this.renderVideoCreative(campaign, context, renderFamily);
+      }
+      // A video-family zone with a non-video creative (misconfigured
+      // campaign) falls through to the generic branches below rather than
+      // rendering nothing.
+    }
+
     if (campaign.creativeType === 'html' && campaign.creativeHtml) {
-      return campaign.creativeHtml;
+      return renderFamily === 'native'
+        ? this.wrapNativeCreative(campaign.creativeHtml)
+        : campaign.creativeHtml;
     }
 
     if (campaign.creativeType === 'image' && campaign.creativeUrl) {
       const image = `<img src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" alt="" style="display:block;max-width:100%;height:auto;" />`;
+      const inner = renderFamily === 'native' ? this.wrapNativeCreative(image) : image;
 
       // No destinationUrl (e.g. a campaign created before this field
       // existed) - keep the old bare-image behavior rather than linking
       // nowhere useful.
       if (!campaign.destinationUrl) {
-        return image;
+        return inner;
       }
 
-      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${image}</a>`;
-    }
-
-    if (campaign.creativeType === 'video' && campaign.creativeUrl) {
-      const video = `<video src="${this.escapeHtmlAttribute(campaign.creativeUrl)}" autoplay muted loop playsinline style="display:block;max-width:100%;height:auto;"></video>`;
-
-      if (!campaign.destinationUrl) {
-        return video;
-      }
-
-      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${video}</a>`;
+      return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
     }
 
     return `<a href="/api/v1/trap" style="display:none !important;"></a>`;
+  }
+
+  // Native formats (In-Article/In-Feed/Recommended Content/Sponsored
+  // Widget) must visibly disclose that this is an ad rather than pretending
+  // to be organic content - see publisher_tag.js's `native` family, which
+  // adds its own "blend in" card styling around this markup. Kept simple
+  // (a labeled wrapper around whatever creative markup the advertiser
+  // supplied) rather than requiring separate structured headline/body/CTA
+  // fields on Campaign.
+  private wrapNativeCreative(inner: string): string {
+    return `<div class="adnetwork-native" data-adnetwork-native="true"><span class="adnetwork-native__label" style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;opacity:.6;margin-bottom:4px;">Sponsored</span>${inner}</div>`;
+  }
+
+  // Video formats get a real <video> element with native controls (not a
+  // silent autoplay loop) plus a `data-skip-after` hint publisher_tag.js
+  // uses to render a skip button once that many seconds have played -
+  // PRE_ROLL/MID_ROLL/POST_ROLL only differ in where the publisher places
+  // the zone relative to their own player, not in this markup. VIDEO_OVERLAY
+  // gets `data-overlay="true"` so the tag positions it as a small bar
+  // instead of a full-size player.
+  private renderVideoCreative(
+    campaign: {
+      id: string;
+      advertiserId: string;
+      maxCpc: number;
+      maxCpm?: number | null;
+      maxCpa?: number | null;
+      creativeUrl: string | null;
+      destinationUrl?: string | null;
+    },
+    context: { zoneId: string; origin: string; path: string },
+    renderFamily: 'video' | 'video_overlay',
+  ): string {
+    const isOverlay = renderFamily === 'video_overlay';
+    const video =
+      `<video src="${this.escapeHtmlAttribute(campaign.creativeUrl as string)}" ` +
+      `controls playsinline muted ${isOverlay ? '' : 'autoplay '}` +
+      `data-skip-after="5" ${isOverlay ? 'data-overlay="true" ' : ''}` +
+      `style="display:block;max-width:100%;height:auto;"></video>`;
+
+    if (!campaign.destinationUrl) {
+      return video;
+    }
+
+    return `<a href="${this.escapeHtmlAttribute(this.buildClickUrl(campaign, context))}" target="_blank" rel="noopener noreferrer" data-adnetwork-video-click="true">${video}</a>`;
   }
 
   // Routes the click through the existing /api/v1/click endpoint (records
@@ -451,6 +508,65 @@ export class AdEngineController {
       clickId,
       Number.isFinite(conversionValue) ? conversionValue : undefined,
     );
+  }
+
+  // A 1x1 open-tracking pixel for delivery channels that can't run
+  // publisher_tag.js at all (currently just Newsletter Sponsorship - email
+  // clients strip <script> tags). Unlike /serve, this never picks a
+  // campaign itself - PublisherService.getNewsletterSnippet already chose
+  // one when the snippet was generated, so this only records the
+  // impression that campaign/zone pairing actually got. `cost` is
+  // precomputed by the snippet the same way buildClickUrl precomputes a
+  // click's cost, for the same reason (a CPM campaign is billed here per
+  // impression; a CPC/CPA campaign must never also be charged an
+  // impression cost).
+  private static readonly TRANSPARENT_GIF = Buffer.from(
+    'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7',
+    'base64',
+  );
+
+  @Get('pixel')
+  async pixel(
+    @Query('zoneId') zoneId: string,
+    @Query('campaignId') campaignId: string,
+    @Query('advertiserId') advertiserId: string,
+    @Query('cost') cost: string,
+    @Query('maxCpm') maxCpm: string,
+    @Headers('user-agent') userAgent: string,
+    @Headers('x-geo-country') countryHeader: string,
+    @Ip() ipAddress: string,
+    @Res({ passthrough: false }) response: Response,
+  ) {
+    const country = this.geoIpService.resolveCountry(ipAddress, countryHeader);
+
+    if (zoneId && campaignId && advertiserId) {
+      const numericMaxCpm = Number(maxCpm);
+
+      this.adEventProducerService.publishImpression({
+        type: 'impression',
+        zone: zoneId,
+        campaign: campaignId,
+        advertiser: advertiserId,
+        cost: Number(cost) || 0,
+        time: Math.floor(Date.now() / 1000),
+        maxCpm:
+          Number.isFinite(numericMaxCpm) && numericMaxCpm > 0
+            ? numericMaxCpm
+            : undefined,
+        request: {
+          origin: '',
+          path: '',
+          country,
+          device: 'unknown',
+          ipAddress,
+          userAgent,
+        },
+      });
+    }
+
+    response.set('Content-Type', 'image/gif');
+    response.set('Cache-Control', 'no-store');
+    response.send(AdEngineController.TRANSPARENT_GIF);
   }
 
   @Get('trap')

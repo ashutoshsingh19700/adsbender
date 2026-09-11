@@ -180,8 +180,8 @@ export function CampaignWizard({
   const [result, setResult] = React.useState<Campaign | null>(null)
   const [uploading, setUploading] = React.useState(false)
   const [showIntake, setShowIntake] = React.useState(true)
-  const [advertiseTarget, setAdvertiseTarget] =
-    React.useState<AdvertiseTarget | null>(null)
+  const [advertiseTargets, setAdvertiseTargets] =
+    React.useState<AdvertiseTarget[]>([])
   const [step, setStep] = React.useState(0)
   const [adFormatPricing, setAdFormatPricing] =
     React.useState<AdFormatPricing>({})
@@ -300,8 +300,8 @@ export function CampaignWizard({
     setStep((s) => Math.max(s - 1, 0))
   }
 
-  function handleIntakeSubmit(target: AdvertiseTarget, landingUrl: string) {
-    setAdvertiseTarget(target)
+  function handleIntakeSubmit(targets: AdvertiseTarget[], landingUrl: string) {
+    setAdvertiseTargets(targets)
     form.setValue("destinationUrl", landingUrl, {
       shouldValidate: true,
       shouldDirty: true,
@@ -490,7 +490,7 @@ export function CampaignWizard({
                 setResult(null)
                 form.reset()
                 setStep(0)
-                setAdvertiseTarget(null)
+                setAdvertiseTargets([])
                 setShowIntake(true)
               }}
             >
@@ -513,7 +513,11 @@ export function CampaignWizard({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <AdvertiseTargetDialog open={showIntake} onSubmit={handleIntakeSubmit} />
+      <AdvertiseTargetDialog
+        open={showIntake}
+        onSubmit={handleIntakeSubmit}
+        onClose={onCancel}
+      />
 
       <p className="text-sm text-muted-foreground">
         Campaigns <span className="mx-1">›</span> New Campaign
@@ -819,6 +823,17 @@ export function CampaignWizard({
 
             {step === 2 ? (
             <>
+            {getAdFormat(adFormat)?.renderFamily === "newsletter" ? (
+              <div className="mb-6 rounded-lg border border-border bg-muted/40 p-4 text-sm text-foreground">
+                <p className="font-medium">Delivered as a copy-paste HTML snippet</p>
+                <p className="mt-1 text-muted-foreground">
+                  Newsletter Sponsorship doesn&apos;t run through a publisher&apos;s live JS tag
+                  (email clients block scripts). Instead, the publisher pastes a static HTML
+                  snippet built from this creative into their email tool - the same image/HTML
+                  and landing URL below, plus a working open-tracking pixel and click link.
+                </p>
+              </div>
+            ) : null}
             <SettingsRow
               label="Landing URL & Preview"
               description="Where people land when they click this ad."
@@ -1438,17 +1453,19 @@ export function CampaignWizard({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 py-5 text-base">
-                {advertiseTarget ? (
+                {advertiseTargets.length > 0 ? (
                   <SummaryRow
                     icon={Globe}
                     label="Advertising"
-                    value={
-                      advertiseTarget === "social_media"
-                        ? "Social media"
-                        : advertiseTarget === "app"
-                          ? "App"
-                          : "Website"
-                    }
+                    value={advertiseTargets
+                      .map((target) =>
+                        target === "social_media"
+                          ? "Social media"
+                          : target === "app"
+                            ? "App"
+                            : "Website"
+                      )
+                      .join(", ")}
                   />
                 ) : null}
                 <SummaryRow
@@ -1608,12 +1625,12 @@ function OptionTile({
       className={cn(
         "relative flex flex-col items-center justify-center gap-2 rounded-lg border p-4 text-base font-medium transition-colors",
         selected
-          ? "border-rose-400 bg-rose-50 text-rose-600 dark:bg-rose-950/20"
-          : "border-border text-foreground hover:border-rose-300 hover:bg-rose-50/40 dark:hover:bg-rose-950/10"
+          ? "tile-select text-foreground"
+          : "border-border text-foreground tile-select-hover"
       )}
     >
       {selected ? (
-        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-rose-500 text-white">
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-black text-white">
           <Check className="size-3" strokeWidth={3} />
         </span>
       ) : null}

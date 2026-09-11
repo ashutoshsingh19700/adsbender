@@ -63,14 +63,13 @@ export class ZoneCacheSyncService implements OnModuleInit, OnModuleDestroy {
   async syncActiveZones() {
     const zones = await this.prisma.adZone.findMany({
       where: { status: 'ACTIVE' },
-      select: { id: true },
+      select: { id: true, layoutType: true },
     });
-    const zoneIds = zones.map((zone) => zone.id);
 
-    await this.zoneCacheStore.replaceActiveZoneIds(zoneIds);
+    await this.zoneCacheStore.replaceActiveZoneIds(zones);
 
     return {
-      cachedZones: zoneIds.length,
+      cachedZones: zones.length,
     };
   }
 }

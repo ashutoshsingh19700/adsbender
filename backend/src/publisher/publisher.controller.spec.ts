@@ -65,7 +65,7 @@ describe('PublisherController', () => {
         zoneName: 'Homepage',
         width: 300,
         height: 250,
-        layoutType: 'rectangle',
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
       },
     );
 
@@ -73,7 +73,7 @@ describe('PublisherController', () => {
       zoneName: 'Homepage',
       width: 300,
       height: 250,
-      layoutType: 'rectangle',
+      layoutType: 'MEDIUM_RECTANGLE_300X250',
     });
   });
 });

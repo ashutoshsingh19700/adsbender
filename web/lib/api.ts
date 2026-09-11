@@ -301,6 +301,15 @@ export function getAdZoneSnippet(zoneId: string) {
   )
 }
 
+// Newsletter Sponsorship zones can't use the live JS tag (email clients
+// block scripts) - see PublisherService.getNewsletterSnippet on the
+// backend for the static HTML this returns instead.
+export function getNewsletterSnippet(zoneId: string) {
+  return apiFetch<{ zoneId: string; snippet: string }>(
+    `/api/v1/publisher/ad-zones/${zoneId}/newsletter-snippet`
+  )
+}
+
 export function getAdZonePerformance(
   zoneId: string,
   startDate: string,

@@ -21,6 +21,7 @@ import {
   archiveAdZone,
   getAdZonePerformance,
   getAdZoneSnippet,
+  getNewsletterSnippet,
   listAdZones,
   updateAdZone,
   updateAdZoneStatus,
@@ -570,7 +571,11 @@ export function ZoneSnippetDialog({
     setSnippet(null)
     setCopied(false)
     setLoading(true)
-    getAdZoneSnippet(zone.id)
+    const isNewsletter = zone.layoutType === "NEWSLETTER_SPONSORSHIP"
+    const fetchSnippet = isNewsletter
+      ? getNewsletterSnippet(zone.id)
+      : getAdZoneSnippet(zone.id)
+    fetchSnippet
       .then((result) => {
         if (!cancelled) setSnippet(result.snippet)
       })
@@ -603,14 +608,19 @@ export function ZoneSnippetDialog({
     }
   }
 
+  const isNewsletter = zone?.layoutType === "NEWSLETTER_SPONSORSHIP"
+
   return (
     <Dialog open={!!zone} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Embed snippet</DialogTitle>
+          <DialogTitle>
+            {isNewsletter ? "Newsletter HTML snippet" : "Embed snippet"}
+          </DialogTitle>
           <DialogDescription>
-            Paste this on your site where &quot;{zone?.zoneName}&quot; should
-            appear.
+            {isNewsletter
+              ? `Paste this HTML block into your email tool where "${zone?.zoneName}" should appear.`
+              : `Paste this on your site where "${zone?.zoneName}" should appear.`}
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -624,11 +634,9 @@ export function ZoneSnippetDialog({
           />
         )}
         <p className="text-xs text-muted-foreground">
-          Paste this directly in your page&apos;s normal, always-rendered
-          content — not inside a modal, lazy-loaded component, or conditional
-          render. On frameworks with server streaming (e.g. Next.js
-          Suspense), placing it inside a boundary that never resolves into
-          the live DOM will inject the ad invisibly.
+          {isNewsletter
+            ? "This is static HTML, not a live tag — it's generated from whichever campaign is bidding highest right now, and includes a working open-tracking pixel and click link. Email clients block scripts, so it never re-fetches on open; regenerate this snippet before each send to pick up the current sponsor."
+            : "Paste this directly in your page's normal, always-rendered content — not inside a modal, lazy-loaded component, or conditional render. On frameworks with server streaming (e.g. Next.js Suspense), placing it inside a boundary that never resolves into the live DOM will inject the ad invisibly."}
         </p>
         <DialogFooter>
           <Button variant="outline" onClick={copy} disabled={!snippet}>

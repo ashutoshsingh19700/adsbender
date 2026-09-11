@@ -118,5 +118,10 @@ import { PlatformSettingsModule } from '../platform-settings/platform-settings.m
       useExisting: RedisVelocityCounterStore,
     },
   ],
+  // ClickIntegrityService is a stateless HMAC signer (no cache/DB
+  // dependency) - PublisherModule reuses it to sign the click URL embedded
+  // in a Newsletter Sponsorship snippet, the same way AdEngineController
+  // signs every other creative's click URL. See PublisherService.getNewsletterSnippet.
+  exports: [ClickIntegrityService],
 })
 export class AdEngineModule {}

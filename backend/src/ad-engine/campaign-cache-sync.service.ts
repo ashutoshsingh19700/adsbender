@@ -84,6 +84,7 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
           c."creativeUrl",
           c."creativeHtml",
           c."destinationUrl",
+          c."adFormat"::text AS "adFormat",
           c."frequencyCapImpressions",
           c."frequencyCapWindowSeconds",
           u.balance_usd AS "advertiserBalanceUsd"

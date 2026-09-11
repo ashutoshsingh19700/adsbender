@@ -200,6 +200,17 @@
   background-clip: padding-box, border-box;
 }
 
+/* Same soft wash fill as .tile-shade/.tile-hover, but with a solid black
+   border instead of the gradient ring — used wherever a selectable tile
+   should read as "picked" or "hovered" with a plain black outline rather
+   than the brand-gradient border (offer cards, ad-target tiles, device /
+   OS / connection tiles in the campaign wizard). */
+.tile-select,
+.tile-select-hover:hover {
+  border-color: #000 !important;
+  background-image: linear-gradient(150deg, #eaf2ff 0%, #f0ecfd 52%, #fdeef6 100%);
+}
+
 /* Pill-button halo + shine, used on header CTAs */
 .btn-halo {
   display: inline-flex;

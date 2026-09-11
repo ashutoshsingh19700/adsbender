@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -6,6 +7,8 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+
+import { ZONE_LAYOUT_TYPES } from '../../common/ad-formats';
 
 export class CreateAdZoneDto {
   @IsString()
@@ -29,7 +32,11 @@ export class CreateAdZoneDto {
   @Max(4000)
   height: number;
 
-  @IsString()
-  @MinLength(2)
+  // Must be a real format from the shared catalog, or one of the
+  // pre-catalog legacy values (see ZONE_LAYOUT_TYPES) - AdTargetingService
+  // matches a campaign's adFormat against this exact value, so a
+  // typo'd/free-text layoutType would silently never match any campaign
+  // and the zone would never serve anything.
+  @IsIn(ZONE_LAYOUT_TYPES)
   layoutType: string;
 }

@@ -26,6 +26,11 @@ export type CacheableCampaign = {
   // existing call sites/fixtures built before this field existed don't need
   // updating - every real row from CampaignCacheSyncService's query has it.
   destinationUrl?: string | null;
+  // The format this campaign was built for (see CampaignAdFormat in
+  // schema.prisma) - AdTargetingService.isEligible matches this against the
+  // serving zone's layoutType. Optional/nullable so a campaign created
+  // before this feature existed stays wildcard-eligible - see isEligible.
+  adFormat?: string | null;
   // Per-campaign frequency-cap override (see Campaign.frequencyCapImpressions
   // in schema.prisma). Optional/nullable - undefined or null both mean "use
   // VisitorFrequencyCapService's platform default", not "uncapped".
@@ -50,6 +55,7 @@ export type CampaignCacheRecord = {
   creativeUrl: string;
   creativeHtml: string;
   destinationUrl?: string;
+  adFormat?: string;
   frequencyCapImpressions?: string;
   frequencyCapWindowSeconds?: string;
 };
@@ -71,6 +77,7 @@ export type ParsedCampaignCacheRecord = {
   creativeUrl: string | null;
   creativeHtml: string | null;
   destinationUrl?: string | null;
+  adFormat?: string | null;
   frequencyCapImpressions?: number | null;
   frequencyCapWindowSeconds?: number | null;
 };

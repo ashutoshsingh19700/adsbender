@@ -23,7 +23,7 @@ export function SiteHeader() {
   // auth CTAs since the user is already there.
   if (BARE_CHROME_PATHS.includes(pathname)) {
     return (
-      <header className="border-b bg-background sticky top-0 z-40">
+      <header className="bg-background sticky top-0 z-40">
         <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
           <Link
             href="/"
@@ -50,7 +50,7 @@ export function SiteHeader() {
   // sidebar, purely to host the drawer trigger.
   if (!loading && user) {
     return (
-      <header className="border-b bg-background sticky top-0 z-40 md:hidden">
+      <header className="bg-background sticky top-0 z-40 md:hidden">
         <div className="flex h-16 items-center gap-2 px-4 sm:px-6">
           <MobileSidebarTrigger />
           <Link
@@ -66,7 +66,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="border-b bg-background sticky top-0 z-40">
+    <header className="bg-background sticky top-0 z-40">
       <div className="mx-auto flex h-24 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 xl:max-w-7xl 2xl:max-w-[1600px]">
         <div className="flex items-center gap-2 sm:gap-3">
           <MobileSidebarTrigger />

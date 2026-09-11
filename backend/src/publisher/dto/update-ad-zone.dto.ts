@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -6,6 +7,8 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+
+import { ZONE_LAYOUT_TYPES } from '../../common/ad-formats';
 
 // Same fields as CreateAdZoneDto, but all optional since this is a partial
 // update (PATCH) - only send the fields you want to change.
@@ -28,7 +31,6 @@ export class UpdateAdZoneDto {
   height?: number;
 
   @IsOptional()
-  @IsString()
-  @MinLength(2)
+  @IsIn(ZONE_LAYOUT_TYPES)
   layoutType?: string;
 }

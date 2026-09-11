@@ -121,6 +121,18 @@ export class PublisherController {
     return this.publisherService.getAdZoneSnippet(req.user.id, id);
   }
 
+  // Newsletter Sponsorship zones can't use the JS tag at all (email clients
+  // don't run JS) - a separate static-HTML snippet, generated once against
+  // whatever campaign is live right now rather than served live per email
+  // open. See PublisherService.getNewsletterSnippet.
+  @Get('ad-zones/:id/newsletter-snippet')
+  getNewsletterSnippet(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.publisherService.getNewsletterSnippet(req.user.id, id);
+  }
+
   @Get('statistics')
   getStatistics(
     @Req() req: AuthenticatedRequest,

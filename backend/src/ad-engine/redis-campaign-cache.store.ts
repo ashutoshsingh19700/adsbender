@@ -103,6 +103,7 @@ export class RedisCampaignCacheStore
       creativeUrl: campaign.creativeUrl ?? '',
       creativeHtml: campaign.creativeHtml ?? '',
       destinationUrl: campaign.destinationUrl ?? '',
+      adFormat: campaign.adFormat ?? '',
       frequencyCapImpressions:
         campaign.frequencyCapImpressions != null
           ? String(campaign.frequencyCapImpressions)
@@ -146,6 +147,7 @@ export class RedisCampaignCacheStore
       creativeUrl: record.creativeUrl || null,
       creativeHtml: record.creativeHtml || null,
       destinationUrl: record.destinationUrl || null,
+      adFormat: record.adFormat || null,
       frequencyCapImpressions: record.frequencyCapImpressions
         ? Number(record.frequencyCapImpressions)
         : null,

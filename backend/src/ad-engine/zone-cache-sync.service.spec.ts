@@ -17,7 +17,7 @@ describe('ZoneCacheSyncService', () => {
     };
     zoneCacheStore = {
       replaceActiveZoneIds: jest.fn(),
-      isActiveZone: jest.fn(),
+      getActiveZone: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -37,10 +37,10 @@ describe('ZoneCacheSyncService', () => {
     service = module.get(ZoneCacheSyncService);
   });
 
-  it('loads ACTIVE zone ids into the Redis cache store', async () => {
+  it('loads ACTIVE zone ids and layout types into the Redis cache store', async () => {
     prismaService.adZone.findMany.mockResolvedValue([
-      { id: 'zone-1' },
-      { id: 'zone-2' },
+      { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
+      { id: 'zone-2', layoutType: 'POPUP' },
     ]);
 
     await expect(service.syncActiveZones()).resolves.toEqual({
@@ -49,11 +49,11 @@ describe('ZoneCacheSyncService', () => {
 
     expect(prismaService.adZone.findMany).toHaveBeenCalledWith({
       where: { status: 'ACTIVE' },
-      select: { id: true },
+      select: { id: true, layoutType: true },
     });
     expect(zoneCacheStore.replaceActiveZoneIds).toHaveBeenCalledWith([
-      'zone-1',
-      'zone-2',
+      { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
+      { id: 'zone-2', layoutType: 'POPUP' },
     ]);
   });
 

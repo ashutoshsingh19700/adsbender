@@ -38,28 +38,26 @@ export class AdTargetingService {
     // Confirm the zone exists and is ACTIVE before spending any targeting
     // effort on it.
     //
-    // Reads the Redis-cached ACTIVE zone set (see ZoneCacheSyncService)
+    // Reads the Redis-cached ACTIVE zone record (see ZoneCacheSyncService)
     // rather than querying Postgres on every single /serve request -
-    // that's now a plain SISMEMBER (no query planning, no network round
-    // trip to a cross-region DB), same reasoning as the campaign cache
-    // this already mirrors. A newly-created or just-reactivated zone can
-    // take up to ZONE_CACHE_SYNC_INTERVAL_MS to start serving, and a
+    // that's now a plain SISMEMBER+HGET (no query planning, no network
+    // round trip to a cross-region DB), same reasoning as the campaign
+    // cache this already mirrors. A newly-created or just-reactivated zone
+    // can take up to ZONE_CACHE_SYNC_INTERVAL_MS to start serving, and a
     // just-paused one up to that long to stop - the same staleness budget
     // already accepted for campaigns. A malformed zoneId (not a real UUID
     // at all) is simply never a member of the set, so it falls out the
     // same "not found" path as any other unknown id, no special handling
     // needed the way the old Postgres uuid-cast failure required.
-    const isActiveZone = await this.zoneCacheStore.isActiveZone(
-      request.zoneId,
-    );
+    const zone = await this.zoneCacheStore.getActiveZone(request.zoneId);
 
-    if (!isActiveZone) {
+    if (!zone) {
       return null;
     }
 
     const campaigns = await this.campaignCacheStore.getActiveCampaigns();
     const eligible = campaigns.filter((campaign) =>
-      this.isEligible(campaign, request),
+      this.isEligible(campaign, request, zone.layoutType),
     );
     const underCap = await this.filterUnderFrequencyCap(
       eligible,
@@ -221,8 +219,24 @@ export class AdTargetingService {
   private isEligible(
     campaign: ParsedCampaignCacheRecord,
     request: TargetingRequest,
+    zoneLayoutType: string,
   ) {
     if (campaign.status !== 'ACTIVE') {
+      return false;
+    }
+
+    // A campaign's adFormat must match the exact format the publisher built
+    // this zone for (a "Popup" zone must never serve a plain banner
+    // campaign, or vice versa - see RENDER_FAMILY_BY_FORMAT and
+    // publisher_tag.js, which render each format's DOM/JS behavior
+    // completely differently). A campaign with no adFormat predates this
+    // feature and stays wildcard-eligible everywhere rather than being
+    // orphaned from every zone the moment this shipped.
+    if (
+      campaign.adFormat &&
+      zoneLayoutType &&
+      campaign.adFormat !== zoneLayoutType
+    ) {
       return false;
     }
 

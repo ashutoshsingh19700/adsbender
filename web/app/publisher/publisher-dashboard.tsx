@@ -25,7 +25,7 @@ import {
   BarChartHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 
-import { ApiError, createAdZone, getPublisherProfile, validateDomain } from "@/lib/api"
+import { ApiError, createAdZone, getNewsletterSnippet, getPublisherProfile, validateDomain } from "@/lib/api"
 import type { AdZone, PublisherSite } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -453,7 +453,20 @@ export function PublisherDashboard() {
   async function onCreateZone(values: z.infer<typeof zoneSchema>) {
     try {
       const result = await createAdZone(values)
-      setZone(result)
+      // Newsletter Sponsorship can't use the live JS tag the create-zone
+      // response's `snippet` field always returns (email clients block
+      // scripts) - swap in the static HTML snippet instead. See
+      // PublisherService.getNewsletterSnippet.
+      if (result.zone.layoutType === "NEWSLETTER_SPONSORSHIP") {
+        try {
+          const newsletter = await getNewsletterSnippet(result.zone.id)
+          setZone({ zone: result.zone, snippet: newsletter.snippet })
+        } catch {
+          setZone(result)
+        }
+      } else {
+        setZone(result)
+      }
       setZoneListVersion((v) => v + 1)
       setStep(2)
       toast.success(`Ad zone "${result.zone.zoneName}" created`)
