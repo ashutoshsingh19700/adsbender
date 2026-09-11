@@ -96,7 +96,7 @@ export default function ServicesPage() {
       ))}
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-violet-50 via-violet-50/40 to-background">
+      <section className="relative overflow-hidden bg-linear-to-b from-violet-50 via-violet-50/40 to-background">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-24 right-0 -z-10 size-96 rounded-full bg-violet-200/50 blur-3xl"
