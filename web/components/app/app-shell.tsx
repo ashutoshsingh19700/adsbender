@@ -30,17 +30,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // viewport, matching the reference dashboard design. Adding top padding
   // pushed the whole shell down and left a blank strip above the topbar.
   //
-  // /analytics is shared across all three roles (ADVERTISER, PUBLISHER,
-  // ADMIN) - its own layout.tsx picks the matching sidebar per role, so it
-  // needs the same bare wrapper as /advertiser and /publisher rather than
-  // the generic AppSidebar below (which would stack a second sidebar next
-  // to the role-specific one).
+  // /analytics, /faq and /contact are all reachable from every role's
+  // sidebar ("Analytics" / "Help Center" / "Contact Us") but live outside
+  // /advertiser and /publisher - each has its own layout.tsx that picks the
+  // matching sidebar per role (see RoleAwareShell / SupportPageShell), so
+  // they all need the same bare wrapper as /advertiser and /publisher
+  // rather than the generic AppSidebar below, which would stack a second
+  // sidebar next to the role-specific one.
   if (
     pathname === "/advertiser" ||
     pathname.startsWith("/advertiser/") ||
     pathname === "/publisher" ||
     pathname.startsWith("/publisher/") ||
-    pathname === "/analytics"
+    pathname === "/analytics" ||
+    pathname === "/faq" ||
+    pathname === "/contact"
   ) {
     return <main className="flex-1">{children}</main>
   }

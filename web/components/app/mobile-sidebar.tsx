@@ -34,18 +34,20 @@ export function MobileSidebarTrigger() {
 
   if (!user || BARE_CHROME_PATHS.includes(pathname)) return null
 
-  // /analytics is shared across roles (see app/analytics/layout.tsx) - the
-  // drawer's nav for it follows the signed-in user's role the same way that
-  // layout does, so it matches whichever sidebar desktop is showing there.
-  const onAnalytics = pathname === "/analytics"
+  // /analytics, /faq and /contact are shared across roles (see
+  // RoleAwareShell / SupportPageShell) - the drawer's nav for them follows
+  // the signed-in user's role the same way those layouts do, so it matches
+  // whichever sidebar desktop is showing there.
+  const onSharedPage =
+    pathname === "/analytics" || pathname === "/faq" || pathname === "/contact"
   const isAdvertiser =
     pathname === "/advertiser" ||
     pathname.startsWith("/advertiser/") ||
-    (onAnalytics && user.role === "ADVERTISER")
+    (onSharedPage && user.role === "ADVERTISER")
   const isPublisher =
     pathname === "/publisher" ||
     pathname.startsWith("/publisher/") ||
-    (onAnalytics && user.role === "PUBLISHER")
+    (onSharedPage && user.role === "PUBLISHER")
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
