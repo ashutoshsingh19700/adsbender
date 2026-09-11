@@ -1,5 +1,6 @@
-import { StatisticsPage } from "./statistics-page"
+import { redirect } from "next/navigation"
 
+// Statistics now lives on the advertiser dashboard itself.
 export default function Page() {
-  return <StatisticsPage />
+  redirect("/advertiser")
 }

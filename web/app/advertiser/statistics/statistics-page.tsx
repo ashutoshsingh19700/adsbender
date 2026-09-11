@@ -40,7 +40,7 @@ type Row = {
   totals: AnalyticsTotals | "error" | undefined
 }
 
-export function StatisticsPage() {
+export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [range, setRange] = React.useState(defaultDateRange)
   const [statusFilter, setStatusFilter] = React.useState<
     CampaignStatus | "ALL"
@@ -126,14 +126,29 @@ export function StatisticsPage() {
   )
 
   return (
-    <div className="space-y-6 px-4 py-10 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
-        <p className="text-muted-foreground">
-          Impressions, clicks, CTR, and spend per campaign for the selected
-          date range.
-        </p>
-      </div>
+    <div
+      className={cn(
+        "space-y-6",
+        !embedded && "px-4 py-10 sm:px-6 lg:px-8"
+      )}
+    >
+      {!embedded ? (
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
+          <p className="text-muted-foreground">
+            Impressions, clicks, CTR, and spend per campaign for the selected
+            date range.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">Statistics</h2>
+          <p className="text-sm text-muted-foreground">
+            Impressions, clicks, CTR, and spend per campaign for the selected
+            date range.
+          </p>
+        </div>
+      )}
 
       {/* Filter bar */}
       <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">

@@ -42,7 +42,6 @@ type GroupItem = {
 
 const NAV: (LeafItem | GroupItem)[] = [
   { href: "/advertiser", label: "Dashboard", icon: DashboardSquare01Icon },
-  { href: "/advertiser/statistics", label: "Statistics", icon: Chart01Icon },
   {
     label: "Campaigns",
     icon: Megaphone01Icon,
