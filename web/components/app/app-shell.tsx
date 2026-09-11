@@ -13,9 +13,10 @@ import { AppSidebar } from "@/components/app/app-sidebar"
 // `user` is set - see its comment in lib/roles.ts for why a still-signed-in
 // visit to /login shouldn't show the sidebar either.
 //
-// /advertiser/* renders its own, more detailed sidebar (AdvertiserSidebar,
-// via app/advertiser/layout.tsx) - showing this generic one there too would
-// stack two sidebars side by side, so it's skipped for that section.
+// /advertiser/* and /publisher/* each render their own, more detailed
+// sidebar (AdvertiserSidebar / PublisherSidebar, via their own layout.tsx) -
+// showing this generic one there too would stack two sidebars side by side,
+// so both sections are skipped here.
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const pathname = usePathname()
@@ -24,8 +25,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <main className="flex-1 pt-6">{children}</main>
   }
 
-  if (pathname === "/advertiser" || pathname.startsWith("/advertiser/")) {
-    return <main className="flex-1 pt-6">{children}</main>
+  // No pt-6 here (unlike the two returns above) - the advertiser/publisher
+  // sidebar + sticky topbar are meant to sit flush against the top of the
+  // viewport, matching the reference dashboard design. Adding top padding
+  // pushed the whole shell down and left a blank strip above the topbar.
+  //
+  // /analytics is shared across all three roles (ADVERTISER, PUBLISHER,
+  // ADMIN) - its own layout.tsx picks the matching sidebar per role, so it
+  // needs the same bare wrapper as /advertiser and /publisher rather than
+  // the generic AppSidebar below (which would stack a second sidebar next
+  // to the role-specific one).
+  if (
+    pathname === "/advertiser" ||
+    pathname.startsWith("/advertiser/") ||
+    pathname === "/publisher" ||
+    pathname.startsWith("/publisher/") ||
+    pathname === "/analytics"
+  ) {
+    return <main className="flex-1">{children}</main>
   }
 
   return (

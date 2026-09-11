@@ -4,27 +4,30 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  ChevronDown,
-  ChevronsLeft,
-  ChevronsRight,
-  Crown,
-  HelpCircle,
-  LayoutDashboard,
-  LineChart,
-  ListChecks,
-  Mail,
-  Megaphone,
-  PlusCircle,
-  Wallet,
-} from "lucide-react"
+  AddCircleIcon,
+  Chart01Icon,
+  CheckListIcon,
+  ChevronDownIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
+  CrownIcon,
+  DashboardSquare01Icon,
+  HelpCircleIcon,
+  Mail01Icon,
+  Megaphone01Icon,
+  Wallet01Icon,
+} from "@hugeicons/core-free-icons"
+import type { IconSvgElement } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/app/logo"
+import { HIcon } from "@/components/app/h-icon"
 
 type LeafItem = {
   href: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: IconSvgElement
   // Rendered as a filled gradient pill instead of a plain link - used for
   // the "New Campaign" shortcut so it reads as a primary action, matching
   // the reference AdsBender dashboard design.
@@ -33,35 +36,35 @@ type LeafItem = {
 
 type GroupItem = {
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: IconSvgElement
   children: LeafItem[]
 }
 
 const NAV: (LeafItem | GroupItem)[] = [
-  { href: "/advertiser", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/advertiser/statistics", label: "Statistics", icon: LineChart },
+  { href: "/advertiser", label: "Dashboard", icon: DashboardSquare01Icon },
+  { href: "/advertiser/statistics", label: "Statistics", icon: Chart01Icon },
   {
     label: "Campaigns",
-    icon: Megaphone,
+    icon: Megaphone01Icon,
     children: [
-      { href: "/advertiser/campaigns", label: "My Campaigns", icon: ListChecks },
+      { href: "/advertiser/campaigns", label: "My Campaigns", icon: CheckListIcon },
       {
         href: "/advertiser/campaigns?tab=new",
         label: "New Campaign",
-        icon: PlusCircle,
+        icon: AddCircleIcon,
         emphasize: true,
       },
     ],
   },
-  { href: "/advertiser/wallet", label: "Add Funds", icon: Wallet },
+  { href: "/advertiser/wallet", label: "Add Funds", icon: Wallet01Icon },
   // Shared with the global AppSidebar (see app-shell.tsx) - kept here too
   // since /advertiser/* pages render this sidebar instead of that one.
-  { href: "/analytics", label: "Analytics", icon: LineChart },
+  { href: "/analytics", label: "Analytics", icon: Chart01Icon },
 ]
 
 const SUPPORT_LINKS: LeafItem[] = [
-  { href: "/faq", label: "Help Center", icon: HelpCircle },
-  { href: "/contact", label: "Contact Us", icon: Mail },
+  { href: "/faq", label: "Help Center", icon: HelpCircleIcon },
+  { href: "/contact", label: "Contact Us", icon: Mail01Icon },
 ]
 
 function isGroup(item: LeafItem | GroupItem): item is GroupItem {
@@ -102,16 +105,17 @@ export function AdvertiserSidebarNav({
               type="button"
               onClick={() => setOpen((o) => !o)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-indigo-100/80 transition-colors hover:bg-white/10 hover:text-white",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                 item.children.some((c) => pathname === hrefPath(c.href)) &&
-                  "bg-white/10 text-white"
+                  "bg-violet-50 text-violet-700"
               )}
             >
-              <item.icon className="size-4 shrink-0" />
+              <HIcon icon={item.icon} className="size-4 shrink-0" />
               {!collapsed ? (
                 <>
                   <span className="flex-1 text-left">{item.label}</span>
-                  <ChevronDown
+                  <HIcon
+                    icon={ChevronDownIcon}
                     className={cn(
                       "size-4 shrink-0 transition-transform",
                       open && "rotate-180"
@@ -121,7 +125,7 @@ export function AdvertiserSidebarNav({
               ) : null}
             </button>
             {open && !collapsed ? (
-              <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-white/10 pl-3">
+              <div className="ml-4 mt-1 flex flex-col gap-1 border-l pl-3">
                 {item.children.map((child) => {
                   const active = child.emphasize
                     ? isNewCampaignActive(pathname, search)
@@ -139,7 +143,7 @@ export function AdvertiserSidebarNav({
                             : "sidebar-pill-gradient opacity-80 hover:opacity-100"
                         )}
                       >
-                        <child.icon className="size-3.5 shrink-0" />
+                        <HIcon icon={child.icon} className="size-3.5 shrink-0" />
                         {child.label}
                       </Link>
                     )
@@ -150,11 +154,11 @@ export function AdvertiserSidebarNav({
                       href={child.href}
                       onClick={onNavigate}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-indigo-100/70 transition-colors hover:bg-white/10 hover:text-white",
-                        active && "bg-white/10 font-medium text-white"
+                        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        active && "bg-violet-50 font-medium text-violet-700"
                       )}
                     >
-                      <child.icon className="size-3.5 shrink-0" />
+                      <HIcon icon={child.icon} className="size-3.5 shrink-0" />
                       {child.label}
                     </Link>
                   )
@@ -169,23 +173,23 @@ export function AdvertiserSidebarNav({
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-indigo-100/80 transition-colors hover:bg-white/10 hover:text-white",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               pathname === hrefPath(item.href) &&
                 "sidebar-pill-gradient text-white hover:opacity-90"
             )}
           >
-            <item.icon className="size-4 shrink-0" />
+            <HIcon icon={item.icon} className="size-4 shrink-0" />
             {!collapsed ? item.label : null}
           </Link>
         )
       )}
 
       {!collapsed ? (
-        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide text-indigo-100/40 uppercase">
+        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
           Support
         </p>
       ) : (
-        <div className="my-4 h-px bg-white/10" />
+        <div className="my-4 h-px bg-border" />
       )}
       {SUPPORT_LINKS.map((link) => (
         <Link
@@ -193,9 +197,9 @@ export function AdvertiserSidebarNav({
           href={link.href}
           onClick={onNavigate}
           title={collapsed ? link.label : undefined}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-indigo-100/70 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <link.icon className="size-4 shrink-0" />
+          <HIcon icon={link.icon} className="size-4 shrink-0" />
           {!collapsed ? link.label : null}
         </Link>
       ))}
@@ -209,18 +213,21 @@ export function AdvertiserSidebar() {
   return (
     <aside
       className={cn(
-        "sidebar-shell sticky top-0 hidden h-screen shrink-0 flex-col text-white md:flex",
+        "sticky top-0 hidden h-screen shrink-0 flex-col border-r bg-white md:flex",
         collapsed ? "w-[76px]" : "w-64"
       )}
     >
       <Link
         href="/advertiser"
-        className="flex items-center gap-2.5 px-4 py-5 text-lg font-semibold tracking-tight"
+        className="flex items-center gap-2.5 border-b px-4 py-5 text-lg font-semibold tracking-tight"
       >
-        <span className="sidebar-pill-gradient flex size-9 shrink-0 items-center justify-center rounded-xl shadow-lg shadow-fuchsia-900/30">
-          <span className="block size-3.5 rotate-45 rounded-[3px] bg-white" />
-        </span>
-        {!collapsed ? <span className="text-white">AdsBender</span> : null}
+        {collapsed ? (
+          <span className="sidebar-pill-gradient flex size-9 shrink-0 items-center justify-center rounded-xl shadow-lg shadow-fuchsia-900/30">
+            <span className="block size-3.5 rotate-45 rounded-[3px] bg-white" />
+          </span>
+        ) : (
+          <Logo className="h-9" />
+        )}
       </Link>
 
       <div className="flex-1 overflow-y-auto">
@@ -228,9 +235,9 @@ export function AdvertiserSidebar() {
       </div>
 
       {!collapsed ? (
-        <div className="mx-3 mb-3 rounded-2xl bg-white/95 p-4 text-center shadow-lg">
+        <div className="mx-3 mb-3 rounded-2xl border bg-muted/30 p-4 text-center shadow-sm">
           <span className="sidebar-pill-gradient mx-auto flex size-9 items-center justify-center rounded-full text-white">
-            <Crown className="size-4" />
+            <HIcon icon={CrownIcon} className="size-4" />
           </span>
           <p className="mt-2 text-sm font-semibold text-foreground">
             Upgrade your campaigns
@@ -250,13 +257,13 @@ export function AdvertiserSidebar() {
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="flex items-center gap-2 border-t border-white/10 px-4 py-3 text-sm font-medium text-indigo-100/70 transition-colors hover:bg-white/10 hover:text-white"
+        className="flex items-center gap-2 border-t px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         {collapsed ? (
-          <ChevronsRight className="size-4 shrink-0" />
+          <HIcon icon={ChevronsRightIcon} className="size-4 shrink-0" />
         ) : (
           <>
-            <ChevronsLeft className="size-4 shrink-0" />
+            <HIcon icon={ChevronsLeftIcon} className="size-4 shrink-0" />
             Collapse
           </>
         )}

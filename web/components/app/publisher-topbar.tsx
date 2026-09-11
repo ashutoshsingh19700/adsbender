@@ -13,17 +13,15 @@ import { useAuth } from "@/app/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { HIcon } from "@/components/app/h-icon"
 
-// Top bar for the redesigned advertiser shell: search, account email, role
-// badge, notifications and avatar. Sits to the right of <AdvertiserSidebar>
-// (see advertiser/layout.tsx) - the sidebar itself no longer carries the
-// account footer now that this identity strip exists up top.
-export function AdvertiserTopbar() {
+// Same identity strip as AdvertiserTopbar (see advertiser-topbar.tsx), kept
+// visually identical so the two dashboards read as one product.
+export function PublisherTopbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const initial = user?.email?.[0]?.toUpperCase() ?? "A"
+  const initial = user?.email?.[0]?.toUpperCase() ?? "P"
 
   useEffect(() => {
     if (!menuOpen) return
@@ -49,7 +47,7 @@ export function AdvertiserTopbar() {
         <HIcon icon={Search01Icon} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="search"
-          placeholder="Search campaigns, stats, or help..."
+          placeholder="Search sites, zones, or help..."
           className="h-9 w-full rounded-full border bg-muted/40 pl-9 pr-14 text-sm outline-none placeholder:text-muted-foreground focus:border-violet-300 focus:bg-background focus:ring-2 focus:ring-violet-100"
         />
         <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -66,7 +64,7 @@ export function AdvertiserTopbar() {
         ) : null}
 
         <span className="role-badge-gradient rounded-full px-3 py-1 text-xs font-semibold tracking-wide text-white">
-          {user?.role ?? "ADVERTISER"}
+          {user?.role ?? "PUBLISHER"}
         </span>
 
         <Button
@@ -95,7 +93,7 @@ export function AdvertiserTopbar() {
               {user?.email ? (
                 <div className="border-b px-3 py-2">
                   <p className="truncate text-sm font-medium">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role ?? "ADVERTISER"}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role ?? "PUBLISHER"}</p>
                 </div>
               ) : null}
               <button

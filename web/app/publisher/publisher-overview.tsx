@@ -1,33 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
-import { Clock3, Globe2, LayoutGrid, Wallet as WalletIcon } from "lucide-react"
+import {
+  Clock01Icon,
+  GlobeIcon,
+  LayoutGridIcon,
+  Wallet01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { ApiError, getWalletSummary, listAdZones, listPublisherSites } from "@/lib/api"
 import type { AdZoneStatus, PublisherWalletSummary } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
 import { StatCard } from "@/components/app/stat-card"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-
-const chartConfig = {
-  count: { label: "Ad zones", color: "var(--chart-2)" },
-} satisfies ChartConfig
+import { toIconComponent } from "@/components/app/h-icon"
 
 const ZONE_STATUSES: AdZoneStatus[] = ["ACTIVE", "PAUSED", "ARCHIVED"]
+
+const WalletStatIcon = toIconComponent(Wallet01Icon)
+const ClockStatIcon = toIconComponent(Clock01Icon)
+const GlobeStatIcon = toIconComponent(GlobeIcon)
+const GridStatIcon = toIconComponent(LayoutGridIcon)
 
 // Publisher Portal's at-a-glance header: this publisher's own earnings and
 // site/zone counts only — sourced from their wallet summary, never a
@@ -89,72 +82,37 @@ export function PublisherOverview({ refreshToken }: { refreshToken: number }) {
   }, [refreshToken])
 
   const totalZones = ZONE_STATUSES.reduce((sum, s) => sum + zoneCounts[s], 0)
-  const chartData = ZONE_STATUSES.map((status) => ({
-    status: status.charAt(0) + status.slice(1).toLowerCase(),
-    count: zoneCounts[status],
-  }))
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard
-          label="Available earnings"
-          value={formatCurrency(summary?.availableEarnings ?? 0)}
-          hint="Ready to withdraw"
-          icon={WalletIcon}
-          loading={loading}
-        />
-        <StatCard
-          label="Pending earnings"
-          value={formatCurrency(summary?.pendingEarnings ?? 0)}
-          hint="Clearing before payout"
-          icon={Clock3}
-          loading={loading}
-        />
-        <StatCard
-          label="Verified sites"
-          value={String(verifiedSites)}
-          hint="Ownership confirmed"
-          icon={Globe2}
-          loading={loading}
-        />
-        <StatCard
-          label="Ad zones"
-          value={String(totalZones)}
-          hint={`${zoneCounts.ACTIVE} active`}
-          icon={LayoutGrid}
-          loading={loading}
-        />
-      </div>
-
-      {!loading && totalZones > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Ad zones by status</CardTitle>
-            <CardDescription>
-              How your inventory is distributed across active, paused, and
-              archived zones.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-48 w-full">
-              <BarChart data={chartData} layout="vertical">
-                <CartesianGrid horizontal={false} />
-                <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-                <YAxis
-                  type="category"
-                  dataKey="status"
-                  tickLine={false}
-                  axisLine={false}
-                  width={80}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--color-count)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      ) : null}
+    <div className="grid gap-4 sm:grid-cols-4">
+      <StatCard
+        label="Available earnings"
+        value={formatCurrency(summary?.availableEarnings ?? 0)}
+        hint="Ready to withdraw"
+        icon={WalletStatIcon}
+        loading={loading}
+      />
+      <StatCard
+        label="Pending earnings"
+        value={formatCurrency(summary?.pendingEarnings ?? 0)}
+        hint="Clearing before payout"
+        icon={ClockStatIcon}
+        loading={loading}
+      />
+      <StatCard
+        label="Verified sites"
+        value={String(verifiedSites)}
+        hint="Ownership confirmed"
+        icon={GlobeStatIcon}
+        loading={loading}
+      />
+      <StatCard
+        label="Ad zones"
+        value={String(totalZones)}
+        hint={`${zoneCounts.ACTIVE} active`}
+        icon={GridStatIcon}
+        loading={loading}
+      />
     </div>
   )
 }

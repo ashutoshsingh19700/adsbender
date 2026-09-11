@@ -5,11 +5,31 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Check, CheckCircle2, Clock, Code2, Copy, Globe2, LayoutGrid } from "lucide-react"
+import {
+  ArrowRight01Icon,
+  CheckIcon,
+  CheckmarkCircle02Icon,
+  ChevronDownIcon,
+  Clock01Icon,
+  CrownIcon,
+  GlobeIcon,
+  Layers01Icon,
+  LayoutGridIcon,
+  Maximize02Icon,
+  NewspaperIcon,
+  PanelRightIcon,
+  SourceCodeIcon,
+  Video01Icon,
+  Copy01Icon,
+  DashboardSquare02Icon,
+  BarChartHorizontalIcon,
+} from "@hugeicons/core-free-icons"
 
 import { ApiError, createAdZone, getPublisherProfile, validateDomain } from "@/lib/api"
 import type { AdZone, PublisherSite } from "@/lib/types"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { HIcon, toIconComponent } from "@/components/app/h-icon"
 import {
   Card,
   CardContent,
@@ -28,22 +48,77 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AdZoneManager } from "@/app/publisher/ad-zone-manager"
 import { PublisherOverview } from "@/app/publisher/publisher-overview"
 import { GROUPED_LAYOUT_TYPES, zoneSchema } from "@/app/publisher/zone-form"
-import { getAdFormat } from "@/lib/ad-formats"
+import { getAdFormat, type AdFormatCategory } from "@/lib/ad-formats"
+
+// Same tile-shade / tile-hover selectable-card treatment as the advertiser's
+// "What do you want to advertise?" picker (see
+// app/advertiser/advertise-target-dialog.tsx) - one icon per format category
+// so the two-tier category -> format pickers below read the same way.
+const CATEGORY_ICONS: Record<AdFormatCategory | "Legacy", React.ElementType> = {
+  Legacy: toIconComponent(DashboardSquare02Icon),
+  "Display Ads": toIconComponent(BarChartHorizontalIcon),
+  "Sidebar Ads": toIconComponent(PanelRightIcon),
+  "Native Ads": toIconComponent(NewspaperIcon),
+  "Popup & Overlay Ads": toIconComponent(Layers01Icon),
+  "Interstitial Ads": toIconComponent(Maximize02Icon),
+  "Video Ads": toIconComponent(Video01Icon),
+  "Premium Inventory": toIconComponent(CrownIcon),
+}
+
+const FallbackFormatIcon = toIconComponent(LayoutGridIcon)
+const GlobeStepIcon = toIconComponent(GlobeIcon)
+const GridStepIcon = toIconComponent(LayoutGridIcon)
+const CodeStepIcon = toIconComponent(SourceCodeIcon)
+
+// Selectable tile shared by both the category row and the format grid below
+// it - mirrors AdvertiseTargetDialog's option button exactly (same
+// tile-shade/tile-hover classes, same checkmark badge).
+function PickerTile({
+  selected,
+  onClick,
+  icon: Icon,
+  label,
+  sublabel,
+}: {
+  selected: boolean
+  onClick: () => void
+  icon: React.ElementType
+  label: string
+  sublabel?: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-1.5 rounded-lg border p-3 text-center text-sm font-medium transition-colors",
+        selected
+          ? "border-blue-500 tile-shade text-foreground"
+          : "border-border text-foreground tile-hover hover:border-blue-500"
+      )}
+    >
+      {selected ? (
+        <span className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-blue-600 text-white">
+          <HIcon icon={CheckIcon} className="size-3" />
+        </span>
+      ) : null}
+      <Icon className="size-5" />
+      <span>{label}</span>
+      {sublabel ? (
+        <span className="text-xs font-normal text-muted-foreground">
+          {sublabel}
+        </span>
+      ) : null}
+    </button>
+  )
+}
 
 // Plain-language, per-platform steps for pasting the verification line onto
 // a site's ads.txt — most publishers aren't developers and don't know what
@@ -134,7 +209,7 @@ function StepHeader({
             : "bg-violet-100 text-violet-600")
         }
       >
-        {done ? <CheckCircle2 className="size-5" /> : <Icon className="size-5" />}
+        {done ? <HIcon icon={CheckmarkCircle02Icon} className="size-5" /> : <Icon className="size-5" />}
         <span className="absolute -top-1 -right-1 flex size-4.5 items-center justify-center rounded-full border-2 border-background bg-foreground text-[10px] font-semibold text-background">
           {step}
         </span>
@@ -175,6 +250,120 @@ function ZonePreview({ width, height }: { width: number; height: number }) {
   )
 }
 
+// The three onboarding cards used to just stack on one long, scrolling
+// page. Paginated into steps instead - same pill-row + Back/Next pattern as
+// the advertiser's campaign wizard (see app/advertiser/campaign-wizard.tsx)
+// - so setting up a zone never requires scrolling past the other steps.
+const SETUP_STEPS = [
+  { title: "Verify domain", icon: GlobeIcon },
+  { title: "Create ad zone", icon: LayoutGridIcon },
+  { title: "Install snippet", icon: SourceCodeIcon },
+]
+
+function WizardSteps({
+  step,
+  onStepClick,
+}: {
+  step: number
+  onStepClick: (index: number) => void
+}) {
+  return (
+    <ol className="flex flex-wrap items-center gap-x-1 gap-y-2">
+      {SETUP_STEPS.map((s, i) => {
+        const status = i < step ? "done" : i === step ? "active" : "upcoming"
+        return (
+          <React.Fragment key={s.title}>
+            <li>
+              <button
+                type="button"
+                onClick={() => onStepClick(i)}
+                className={cn(
+                  "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  status === "active"
+                    ? "brand-gradient text-white shadow-sm"
+                    : "hover:bg-muted"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                    status === "active"
+                      ? "bg-white/25 text-white"
+                      : status === "done"
+                        ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
+                        : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {status === "done" ? (
+                    <HIcon icon={CheckIcon} className="size-3.5" />
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span
+                  className={
+                    status === "active"
+                      ? "text-white"
+                      : status === "done"
+                        ? "text-violet-600"
+                        : "text-muted-foreground"
+                  }
+                >
+                  {s.title}
+                </span>
+              </button>
+            </li>
+            {i < SETUP_STEPS.length - 1 ? (
+              <HIcon icon={ArrowRight01Icon} className="size-3.5 shrink-0 text-muted-foreground/50" />
+            ) : null}
+          </React.Fragment>
+        )
+      })}
+    </ol>
+  )
+}
+
+function WizardNav({
+  step,
+  setStep,
+  lastStep,
+  nextDisabled,
+}: {
+  step: number
+  setStep: (updater: (s: number) => number) => void
+  lastStep: number
+  nextDisabled?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between pt-2">
+      {step > 0 ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          className="gap-1.5 rounded-full"
+        >
+          <HIcon icon={ArrowRight01Icon} className="size-4 rotate-180" />
+          Back
+        </Button>
+      ) : (
+        <span />
+      )}
+      {step < lastStep ? (
+        <Button
+          type="button"
+          disabled={nextDisabled}
+          onClick={() => setStep((s) => Math.min(lastStep, s + 1))}
+          className="brand-gradient gap-1.5 rounded-full text-white"
+        >
+          Next
+          <HIcon icon={ArrowRight01Icon} className="size-4" />
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
 export function PublisherDashboard() {
   const [site, setSite] = React.useState<PublisherSite | null>(null)
   const [zone, setZone] = React.useState<{
@@ -185,8 +374,14 @@ export function PublisherDashboard() {
   const [tokenCopied, setTokenCopied] = React.useState(false)
   const [publisherId, setPublisherId] = React.useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = React.useState(false)
+  // Collapsed by default so step 1 fits on screen without scrolling - the
+  // per-platform steps are reference material, not something everyone needs
+  // to see immediately.
+  const [showGuide, setShowGuide] = React.useState(false)
   // Bumped after a zone is created so <AdZoneManager> re-fetches its list.
   const [zoneListVersion, setZoneListVersion] = React.useState(0)
+  // Which onboarding step is showing - see SETUP_STEPS/WizardSteps above.
+  const [step, setStep] = React.useState(0)
 
   // Needed so we can show the publisher their default ads.txt token below —
   // otherwise there's no way to know what to put in ads.txt without reading
@@ -233,6 +428,12 @@ export function PublisherDashboard() {
     },
   })
 
+  // Which category tile is expanded in the ad-format picker below - starts
+  // on "Legacy" since that's where the default layoutType ("banner") lives.
+  const [formatCategory, setFormatCategory] = React.useState<
+    AdFormatCategory | "Legacy"
+  >("Legacy")
+
   async function onValidateDomain(values: z.infer<typeof domainSchema>) {
     try {
       const result = await validateDomain({
@@ -254,6 +455,7 @@ export function PublisherDashboard() {
       const result = await createAdZone(values)
       setZone(result)
       setZoneListVersion((v) => v + 1)
+      setStep(2)
       toast.success(`Ad zone "${result.zone.zoneName}" created`)
     } catch (error) {
       toast.error(
@@ -270,12 +472,12 @@ export function PublisherDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-10">
+    <div className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-xl font-semibold tracking-tight">
           Publisher Portal
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Verify your site ownership and create ad zones to embed on your
           pages.
         </p>
@@ -283,10 +485,14 @@ export function PublisherDashboard() {
 
       <PublisherOverview refreshToken={zoneListVersion} />
 
+      <WizardSteps step={step} onStepClick={setStep} />
+
+      {step === 0 ? (
+      <>
       <Card>
         <StepHeader
           step={1}
-          icon={Globe2}
+          icon={GlobeStepIcon}
           title="Verify domain ownership"
           done={!!site?.verified}
           description="We need one small proof that you own this website — no coding required, just a few clicks in your hosting dashboard. Prefer to skip this? Create your ad zone below and paste its snippet on your site — we'll verify it automatically the first time an ad loads there."
@@ -294,81 +500,103 @@ export function PublisherDashboard() {
         <Form {...domainForm}>
           <form onSubmit={domainForm.handleSubmit(onValidateDomain)}>
             <CardContent className="space-y-5">
-              <FormField
-                control={domainForm.control}
-                name="domain"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your website address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  control={domainForm.control}
+                  name="domain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your website address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-                <p className="text-sm font-medium">Your verification code</p>
-                <p className="text-xs text-muted-foreground">
-                  This is unique to your account. You&apos;ll paste it onto your
-                  site in the next step.
-                </p>
-                {defaultToken ? (
-                  <div className="flex items-center gap-2.5">
-                    <code className="flex-1 truncate rounded bg-muted px-1.5 py-1 text-xs">
-                      {defaultToken}
-                    </code>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={copyToken}
-                    >
-                      {tokenCopied ? (
-                        <>
-                          <Check className="size-3.5" /> Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="size-3.5" /> Copy code
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Loading your code…</p>
-                )}
+                <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                  <p className="text-sm font-medium">Your verification code</p>
+                  <p className="text-xs text-muted-foreground">
+                    This is unique to your account. You&apos;ll paste it onto
+                    your site in the next step.
+                  </p>
+                  {defaultToken ? (
+                    <div className="flex items-center gap-2.5">
+                      <code className="flex-1 truncate rounded bg-muted px-1.5 py-1 text-xs">
+                        {defaultToken}
+                      </code>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={copyToken}
+                      >
+                        {tokenCopied ? (
+                          <>
+                            <HIcon icon={CheckIcon} className="size-3.5" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <HIcon icon={Copy01Icon} className="size-3.5" /> Copy code
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Loading your code…
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium">
-                  How do I add this to my site?
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Pick how your website is built for step-by-step instructions.
-                </p>
-                <Tabs defaultValue={ADS_TXT_GUIDES[0].value}>
-                  <TabsList className="h-auto flex-wrap">
-                    {ADS_TXT_GUIDES.map((guide) => (
-                      <TabsTrigger key={guide.value} value={guide.value}>
-                        {guide.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {ADS_TXT_GUIDES.map((guide) => (
-                    <TabsContent key={guide.value} value={guide.value}>
-                      <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-foreground">
-                        {guide.steps(defaultToken ?? "adnetwork-verify=…").map(
-                          (step, i) => (
-                            <li key={i}>{step}</li>
-                          )
-                        )}
-                      </ol>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                <button
+                  type="button"
+                  onClick={() => setShowGuide((v) => !v)}
+                  className="flex w-full items-center justify-between text-left"
+                >
+                  <span className="text-sm font-medium">
+                    How do I add this to my site?
+                  </span>
+                  <HIcon
+                    icon={ChevronDownIcon}
+                    className={
+                      "size-4 text-muted-foreground transition-transform " +
+                      (showGuide ? "rotate-180" : "")
+                    }
+                  />
+                </button>
+                {showGuide ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Pick how your website is built for step-by-step
+                      instructions.
+                    </p>
+                    <Tabs defaultValue={ADS_TXT_GUIDES[0].value}>
+                      <TabsList className="h-auto flex-wrap">
+                        {ADS_TXT_GUIDES.map((guide) => (
+                          <TabsTrigger key={guide.value} value={guide.value}>
+                            {guide.label}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {ADS_TXT_GUIDES.map((guide) => (
+                        <TabsContent key={guide.value} value={guide.value}>
+                          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-foreground">
+                            {guide
+                              .steps(defaultToken ?? "adnetwork-verify=…")
+                              .map((step, i) => (
+                                <li key={i}>{step}</li>
+                              ))}
+                          </ol>
+                        </TabsContent>
+                      ))}
+                    </Tabs>
+                  </>
+                ) : null}
               </div>
 
               {showAdvanced ? (
@@ -412,9 +640,9 @@ export function PublisherDashboard() {
                   }
                 >
                   {site.verified ? (
-                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    <HIcon icon={CheckmarkCircle02Icon} className="size-4 shrink-0 text-emerald-600" />
                   ) : (
-                    <Clock className="size-4 shrink-0 text-amber-600" />
+                    <HIcon icon={Clock01Icon} className="size-4 shrink-0 text-amber-600" />
                   )}
                   <span className="font-medium">{site.domain}</span>
                   <Badge
@@ -443,11 +671,16 @@ export function PublisherDashboard() {
           </form>
         </Form>
       </Card>
+      <WizardNav step={step} setStep={setStep} lastStep={2} />
+      </>
+      ) : null}
 
+      {step === 1 ? (
+      <>
       <Card>
         <StepHeader
           step={2}
-          icon={LayoutGrid}
+          icon={GridStepIcon}
           title="Create an ad zone"
           description="Define a slot size and layout to generate an embeddable snippet."
         />
@@ -505,49 +738,62 @@ export function PublisherDashboard() {
               <FormField
                 control={zoneForm.control}
                 name="layoutType"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel>Ad format</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value)
-                        const format = getAdFormat(value)
-                        if (format) {
-                          zoneForm.setValue("width", format.recommendedWidth, {
-                            shouldValidate: true,
-                          })
-                          zoneForm.setValue("height", format.recommendedHeight, {
-                            shouldValidate: true,
-                          })
-                        }
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {GROUPED_LAYOUT_TYPES.map((group) => (
-                          <SelectGroup key={group.category}>
-                            <SelectLabel>{group.category}</SelectLabel>
-                            {group.formats.map((layout) => (
-                              <SelectItem key={layout.value} value={layout.value}>
-                                {layout.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      {getAdFormat(field.value)?.description ??
-                        "Picking a format fills in the recommended size below - feel free to adjust it."}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const activeGroup =
+                    GROUPED_LAYOUT_TYPES.find(
+                      (group) => group.category === formatCategory
+                    ) ?? GROUPED_LAYOUT_TYPES[0]
+
+                  function pickFormat(value: string) {
+                    field.onChange(value)
+                    const format = getAdFormat(value)
+                    if (format) {
+                      zoneForm.setValue("width", format.recommendedWidth, {
+                        shouldValidate: true,
+                      })
+                      zoneForm.setValue("height", format.recommendedHeight, {
+                        shouldValidate: true,
+                      })
+                    }
+                  }
+
+                  return (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel>Ad format</FormLabel>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-4 gap-2 lg:grid-cols-8">
+                          {GROUPED_LAYOUT_TYPES.map((group) => (
+                            <PickerTile
+                              key={group.category}
+                              selected={formatCategory === group.category}
+                              onClick={() => setFormatCategory(group.category)}
+                              icon={CATEGORY_ICONS[group.category]}
+                              label={group.category}
+                            />
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                          {activeGroup.formats.map((layout) => (
+                            <PickerTile
+                              key={layout.value}
+                              selected={field.value === layout.value}
+                              onClick={() => pickFormat(layout.value)}
+                              icon={
+                                getAdFormat(layout.value)?.icon ?? FallbackFormatIcon
+                              }
+                              label={layout.label}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <FormDescription>
+                        {getAdFormat(field.value)?.description ??
+                          "Picking a format fills in the recommended size below - feel free to adjust it."}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
               </div>
 
@@ -566,32 +812,50 @@ export function PublisherDashboard() {
           </form>
         </Form>
       </Card>
+      <WizardNav step={step} setStep={setStep} lastStep={2} />
+      </>
+      ) : null}
 
-      {zone ? (
-        <Card>
-          <StepHeader
-            step={3}
-            icon={Code2}
-            title="Install on your site"
-            description="Paste this snippet where the ad should appear on your page."
-          />
-          <CardContent>
-            <Textarea readOnly rows={4} value={zone.snippet} className="font-mono text-xs" />
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" onClick={copySnippet}>
-              {copied ? (
-                <>
-                  <Check className="size-4" /> Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="size-4" /> Copy snippet
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+      {step === 2 ? (
+        zone ? (
+          <Card>
+            <StepHeader
+              step={3}
+              icon={CodeStepIcon}
+              title="Install on your site"
+              description="Paste this snippet where the ad should appear on your page."
+            />
+            <CardContent>
+              <Textarea readOnly rows={4} value={zone.snippet} className="font-mono text-xs" />
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" onClick={copySnippet}>
+                {copied ? (
+                  <>
+                    <HIcon icon={CheckIcon} className="size-4" /> Copied
+                  </>
+                ) : (
+                  <>
+                    <HIcon icon={Copy01Icon} className="size-4" /> Copy snippet
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
+              <HIcon icon={SourceCodeIcon} className="size-6 text-muted-foreground" />
+              <p className="font-medium">No ad zone yet</p>
+              <p className="text-sm text-muted-foreground">
+                Go back and create an ad zone to get its install snippet.
+              </p>
+            </CardContent>
+          </Card>
+        )
+      ) : null}
+      {step === 2 ? (
+        <WizardNav step={step} setStep={setStep} lastStep={2} />
       ) : null}
 
       <div>

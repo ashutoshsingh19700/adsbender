@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
-import { MenuIcon } from "lucide-react"
+import { Menu01Icon } from "@hugeicons/core-free-icons"
 
 import { useAuth } from "@/app/providers/auth-provider"
 import { BARE_CHROME_PATHS } from "@/lib/roles"
 import { Button } from "@/components/ui/button"
+import { HIcon } from "@/components/app/h-icon"
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/sheet"
 import { AppSidebarNav } from "@/components/app/app-sidebar"
 import { AdvertiserSidebarNav } from "@/components/app/advertiser-sidebar"
+import { PublisherSidebarNav } from "@/components/app/publisher-sidebar"
 import { SidebarAccountFooter } from "@/components/app/sidebar-account-footer"
 
 // Below md, both AppSidebar and AdvertiserSidebar render nothing (they're
@@ -32,7 +34,18 @@ export function MobileSidebarTrigger() {
 
   if (!user || BARE_CHROME_PATHS.includes(pathname)) return null
 
-  const isAdvertiser = pathname === "/advertiser" || pathname.startsWith("/advertiser/")
+  // /analytics is shared across roles (see app/analytics/layout.tsx) - the
+  // drawer's nav for it follows the signed-in user's role the same way that
+  // layout does, so it matches whichever sidebar desktop is showing there.
+  const onAnalytics = pathname === "/analytics"
+  const isAdvertiser =
+    pathname === "/advertiser" ||
+    pathname.startsWith("/advertiser/") ||
+    (onAnalytics && user.role === "ADVERTISER")
+  const isPublisher =
+    pathname === "/publisher" ||
+    pathname.startsWith("/publisher/") ||
+    (onAnalytics && user.role === "PUBLISHER")
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -43,32 +56,23 @@ export function MobileSidebarTrigger() {
           className="md:hidden"
           aria-label="Open navigation menu"
         >
-          <MenuIcon className="size-5" />
+          <HIcon icon={Menu01Icon} className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent
-        side="left"
-        className={
-          isAdvertiser
-            ? "sidebar-shell flex w-72 flex-col border-none p-0 text-white"
-            : "flex w-72 flex-col p-0"
-        }
-      >
-        <SheetHeader
-          className={isAdvertiser ? "border-b border-white/10 px-4 py-4" : "border-b px-4 py-4"}
-        >
-          <SheetTitle className={isAdvertiser ? "text-white" : undefined}>
-            Navigation
-          </SheetTitle>
+      <SheetContent side="left" className="flex w-72 flex-col p-0">
+        <SheetHeader className="border-b px-4 py-4">
+          <SheetTitle>Navigation</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto">
           {isAdvertiser ? (
             <AdvertiserSidebarNav onNavigate={() => setOpen(false)} />
+          ) : isPublisher ? (
+            <PublisherSidebarNav onNavigate={() => setOpen(false)} />
           ) : (
             <AppSidebarNav onNavigate={() => setOpen(false)} />
           )}
         </div>
-        {!isAdvertiser ? <SidebarAccountFooter /> : null}
+        {!isAdvertiser && !isPublisher ? <SidebarAccountFooter /> : null}
       </SheetContent>
     </Sheet>
   )

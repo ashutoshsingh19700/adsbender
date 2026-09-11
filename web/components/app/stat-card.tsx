@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react"
+import type { ComponentType } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -24,7 +24,7 @@ export function StatCard({
   label: string
   value: string
   hint?: string
-  icon?: LucideIcon
+  icon?: ComponentType<{ className?: string }>
   loading?: boolean
   tone?: "default" | "positive" | "warning"
 }) {

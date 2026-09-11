@@ -3,12 +3,18 @@
 import * as React from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
-import { LayoutGrid, Rocket, Wallet2, Wallet as WalletIcon } from "lucide-react"
+import {
+  LayoutGridIcon,
+  RocketIcon,
+  Wallet01Icon,
+  Wallet02Icon,
+} from "@hugeicons/core-free-icons"
 
 import { ApiError, getWalletSummary } from "@/lib/api"
 import type { AdvertiserWalletSummary } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
 import { StatCard } from "@/components/app/stat-card"
+import { toIconComponent } from "@/components/app/h-icon"
 import {
   Card,
   CardContent,
@@ -27,6 +33,11 @@ const chartConfig = {
   spent: { label: "Spent", color: "var(--chart-1)" },
   remaining: { label: "Remaining budget", color: "var(--chart-2)" },
 } satisfies ChartConfig
+
+const WalletStatIcon = toIconComponent(Wallet01Icon)
+const Wallet2StatIcon = toIconComponent(Wallet02Icon)
+const RocketStatIcon = toIconComponent(RocketIcon)
+const GridStatIcon = toIconComponent(LayoutGridIcon)
 
 // Advertiser Studio's at-a-glance header: wallet + campaign totals sourced
 // from the advertiser's own wallet summary only — never platform-wide
@@ -89,28 +100,28 @@ export function AdvertiserOverview({ refreshToken }: { refreshToken: number }) {
           label="Available balance"
           value={formatCurrency(summary?.availableBalance ?? 0)}
           hint="Free to reserve for new campaigns"
-          icon={WalletIcon}
+          icon={WalletStatIcon}
           loading={loading}
         />
         <StatCard
           label="Reserved budget"
           value={formatCurrency(summary?.reservedBalance ?? 0)}
           hint="Held against live campaigns"
-          icon={Wallet2}
+          icon={Wallet2StatIcon}
           loading={loading}
         />
         <StatCard
           label="Live campaigns"
           value={String(liveCampaigns.length)}
           hint="Active or paused"
-          icon={Rocket}
+          icon={RocketStatIcon}
           loading={loading}
         />
         <StatCard
           label="Total deposited"
           value={formatCurrency(summary?.totalDeposited ?? 0)}
           hint="Lifetime, all campaigns"
-          icon={LayoutGrid}
+          icon={GridStatIcon}
           loading={loading}
         />
       </div>
