@@ -26,6 +26,7 @@ const START_MODES = [
   'SCHEDULE',
   'KEEP_INACTIVE',
 ] as const;
+const CONNECTION_TYPES = ['WIFI', 'MOBILE_DATA', 'ALL'] as const;
 
 // Mirrors Campaign.locations in schema.prisma - one region/city
 // include/exclude rule. Stored as-is in the `locations` Json column; not
@@ -90,6 +91,17 @@ export class CreateCampaignDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   targetDevices: string[];
+
+  // Optional refinement within targetDevices - empty means "no OS filter",
+  // unlike targetDevices' required-non-empty semantics.
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targetOperatingSystems?: string[];
+
+  @IsOptional()
+  @IsIn(CONNECTION_TYPES)
+  connectionType?: (typeof CONNECTION_TYPES)[number];
 
   @IsString()
   @IsIn(['image', 'video', 'html'])

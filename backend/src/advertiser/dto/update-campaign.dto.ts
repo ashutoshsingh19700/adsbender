@@ -26,6 +26,7 @@ const START_MODES = [
   'SCHEDULE',
   'KEEP_INACTIVE',
 ] as const;
+const CONNECTION_TYPES = ['WIFI', 'MOBILE_DATA', 'ALL'] as const;
 
 // Same shape as CreateCampaignDto's - see there for field notes.
 class CampaignLocationDto {
@@ -92,6 +93,16 @@ export class UpdateCampaignDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   targetDevices?: string[];
+
+  // See CreateCampaignDto - optional refinement within targetDevices.
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targetOperatingSystems?: string[];
+
+  @IsOptional()
+  @IsIn(CONNECTION_TYPES)
+  connectionType?: (typeof CONNECTION_TYPES)[number];
 
   @IsOptional()
   @IsString()

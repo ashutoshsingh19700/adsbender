@@ -94,6 +94,10 @@ export class AdvertiserService {
         targetDevices: this.normalizeList(dto.targetDevices).map((device) =>
           device.toLowerCase(),
         ),
+        targetOperatingSystems: dto.targetOperatingSystems
+          ? this.normalizeList(dto.targetOperatingSystems)
+          : undefined,
+        connectionType: dto.connectionType,
         creativeType: dto.creativeType,
         creativeUrl: dto.creativeUrl,
         creativeHtml: dto.creativeHtml,
@@ -188,6 +192,9 @@ export class AdvertiserService {
           ? this.normalizeList(dto.targetDevices).map((device) =>
               device.toLowerCase(),
             )
+          : undefined,
+        targetOperatingSystems: dto.targetOperatingSystems
+          ? this.normalizeList(dto.targetOperatingSystems)
           : undefined,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
         countryPricing: dto.countryPricing as Prisma.InputJsonValue | undefined,

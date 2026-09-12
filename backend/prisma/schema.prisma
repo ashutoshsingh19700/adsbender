@@ -102,6 +102,12 @@ enum CampaignStartMode {
   KEEP_INACTIVE
 }
 
+enum CampaignConnectionType {
+  WIFI
+  MOBILE_DATA
+  ALL
+}
+
 enum AdZoneStatus {
   ACTIVE
   PAUSED
@@ -336,6 +342,11 @@ model Campaign {
 
   targetCountries String[]
   targetDevices   String[]
+  // Optional refinements within the selected devices/countries. Unlike
+  // targetDevices, an empty array means "no OS filter" rather than
+  // "matches nothing". Not yet read by AdEngineController.
+  targetOperatingSystems String[]
+  connectionType         CampaignConnectionType @default(ALL)
 
   // Adsterra-style campaign setup fields. All additive/nullable-or-defaulted
   // so existing rows and the ad-serving path (AdEngineController) are
