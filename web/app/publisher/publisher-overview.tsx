@@ -2,25 +2,13 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import {
-  Clock01Icon,
-  GlobeIcon,
-  LayoutGridIcon,
-  Wallet01Icon,
-} from "@hugeicons/core-free-icons"
 
 import { ApiError, getWalletSummary, listAdZones, listPublisherSites } from "@/lib/api"
 import type { AdZoneStatus, PublisherWalletSummary } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
 import { StatCard } from "@/components/app/stat-card"
-import { toIconComponent } from "@/components/app/h-icon"
 
 const ZONE_STATUSES: AdZoneStatus[] = ["ACTIVE", "PAUSED", "ARCHIVED"]
-
-const WalletStatIcon = toIconComponent(Wallet01Icon)
-const ClockStatIcon = toIconComponent(Clock01Icon)
-const GlobeStatIcon = toIconComponent(GlobeIcon)
-const GridStatIcon = toIconComponent(LayoutGridIcon)
 
 // Publisher Portal's at-a-glance header: this publisher's own earnings and
 // site/zone counts only — sourced from their wallet summary, never a
@@ -89,28 +77,24 @@ export function PublisherOverview({ refreshToken }: { refreshToken: number }) {
         label="Available earnings"
         value={formatCurrency(summary?.availableEarnings ?? 0)}
         hint="Ready to withdraw"
-        icon={WalletStatIcon}
         loading={loading}
       />
       <StatCard
         label="Pending earnings"
         value={formatCurrency(summary?.pendingEarnings ?? 0)}
         hint="Clearing before payout"
-        icon={ClockStatIcon}
         loading={loading}
       />
       <StatCard
         label="Verified sites"
         value={String(verifiedSites)}
         hint="Ownership confirmed"
-        icon={GlobeStatIcon}
         loading={loading}
       />
       <StatCard
         label="Ad zones"
         value={String(totalZones)}
         hint={`${zoneCounts.ACTIVE} active`}
-        icon={GridStatIcon}
         loading={loading}
       />
     </div>
