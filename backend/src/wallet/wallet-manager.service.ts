@@ -768,6 +768,37 @@ export class WalletManager {
     return this.failPayout(payout.id, result.failureReason);
   }
 
+  // Durable fallback for a PROCESSING payout - RazorpayXPayoutProvider
+  // returns PROCESSING for anything not settled synchronously, and this is
+  // what moves it to its final state once RazorpayX actually finishes it.
+  // Looked up by providerRef (the RazorpayX payout id stashed on submit),
+  // so an unknown/duplicate delivery is always a safe no-op.
+  async handleRazorpayXPayoutWebhookEvent(event: {
+    event: string;
+    payload?: { payout?: { entity?: { id?: string } } };
+  }) {
+    const providerRef = event.payload?.payout?.entity?.id;
+    if (!providerRef) {
+      return;
+    }
+
+    const payout = await this.prisma.payout.findFirst({
+      where: { providerRef },
+    });
+    if (!payout) {
+      return;
+    }
+
+    if (event.event === 'payout.processed') {
+      await this.completePayout(payout.id, providerRef);
+      return;
+    }
+
+    if (event.event === 'payout.reversed' || event.event === 'payout.failed') {
+      await this.failPayout(payout.id, `RazorpayX payout ${event.event}`);
+    }
+  }
+
   // --- Locking helpers (consistent User -> Wallet -> Campaign order) ---
 
   private async lockUser(tx: Prisma.TransactionClient, userId: string) {

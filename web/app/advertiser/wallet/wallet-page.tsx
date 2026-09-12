@@ -10,8 +10,10 @@ import {
   ApiError,
   capturePayPalPayment,
   createPayPalOrder,
+  createRazorpayOrder,
   getWalletSummary,
   listWalletTransactions,
+  verifyRazorpayPayment,
   type CreatePayPalOrderResult,
 } from "@/lib/api"
 import type {
@@ -21,6 +23,7 @@ import type {
 } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
 import { loadPayPalSdk, renderPayPalButtons } from "@/lib/paypal"
+import { loadRazorpayCheckout, openRazorpayCheckout } from "@/lib/razorpay"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,6 +43,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -49,6 +59,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
+type Gateway = "paypal" | "razorpay"
+type RazorpayCurrency = "INR" | "USD"
 
 const depositSchema = z.object({
   amount: z.coerce.number().min(1, "Enter an amount of at least $1"),
@@ -80,6 +93,9 @@ export function AdvertiserWalletPage() {
   )
   const [loading, setLoading] = React.useState(true)
   const [creatingOrder, setCreatingOrder] = React.useState(false)
+  const [gateway, setGateway] = React.useState<Gateway>("paypal")
+  const [razorpayCurrency, setRazorpayCurrency] =
+    React.useState<RazorpayCurrency>("INR")
   const [pendingOrder, setPendingOrder] =
     React.useState<CreatePayPalOrderResult | null>(null)
   const buttonsContainerRef = React.useRef<HTMLDivElement>(null)
@@ -113,18 +129,56 @@ export function AdvertiserWalletPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Step 1: create the order server-side, then reveal the PayPal Buttons
-  // for it (see the effect below) - PayPal Buttons render inline into the
-  // page rather than opening a JS-triggered modal like Razorpay did, so
-  // there's no single "pay" click that does everything.
+  // PayPal step 1: create the order server-side, then reveal the PayPal
+  // Buttons for it (see the effect below) - PayPal Buttons render inline
+  // into the page rather than opening a JS-triggered modal, so there's no
+  // single "pay" click that does everything the way Razorpay's does.
+  //
+  // Razorpay is a single click end-to-end: create the order, open Checkout
+  // as a modal, then verify the signature it hands back. The verify call is
+  // what actually credits the wallet - the signature alone proves the
+  // payment happened, nothing the browser sends is trusted on its own (see
+  // backend/src/payments/payments.service.ts).
   async function onDeposit(values: DepositFormOutput) {
     setCreatingOrder(true)
     try {
-      const order = await createPayPalOrder({ amountUsd: values.amount })
-      setPendingOrder(order)
+      if (gateway === "paypal") {
+        const order = await createPayPalOrder({ amountUsd: values.amount })
+        setPendingOrder(order)
+        return
+      }
+
+      const order = await createRazorpayOrder({
+        amountUsd: values.amount,
+        payCurrency: razorpayCurrency,
+      })
+
+      await loadRazorpayCheckout()
+      const result = await openRazorpayCheckout({
+        key: order.razorpayKeyId,
+        order_id: order.razorpayOrderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Ad Network",
+        description: "Wallet top-up",
+      })
+
+      await verifyRazorpayPayment({
+        razorpayOrderId: result.razorpay_order_id,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpaySignature: result.razorpay_signature,
+      })
+
+      toast.success(`Added ${formatCurrency(order.creditAmountUsd)} to your wallet`)
+      form.reset({ amount: 50 })
+      await load()
     } catch (error) {
+      if (error instanceof Error && error.message === "DISMISSED") {
+        // Buyer closed the Razorpay modal without paying - not an error.
+        return
+      }
       toast.error(
-        error instanceof ApiError ? error.message : "Could not start payment"
+        error instanceof ApiError ? error.message : "Could not complete payment"
       )
     } finally {
       setCreatingOrder(false)
@@ -261,6 +315,40 @@ export function AdvertiserWalletPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onDeposit)}>
                 <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <FormLabel>Payment method</FormLabel>
+                    <Select
+                      value={gateway}
+                      onValueChange={(value) => setGateway(value as Gateway)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="paypal">PayPal</SelectItem>
+                        <SelectItem value="razorpay">Razorpay</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {gateway === "razorpay" && (
+                    <div className="space-y-2">
+                      <FormLabel>Charge currency</FormLabel>
+                      <Select
+                        value={razorpayCurrency}
+                        onValueChange={(value) =>
+                          setRazorpayCurrency(value as RazorpayCurrency)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">INR (₹)</SelectItem>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="amount"
@@ -283,7 +371,11 @@ export function AdvertiserWalletPage() {
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" disabled={creatingOrder}>
-                    {creatingOrder ? "Starting checkout..." : "Continue to PayPal"}
+                    {creatingOrder
+                      ? "Starting checkout..."
+                      : gateway === "paypal"
+                        ? "Continue to PayPal"
+                        : "Pay with Razorpay"}
                   </Button>
                 </CardFooter>
               </form>

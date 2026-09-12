@@ -7,6 +7,7 @@ import type {
   AdZoneStatus,
   AnalyticsResponse,
   AuthUser,
+  BeneficiaryAccount,
   BlacklistedIp,
   Campaign,
   CampaignAdFormat,
@@ -25,6 +26,7 @@ import type {
   PublisherSite,
   RevenueBreakdown,
   RevenueSummary,
+  SetBeneficiaryAccountInput,
   SiteStatus,
   StatisticsGroupBy,
   StatisticsResponse,
@@ -534,6 +536,56 @@ export function createPayPalOrder(input: { amountUsd: number }) {
 
 export function capturePayPalPayment(input: { paypalOrderId: string }) {
   return apiFetch<{ status: "PAID" }>("/api/v1/payments/paypal/capture", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+// --- Razorpay top-ups ---
+// The other advertiser "Add funds" option alongside PayPal above: create an
+// order, open Razorpay Checkout for it, then have the backend verify the
+// signature Checkout hands back. Wallet crediting only ever happens
+// server-side once that signature (or the webhook) confirms payment - see
+// backend/src/payments.
+
+export type CreateRazorpayOrderResult = {
+  paymentOrderId: string
+  razorpayOrderId: string
+  razorpayKeyId: string
+  amount: number
+  currency: "INR" | "USD"
+  creditAmountUsd: string
+}
+
+export function createRazorpayOrder(input: {
+  amountUsd: number
+  payCurrency: "INR" | "USD"
+}) {
+  return apiFetch<CreateRazorpayOrderResult>("/api/v1/payments/razorpay/order", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function verifyRazorpayPayment(input: {
+  razorpayOrderId: string
+  razorpayPaymentId: string
+  razorpaySignature: string
+}) {
+  return apiFetch<{ status: "PAID" }>("/api/v1/payments/razorpay/verify", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+// --- Publisher payout destination ---
+
+export function getBeneficiaryAccount() {
+  return apiFetch<BeneficiaryAccount | null>("/api/v1/wallet/beneficiary")
+}
+
+export function setBeneficiaryAccount(input: SetBeneficiaryAccountInput) {
+  return apiFetch<BeneficiaryAccount>("/api/v1/wallet/beneficiary", {
     method: "POST",
     body: JSON.stringify(input),
   })

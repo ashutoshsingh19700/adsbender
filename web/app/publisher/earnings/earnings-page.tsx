@@ -8,12 +8,16 @@ import { toast } from "sonner"
 
 import {
   ApiError,
+  getBeneficiaryAccount,
   getWalletSummary,
   listPayouts,
   listWalletTransactions,
   requestPayout,
+  setBeneficiaryAccount,
 } from "@/lib/api"
 import type {
+  BeneficiaryAccount,
+  BeneficiaryAccountType,
   Payout,
   PayoutStatus,
   PublisherWalletSummary,
@@ -41,6 +45,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -82,6 +93,31 @@ const payoutRequestSchema = z.object({
 type PayoutRequestFormInput = z.input<typeof payoutRequestSchema>
 type PayoutRequestFormOutput = z.output<typeof payoutRequestSchema>
 
+const beneficiarySchema = z
+  .object({
+    accountType: z.enum(["BANK_ACCOUNT", "VPA"]),
+    accountHolderName: z.string().min(1, "Enter the account holder's name"),
+    bankAccountNumber: z.string().optional(),
+    ifscCode: z.string().optional(),
+    vpa: z.string().optional(),
+  })
+  .refine(
+    (values) =>
+      values.accountType === "VPA" || !!values.bankAccountNumber?.trim(),
+    { message: "Enter the bank account number", path: ["bankAccountNumber"] }
+  )
+  .refine(
+    (values) => values.accountType === "VPA" || !!values.ifscCode?.trim(),
+    { message: "Enter the IFSC code", path: ["ifscCode"] }
+  )
+  .refine(
+    (values) => values.accountType === "BANK_ACCOUNT" || !!values.vpa?.trim(),
+    { message: "Enter a UPI ID", path: ["vpa"] }
+  )
+
+type BeneficiaryFormInput = z.input<typeof beneficiarySchema>
+type BeneficiaryFormOutput = z.output<typeof beneficiarySchema>
+
 export function PublisherEarningsPage() {
   const [summary, setSummary] = React.useState<PublisherWalletSummary | null>(
     null
@@ -90,7 +126,11 @@ export function PublisherEarningsPage() {
     []
   )
   const [payouts, setPayouts] = React.useState<Payout[]>([])
+  const [beneficiary, setBeneficiary] = React.useState<BeneficiaryAccount | null>(
+    null
+  )
   const [loading, setLoading] = React.useState(true)
+  const [savingBeneficiary, setSavingBeneficiary] = React.useState(false)
 
   const payoutForm = useForm<
     PayoutRequestFormInput,
@@ -101,18 +141,39 @@ export function PublisherEarningsPage() {
     defaultValues: { amount: 20 },
   })
 
+  const beneficiaryForm = useForm<
+    BeneficiaryFormInput,
+    unknown,
+    BeneficiaryFormOutput
+  >({
+    resolver: zodResolver(beneficiarySchema),
+    defaultValues: { accountType: "BANK_ACCOUNT", accountHolderName: "" },
+  })
+  const beneficiaryAccountType = beneficiaryForm.watch("accountType")
+
   const load = React.useCallback(async () => {
     setLoading(true)
     try {
-      const [summaryResult, transactionsResult, payoutsResult] =
+      const [summaryResult, transactionsResult, payoutsResult, beneficiaryResult] =
         await Promise.all([
           getWalletSummary() as Promise<PublisherWalletSummary>,
           listWalletTransactions({ pageSize: 20 }),
           listPayouts({ pageSize: 20 }),
+          getBeneficiaryAccount(),
         ])
       setSummary(summaryResult)
       setTransactions(transactionsResult.transactions)
       setPayouts(payoutsResult.payouts)
+      setBeneficiary(beneficiaryResult)
+      if (beneficiaryResult) {
+        beneficiaryForm.reset({
+          accountType: beneficiaryResult.accountType,
+          accountHolderName: beneficiaryResult.accountHolderName,
+          bankAccountNumber: beneficiaryResult.bankAccountNumber ?? "",
+          ifscCode: beneficiaryResult.ifscCode ?? "",
+          vpa: beneficiaryResult.vpa ?? "",
+        })
+      }
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : "Could not load earnings"
@@ -120,13 +181,34 @@ export function PublisherEarningsPage() {
     } finally {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function onSaveBeneficiary(values: BeneficiaryFormOutput) {
+    setSavingBeneficiary(true)
+    try {
+      const saved = await setBeneficiaryAccount({
+        accountType: values.accountType as BeneficiaryAccountType,
+        accountHolderName: values.accountHolderName,
+        bankAccountNumber: values.bankAccountNumber,
+        ifscCode: values.ifscCode,
+        vpa: values.vpa,
+      })
+      setBeneficiary(saved)
+      toast.success("Payout account saved")
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not save payout account"
+      )
+    } finally {
+      setSavingBeneficiary(false)
+    }
+  }
 
   async function onRequestPayout(values: PayoutRequestFormOutput) {
     try {
@@ -180,6 +262,113 @@ export function PublisherEarningsPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
+        <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Payout account</CardTitle>
+            <CardDescription>
+              Where payouts are sent. Required before a payout can be paid
+              out automatically - without one, requests are held for manual
+              processing.
+            </CardDescription>
+          </CardHeader>
+          <Form {...beneficiaryForm}>
+            <form onSubmit={beneficiaryForm.handleSubmit(onSaveBeneficiary)}>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={beneficiaryForm.control}
+                  name="accountType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Payout method</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="BANK_ACCOUNT">
+                            Bank account
+                          </SelectItem>
+                          <SelectItem value="VPA">UPI</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={beneficiaryForm.control}
+                  name="accountHolderName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account holder name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {beneficiaryAccountType === "VPA" ? (
+                  <FormField
+                    control={beneficiaryForm.control}
+                    name="vpa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UPI ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="name@bank" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <>
+                    <FormField
+                      control={beneficiaryForm.control}
+                      name="bankAccountNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Account number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={beneficiaryForm.control}
+                      name="ifscCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>IFSC code</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" disabled={savingBeneficiary}>
+                  {savingBeneficiary
+                    ? "Saving..."
+                    : beneficiary
+                      ? "Update payout account"
+                      : "Save payout account"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Request payout</CardTitle>
@@ -188,8 +377,9 @@ export function PublisherEarningsPage() {
               {summary
                 ? formatCurrency(summary.minimumPayoutThreshold)
                 : "…"}
-              . No payment provider is configured yet, so requests are
-              queued for manual processing.
+              . {beneficiary
+                ? "Paid out to the account above once processed."
+                : "No payout account on file yet, so requests are queued for manual processing."}
             </CardDescription>
           </CardHeader>
           <Form {...payoutForm}>
@@ -232,6 +422,7 @@ export function PublisherEarningsPage() {
             </form>
           </Form>
         </Card>
+        </div>
 
         <Card>
           <CardHeader>

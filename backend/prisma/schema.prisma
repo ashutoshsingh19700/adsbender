@@ -170,11 +170,12 @@ model User {
   adminScope  AdminScope?
   balance_usd Decimal  @default(0) @db.Decimal(12, 2)
 
-  campaigns      Campaign[]
-  adZones        AdZone[]
-  publisherSites PublisherSite[]
-  wallet         Wallet?
-  paymentOrders  PaymentOrder[]
+  campaigns          Campaign[]
+  adZones            AdZone[]
+  publisherSites     PublisherSite[]
+  wallet             Wallet?
+  paymentOrders      PaymentOrder[]
+  beneficiaryAccount BeneficiaryAccount?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -502,6 +503,43 @@ model PaymentOrder {
 
   @@index([userId])
   @@index([status])
+}
+
+enum BeneficiaryAccountType {
+  BANK_ACCOUNT
+  VPA
+}
+
+// A publisher's payout destination - bank account or UPI VPA. Used by
+// RazorpayXPayoutProvider (backend/src/wallet/payout-providers) to create a
+// RazorpayX Contact + Fund Account before submitting a real payout; the
+// manual provider ignores this entirely. One row per user - re-saving
+// replaces the details AND clears the cached RazorpayX ids (see
+// BeneficiaryAccountService.upsert) so a stale Fund Account can never keep
+// receiving money after a publisher updates their account.
+model BeneficiaryAccount {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accountType       BeneficiaryAccountType
+  accountHolderName String
+
+  // Set when accountType = BANK_ACCOUNT, null otherwise.
+  bankAccountNumber String?
+  ifscCode          String?
+
+  // Set when accountType = VPA, null otherwise.
+  vpa String?
+
+  // RazorpayX identifiers, created lazily on the first payout attempt and
+  // reused after that (see RazorpayXPayoutProvider.ensureFundAccount).
+  // Both cleared back to null whenever the details above are edited.
+  razorpayContactId     String?
+  razorpayFundAccountId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // One row per click on a CPA-priced campaign only (see

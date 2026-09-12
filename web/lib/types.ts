@@ -223,6 +223,30 @@ export type PublisherWalletSummary = PublisherWallet & {
 
 export type WalletSummary = AdvertiserWalletSummary | PublisherWalletSummary
 
+export type BeneficiaryAccountType = "BANK_ACCOUNT" | "VPA"
+
+// A publisher's payout destination - what RazorpayXPayoutProvider pays out
+// to. bankAccountNumber/ifscCode are set for BANK_ACCOUNT, vpa for VPA.
+export type BeneficiaryAccount = {
+  id: string
+  userId: string
+  accountType: BeneficiaryAccountType
+  accountHolderName: string
+  bankAccountNumber: string | null
+  ifscCode: string | null
+  vpa: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SetBeneficiaryAccountInput = {
+  accountType: BeneficiaryAccountType
+  accountHolderName: string
+  bankAccountNumber?: string
+  ifscCode?: string
+  vpa?: string
+}
+
 export type PayoutStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED"
 
 export type Payout = {

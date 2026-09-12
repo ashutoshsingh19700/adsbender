@@ -12,10 +12,12 @@ import {
 
 import type { AuthenticatedRequest } from '../common/authenticated-request';
 import { WalletManager } from './wallet-manager.service';
+import { BeneficiaryAccountService } from './beneficiary-account.service';
 import { AdminDepositDto } from './dto/admin-deposit.dto';
 import { RequestPayoutDto } from './dto/request-payout.dto';
 import { CompletePayoutDto } from './dto/complete-payout.dto';
 import { FailPayoutDto } from './dto/fail-payout.dto';
+import { SetBeneficiaryAccountDto } from './dto/set-beneficiary-account.dto';
 import { AdminScopes } from '../auth/decorators/admin-scopes.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AdminScopeGuard } from '../auth/guards/admin-scope/admin-scope.guard';
@@ -29,7 +31,10 @@ import { RolesGuard } from '../auth/guards/roles/roles.guard';
 @Controller('api/v1/wallet')
 @UseGuards(JwtAuthGuard, RolesGuard, AdminScopeGuard)
 export class WalletController {
-  constructor(private readonly walletManager: WalletManager) {}
+  constructor(
+    private readonly walletManager: WalletManager,
+    private readonly beneficiaryAccounts: BeneficiaryAccountService,
+  ) {}
 
   @Get()
   getWallet(@Req() req: AuthenticatedRequest) {
@@ -87,6 +92,24 @@ export class WalletController {
     @Query() query: { page?: string; pageSize?: string; status?: string },
   ) {
     return this.walletManager.listPayouts(req.user.id, query);
+  }
+
+  // Bank/UPI destination RazorpayXPayoutProvider pays out to. A publisher
+  // must set this before a real payout (as opposed to the manual queue) can
+  // be submitted - see RazorpayXPayoutProvider.submit.
+  @Get('beneficiary')
+  @Roles('PUBLISHER')
+  getBeneficiaryAccount(@Req() req: AuthenticatedRequest) {
+    return this.beneficiaryAccounts.getOrNull(req.user.id);
+  }
+
+  @Post('beneficiary')
+  @Roles('PUBLISHER')
+  setBeneficiaryAccount(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: SetBeneficiaryAccountDto,
+  ) {
+    return this.beneficiaryAccounts.upsert(req.user.id, dto);
   }
 
   @Get('payout/:id')

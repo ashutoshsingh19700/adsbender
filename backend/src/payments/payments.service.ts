@@ -8,8 +8,10 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
 import { PayPalService, PayPalOrder } from './paypal.service';
+import { RazorpayService } from './razorpay.service';
 
 @Injectable()
 export class PaymentsService {
@@ -18,13 +20,17 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paypal: PayPalService,
+    private readonly razorpay: RazorpayService,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly walletManager: WalletManager,
   ) {}
 
-  // Creates a PaymentOrder row + the matching PayPal order. Every order is
-  // priced in USD - PayPal's own checkout shows non-US buyers (including
-  // Indian ones) a local-currency estimate on its side, so there is no FX
-  // logic here at all, unlike the old Razorpay INR flow.
+  // --- PayPal ---
+
+  // Creates a PaymentOrder row + the matching PayPal order. Every PayPal
+  // order is priced in USD - PayPal's own checkout shows non-US buyers
+  // (including Indian ones) a local-currency estimate on its side, so there
+  // is no FX logic here at all, unlike the Razorpay INR flow below.
   async createTopupOrder(userId: string, amountUsd: number) {
     const creditAmountUsd = new Prisma.Decimal(amountUsd).toDecimalPlaces(2);
 
@@ -63,20 +69,7 @@ export class PaymentsService {
         currency: 'USD' as const,
       };
     } catch (error) {
-      // Order never reached PayPal (or the update failed) - mark it FAILED
-      // rather than leaving a dangling CREATED row with a fake
-      // providerOrderId that could never be confirmed anyway.
-      await this.prisma.paymentOrder
-        .update({
-          where: { id: order.id },
-          data: {
-            status: 'FAILED',
-            failureReason:
-              error instanceof Error ? error.message : 'Order creation failed',
-          },
-        })
-        .catch(() => undefined);
-
+      await this.failDanglingOrder(order.id, error);
       throw error;
     }
   }
@@ -88,18 +81,11 @@ export class PaymentsService {
   // The webhook below is the durable fallback that still credits the wallet
   // even if the browser is closed/network drops right after approval.
   async confirmPayment(userId: string, paypalOrderId: string) {
-    const order = await this.prisma.paymentOrder.findUnique({
-      where: { providerOrderId: paypalOrderId },
-    });
-
-    if (!order || order.userId !== userId) {
-      throw new NotFoundException('Payment order not found');
-    }
+    const order = await this.findOrderForUser(userId, paypalOrderId);
 
     if (order.status === 'PAID') {
       return { status: 'PAID' as const };
     }
-
     if (order.status === 'FAILED') {
       throw new BadRequestException('This order can no longer be paid');
     }
@@ -219,12 +205,189 @@ export class PaymentsService {
     );
   }
 
-  // The single exactly-once crediting path, shared by confirmPayment and
-  // the webhook handler. The conditional `status: 'CREATED'` update is the
-  // whole safety mechanism: only the caller that actually wins this
-  // compare-and-swap goes on to credit the wallet, so it does not matter in
-  // which order (or how many times) the confirm call and the webhook fire -
-  // a duplicate or retried delivery is always a no-op past this point.
+  // --- Razorpay ---
+
+  // Creates a PaymentOrder row + the matching Razorpay order. Unlike PayPal,
+  // Razorpay orders can be priced in INR or USD - the USD amount credited to
+  // the wallet is fixed at order-creation time regardless of payCurrency, so
+  // FX movement between order creation and payment can never change what
+  // gets credited (only what Razorpay actually charges).
+  async createRazorpayOrder(
+    userId: string,
+    amountUsd: number,
+    payCurrency: 'INR' | 'USD',
+  ) {
+    const creditAmountUsd = new Prisma.Decimal(amountUsd).toDecimalPlaces(2);
+
+    let payAmount = creditAmountUsd;
+    let fxRate: Prisma.Decimal | null = null;
+
+    if (payCurrency === 'INR') {
+      fxRate = await this.platformSettings.getUsdToInrRate();
+      payAmount = creditAmountUsd
+        .times(fxRate)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    }
+
+    const order = await this.prisma.paymentOrder.create({
+      data: {
+        userId,
+        provider: 'razorpay',
+        payCurrency,
+        payAmount,
+        creditAmountUsd,
+        fxRate,
+        providerOrderId: `pending:${randomUUID()}`,
+      },
+    });
+
+    try {
+      // Razorpay wants an integer in the smallest unit of the currency -
+      // paise for INR, cents for USD.
+      const amountMinorUnits = payAmount
+        .times(100)
+        .toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP)
+        .toNumber();
+
+      const razorpayOrder = await this.razorpay.createOrder(
+        amountMinorUnits,
+        payCurrency,
+        order.id,
+      );
+
+      const updated = await this.prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: { providerOrderId: razorpayOrder.id },
+      });
+
+      return {
+        paymentOrderId: updated.id,
+        razorpayOrderId: razorpayOrder.id,
+        razorpayKeyId: this.razorpay.publicKeyId,
+        amount: amountMinorUnits,
+        currency: payCurrency,
+        creditAmountUsd: creditAmountUsd.toString(),
+      };
+    } catch (error) {
+      await this.failDanglingOrder(order.id, error);
+      throw error;
+    }
+  }
+
+  // Client-side confirmation path: called by the browser right after
+  // Razorpay Checkout's success handler fires. The signature proves the
+  // payment genuinely happened - the webhook below is the durable fallback
+  // for a browser that never calls back (closed tab, network drop, etc).
+  async confirmRazorpayPayment(
+    userId: string,
+    razorpayOrderId: string,
+    razorpayPaymentId: string,
+    razorpaySignature: string,
+  ) {
+    const order = await this.findOrderForUser(userId, razorpayOrderId);
+
+    if (order.status === 'PAID') {
+      return { status: 'PAID' as const };
+    }
+    if (order.status === 'FAILED') {
+      throw new BadRequestException('This order can no longer be paid');
+    }
+
+    const verified = this.razorpay.verifyPaymentSignature(
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    );
+    if (!verified) {
+      throw new BadRequestException('Invalid payment signature');
+    }
+
+    await this.markPaidAndCredit(order.id, razorpayPaymentId);
+
+    return { status: 'PAID' as const };
+  }
+
+  // Webhook entry point - RazorpayPaymentsController has already verified
+  // the `X-Razorpay-Signature` header against the raw body before this is
+  // called, so `event` here can be trusted as genuinely from Razorpay.
+  // `payment.captured` is the durable fallback for a browser that never
+  // came back after paying; `payment.failed` marks the order dead so it
+  // can't be retried against a payment that didn't go through.
+  async handleRazorpayWebhookEvent(event: {
+    event: string;
+    payload?: {
+      payment?: {
+        entity?: { id?: string; order_id?: string; status?: string };
+      };
+    };
+  }) {
+    const payment = event.payload?.payment?.entity;
+    const razorpayOrderId = payment?.order_id;
+    const razorpayPaymentId = payment?.id;
+
+    if (!razorpayOrderId) {
+      return;
+    }
+
+    const order = await this.prisma.paymentOrder.findUnique({
+      where: { providerOrderId: razorpayOrderId },
+    });
+
+    if (!order) {
+      this.logger.warn(`Webhook for unknown order ${razorpayOrderId}`);
+      return;
+    }
+
+    if (event.event === 'payment.captured' && razorpayPaymentId) {
+      await this.markPaidAndCredit(order.id, razorpayPaymentId);
+      return;
+    }
+
+    if (event.event === 'payment.failed') {
+      await this.prisma.paymentOrder.updateMany({
+        where: { id: order.id, status: 'CREATED' },
+        data: { status: 'FAILED', failureReason: 'Payment failed' },
+      });
+    }
+  }
+
+  // --- Shared ---
+
+  private async findOrderForUser(userId: string, providerOrderId: string) {
+    const order = await this.prisma.paymentOrder.findUnique({
+      where: { providerOrderId },
+    });
+
+    if (!order || order.userId !== userId) {
+      throw new NotFoundException('Payment order not found');
+    }
+
+    return order;
+  }
+
+  // Order never reached the gateway (or the follow-up update failed) - mark
+  // it FAILED rather than leaving a dangling CREATED row with a fake
+  // providerOrderId that could never be confirmed anyway.
+  private async failDanglingOrder(orderId: string, error: unknown) {
+    await this.prisma.paymentOrder
+      .update({
+        where: { id: orderId },
+        data: {
+          status: 'FAILED',
+          failureReason:
+            error instanceof Error ? error.message : 'Order creation failed',
+        },
+      })
+      .catch(() => undefined);
+  }
+
+  // The single exactly-once crediting path, shared by every provider's
+  // confirm call and webhook handler. The conditional `status: 'CREATED'`
+  // update is the whole safety mechanism: only the caller that actually
+  // wins this compare-and-swap goes on to credit the wallet, so it does not
+  // matter in which order (or how many times) the confirm call and the
+  // webhook fire - a duplicate or retried delivery is always a no-op past
+  // this point.
   private async markPaidAndCredit(
     paymentOrderId: string,
     providerPaymentId: string,
@@ -236,7 +399,7 @@ export class PaymentsService {
 
     if (result.count === 0) {
       // Already PAID (or FAILED, which shouldn't happen post-capture) -
-      // another caller won the race, or this is a PayPal webhook retry.
+      // another caller won the race, or this is a webhook retry.
       return;
     }
 
@@ -244,10 +407,12 @@ export class PaymentsService {
       where: { id: paymentOrderId },
     });
 
+    const providerLabel = order.provider === 'razorpay' ? 'Razorpay' : 'PayPal';
+
     try {
       await this.walletManager.deposit(order.userId, order.creditAmountUsd, {
         referenceId: providerPaymentId,
-        description: `PayPal top-up ($${order.payAmount.toString()})`,
+        description: `${providerLabel} top-up (${order.payAmount.toString()} ${order.payCurrency})`,
       });
     } catch (error) {
       // Order is now PAID but the wallet credit failed - should not happen

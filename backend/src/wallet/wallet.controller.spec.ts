@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { WalletController } from './wallet.controller';
 import { WalletManager } from './wallet-manager.service';
+import { BeneficiaryAccountService } from './beneficiary-account.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 
@@ -18,6 +19,10 @@ describe('WalletController', () => {
     completePayout: jest.fn(),
     failPayout: jest.fn(),
   };
+  const beneficiaryAccounts = {
+    getOrNull: jest.fn(),
+    upsert: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -28,7 +33,10 @@ describe('WalletController', () => {
     // without needing a real SupabaseService/UsersService/DB connection.
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WalletController],
-      providers: [{ provide: WalletManager, useValue: walletManager }],
+      providers: [
+        { provide: WalletManager, useValue: walletManager },
+        { provide: BeneficiaryAccountService, useValue: beneficiaryAccounts },
+      ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({ canActivate: () => true })
