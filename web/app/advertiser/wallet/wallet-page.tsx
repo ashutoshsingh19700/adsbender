@@ -359,7 +359,7 @@ export function AdvertiserWalletPage() {
                           <Input
                             type="number"
                             step="0.01"
-                            min="1"
+                            min="0.1"
                             {...field}
                             value={(field.value as number | string) ?? ""}
                           />
