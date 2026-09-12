@@ -64,7 +64,7 @@ type Gateway = "paypal" | "razorpay"
 type RazorpayCurrency = "INR" | "USD"
 
 const depositSchema = z.object({
-  amount: z.coerce.number().min(1, "Enter an amount of at least $1"),
+  amount: z.coerce.number().min(0.1, "Enter an amount of at least $0.1"),
 })
 
 type DepositFormInput = z.input<typeof depositSchema>

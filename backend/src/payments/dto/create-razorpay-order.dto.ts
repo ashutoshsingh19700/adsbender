@@ -6,7 +6,7 @@ export class CreateRazorpayOrderDto {
   // payCurrency is INR and the FX rate moves between order creation and
   // payment.
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(1)
+  @Min(0.1)
   @Max(100_000)
   amountUsd: number;
 
