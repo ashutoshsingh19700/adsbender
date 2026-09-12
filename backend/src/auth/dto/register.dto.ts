@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  Length,
   Matches,
 } from 'class-validator';
 
@@ -33,6 +34,16 @@ export class RegisterDto {
 
   @IsEnum(PublicRegisterRole)
   role: PublicRegisterRole;
+
+  // ISO 3166-1 alpha-2 country code picked on the signup form - drives GST
+  // on wallet top-ups later (see PaymentsService) and the country-based
+  // "hidden from other countries" behaviour. Optional at the DTO level so an
+  // older client that never sends it doesn't get rejected; the account is
+  // simply created with no country on file.
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  country?: string;
 
   // Cloudflare Turnstile token from the signup widget. See LoginDto for why
   // this is optional at the DTO level.

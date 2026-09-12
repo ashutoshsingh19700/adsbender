@@ -114,11 +114,11 @@ export function SiteFooter() {
           <div>
             <p className="text-sm font-medium text-foreground">Get in touch</p>
             <a
-              href="mailto:support@adsbender.example"
+              href="mailto:support@adsbender.com"
               className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-violet-600"
             >
               <Mail className="size-3.5" />
-              support@adsbender.example
+              support@adsbender.com
             </a>
           </div>
         </div>

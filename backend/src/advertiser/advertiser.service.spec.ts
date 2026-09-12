@@ -1,11 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CampaignStatus } from '@prisma/client';
+import { CampaignStatus, Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AdvertiserService } from './advertiser.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 describe('AdvertiserService', () => {
   let service: AdvertiserService;
@@ -18,6 +19,16 @@ describe('AdvertiserService', () => {
       count: jest.fn(),
       delete: jest.fn(),
     },
+    // No site has declared a country in these tests, so
+    // AdvertiserService.getAvailableCountries() falls back to "no
+    // restriction" (see its own null-return comment) and every existing
+    // targetCountries assertion below keeps working unchanged.
+    publisherSite: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    user: {
+      findUnique: jest.fn().mockResolvedValue({ balance_usd: 100_000 }),
+    },
   };
   const analyticsService = {
     getDailyMetrics: jest.fn(),
@@ -26,9 +37,19 @@ describe('AdvertiserService', () => {
   const walletManager = {
     releaseCampaignReservation: jest.fn(),
   };
+  const platformSettingsService = {
+    getMinAdvertiserBalanceUsd: jest
+      .fn()
+      .mockResolvedValue(new Prisma.Decimal(10)),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prismaService.publisherSite.findMany.mockResolvedValue([]);
+    prismaService.user.findUnique.mockResolvedValue({ balance_usd: 100_000 });
+    platformSettingsService.getMinAdvertiserBalanceUsd.mockResolvedValue(
+      new Prisma.Decimal(10),
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -36,6 +57,7 @@ describe('AdvertiserService', () => {
         { provide: PrismaService, useValue: prismaService },
         { provide: AnalyticsService, useValue: analyticsService },
         { provide: WalletManager, useValue: walletManager },
+        { provide: PlatformSettingsService, useValue: platformSettingsService },
       ],
     }).compile();
 

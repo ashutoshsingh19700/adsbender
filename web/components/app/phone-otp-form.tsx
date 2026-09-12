@@ -17,13 +17,16 @@ interface PhoneOtpFormProps {
   // signed in before - mirrors the role toggle above the email/password
   // form. Ignored when the phone already belongs to an existing user.
   role: UserRole
+  // ISO 3166-1 alpha-2 code from the shared country picker above, only set
+  // (and only required) on the register tab - same as `role` above.
+  country?: string
   onSuccess: (user: AuthUser) => void
 }
 
 // Alternative to email/password: verify a phone number via a one-time SMS
 // code (delegated to Supabase's phone auth - see AuthService.sendPhoneOtp/
 // verifyPhoneOtp), then log in or finish signing up in the same step.
-export function PhoneOtpForm({ role, onSuccess }: PhoneOtpFormProps) {
+export function PhoneOtpForm({ role, country, onSuccess }: PhoneOtpFormProps) {
   const [phone, setPhone] = React.useState("")
   const [name, setName] = React.useState("")
   const [code, setCode] = React.useState("")
@@ -79,6 +82,7 @@ export function PhoneOtpForm({ role, onSuccess }: PhoneOtpFormProps) {
         token: code,
         name: name || undefined,
         role,
+        country,
       })
       toast.success(`Signed in as ${user.email}`)
       onSuccess(user)

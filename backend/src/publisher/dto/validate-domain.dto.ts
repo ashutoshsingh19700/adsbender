@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  Length,
+  MinLength,
+} from 'class-validator';
 
 export class ValidateDomainDto {
   @IsString()
@@ -18,4 +24,11 @@ export class ValidateDomainDto {
   @IsOptional()
   @IsBoolean()
   adultAds?: boolean;
+
+  // ISO 3166-1 alpha-2 code for this site's primary traffic country - see
+  // PublisherSite.country in schema.prisma for what it's used for.
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  country?: string;
 }

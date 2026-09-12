@@ -46,6 +46,7 @@ import {
   ApiError,
   createCampaign,
   getAdFormatPricing,
+  getAvailableCountries,
   uploadCreativeFile,
   type AdFormatPricing,
 } from "@/lib/api"
@@ -185,6 +186,20 @@ export function CampaignWizard({
   const [step, setStep] = React.useState(0)
   const [adFormatPricing, setAdFormatPricing] =
     React.useState<AdFormatPricing>({})
+  // Countries the network actually has publisher supply in - null means "no
+  // restriction reported yet", in which case every entry in COUNTRIES stays
+  // pickable rather than the wizard blocking targeting outright. See
+  // AdvertiserService.getAvailableCountries on the backend.
+  const [availableCountryCodes, setAvailableCountryCodes] = React.useState<
+    string[] | null
+  >(null)
+  const pickableCountries = React.useMemo(
+    () =>
+      availableCountryCodes
+        ? COUNTRIES.filter((c) => availableCountryCodes.includes(c.value))
+        : COUNTRIES,
+    [availableCountryCodes]
+  )
 
   React.useEffect(() => {
     getAdFormatPricing()
@@ -192,6 +207,11 @@ export function CampaignWizard({
       .catch(() => {
         // Non-fatal - the wizard still works without rate previews, they
         // just won't render until this succeeds.
+      })
+    getAvailableCountries()
+      .then(({ countries }) => setAvailableCountryCodes(countries))
+      .catch(() => {
+        // Non-fatal - falls back to every country in COUNTRIES.
       })
   }, [])
 
@@ -1028,7 +1048,7 @@ export function CampaignWizard({
                           <SelectValue placeholder="Choose a country" />
                         </SelectTrigger>
                         <SelectContent>
-                          {COUNTRIES.map((country) => (
+                          {pickableCountries.map((country) => (
                             <SelectItem
                               key={country.value}
                               value={country.value}
@@ -1145,6 +1165,7 @@ export function CampaignWizard({
                     selectedCountries={targetCountries}
                     highlightedCountry={countryToAdd || undefined}
                     onToggleCountry={togglePinCountry}
+                    pickableCountries={pickableCountries}
                   />
                 </div>
               </div>
@@ -1166,7 +1187,7 @@ export function CampaignWizard({
                       <SelectValue placeholder="Choose a country" />
                     </SelectTrigger>
                     <SelectContent>
-                      {COUNTRIES.map((country) => (
+                      {pickableCountries.map((country) => (
                         <SelectItem key={country.value} value={country.value}>
                           {country.label}
                         </SelectItem>

@@ -175,6 +175,12 @@ model User {
   // Only set (and only meaningful) when role = ADMIN - see AdminScope.
   adminScope  AdminScope?
   balance_usd Decimal  @default(0) @db.Decimal(12, 2)
+  // ISO 3166-1 alpha-2 code picked at signup (see RegisterDto/VerifyPhoneOtpDto/
+  // GoogleAuthDto). Optional - accounts created before this field existed, or
+  // via a path that never collected it, have no country. Drives GST on
+  // advertiser wallet top-ups (PaymentsService - India is charged 18% GST on
+  // top of the credited amount) and nothing else currently.
+  country     String?
 
   campaigns          Campaign[]
   adZones            AdZone[]
@@ -293,6 +299,14 @@ model PublisherSite {
   // Ad serving does not yet branch on this - it's recorded for the
   // publisher's own reference and for future targeting.
   adultAds           Boolean                @default(false)
+  // ISO 3166-1 alpha-2 code for this site's primary traffic country, set by
+  // the publisher in the "Add new Website" dialog. Optional (older sites
+  // predate this field) - used by AdvertiserService.getAvailableCountries()
+  // to build the country allow-list shown in the campaign wizard, so
+  // advertisers can only target countries the network actually has
+  // publisher supply in. A site with no country set is invisible to that
+  // allow-list, but still serves ads normally otherwise.
+  country            String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -459,6 +473,14 @@ model PlatformSetting {
   // credit. Null falls back to RazorpayService's env-configured default.
   usdToInrRate Decimal? @db.Decimal(12, 4)
 
+  // Floor on an advertiser's free/unreserved wallet balance (User.balance_usd)
+  // that a new campaign is never allowed to eat into - see
+  // WalletManager.reserveCampaignBudget and AdvertiserService.createCampaign.
+  // This money is never itself spent or reserved by a campaign; it just has
+  // to stay sitting free in the wallet. Admin-editable via
+  // PATCH /admin/settings/min-advertiser-balance - defaults to $10.
+  minAdvertiserBalanceUsd Decimal @default(10) @db.Decimal(12, 2)
+
   updatedAt DateTime @updatedAt
 }
 
@@ -501,6 +523,13 @@ model PaymentOrder {
   // USD amount credited to the wallet on success - fixed at order creation,
   // independent of payCurrency.
   creditAmountUsd Decimal @db.Decimal(12, 2)
+  // 18% GST charged on top of creditAmountUsd, in USD, when the paying
+  // user's User.country is "IN" at order-creation time (see
+  // PaymentsService). Null for non-Indian advertisers. This amount is
+  // included in payAmount but never in creditAmountUsd - the advertiser's
+  // wallet is only ever credited the amount they asked to add, GST is an
+  // extra cost on top, not part of the top-up.
+  gstAmountUsd Decimal? @db.Decimal(12, 2)
   // usdToInrRate snapshot used to price an older Razorpay INR order, for
   // reconciliation only (not re-read on confirm). Always null for PayPal
   // orders, which are always priced in USD.

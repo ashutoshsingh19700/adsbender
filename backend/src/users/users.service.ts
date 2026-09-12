@@ -32,10 +32,12 @@ export class UsersService {
     email: string;
     role: UserRole;
     phone?: string;
+    country?: string;
   }) {
     return this.prisma.user.create({
       data: {
         ...data,
+        country: data.country?.toUpperCase(),
         balance_usd: 0,
       },
     });

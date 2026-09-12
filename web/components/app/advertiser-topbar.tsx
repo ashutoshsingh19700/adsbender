@@ -1,15 +1,18 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   BellIcon,
   LogOutIcon,
-  Mail01Icon,
   Search01Icon,
+  Wallet01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { useAuth } from "@/app/providers/auth-provider"
+import { ApiError, getWalletSummary } from "@/lib/api"
+import type { AdvertiserWalletSummary } from "@/lib/types"
+import { formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { HIcon } from "@/components/app/h-icon"
 
@@ -22,8 +25,27 @@ export function AdvertiserTopbar() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [wallet, setWallet] = useState<AdvertiserWalletSummary | null>(null)
 
   const initial = user?.email?.[0]?.toUpperCase() ?? "A"
+
+  const loadWallet = useCallback(async () => {
+    try {
+      const summary = (await getWalletSummary()) as AdvertiserWalletSummary
+      setWallet(summary)
+    } catch (error) {
+      // Non-fatal - the topbar just shows nothing where the wallet box
+      // would be rather than blocking the whole shell on this call.
+      if (!(error instanceof ApiError)) {
+        console.error(error)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadWallet()
+  }, [loadWallet])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -58,11 +80,23 @@ export function AdvertiserTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        {user?.email ? (
-          <span className="hidden items-center gap-1.5 text-sm text-muted-foreground md:flex">
-            <HIcon icon={Mail01Icon} className="size-4" />
-            {user.email}
-          </span>
+        {wallet ? (
+          <div className="hidden items-stretch overflow-hidden rounded-full border bg-muted/40 text-xs font-medium md:flex">
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <HIcon icon={Wallet01Icon} className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-muted-foreground">Free</span>
+              <span className="tabular-nums text-foreground">
+                {formatCurrency(wallet.availableBalance)}
+              </span>
+            </div>
+            <div className="h-full w-px bg-border" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <span className="text-muted-foreground">Reserved</span>
+              <span className="tabular-nums text-foreground">
+                {formatCurrency(wallet.reservedBalance)}
+              </span>
+            </div>
+          </div>
         ) : null}
 
         <span className="role-badge-gradient rounded-full px-3 py-1 text-xs font-semibold tracking-wide text-white">

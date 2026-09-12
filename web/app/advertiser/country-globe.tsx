@@ -38,8 +38,11 @@ type Marker = {
   selected: boolean
 }
 
-function buildMarkers(selectedCountries: string[]): Marker[] {
-  const byCode = new Map(COUNTRIES.map((c) => [c.value, c]))
+function buildMarkers(
+  selectedCountries: string[],
+  pickableCountries: typeof COUNTRIES
+): Marker[] {
+  const byCode = new Map(pickableCountries.map((c) => [c.value, c]))
   const markers = new Map<string, Marker>()
 
   for (const { code, color } of SHOWCASE_CODES) {
@@ -86,10 +89,15 @@ export function CountryGlobe({
   selectedCountries,
   highlightedCountry,
   onToggleCountry,
+  // Countries the network actually has publisher supply in - only these get
+  // a pin/click target on the globe. Defaults to every country in
+  // campaign-fields.ts's COUNTRIES for backward compatibility.
+  pickableCountries = COUNTRIES,
 }: {
   selectedCountries: string[]
   highlightedCountry?: string
   onToggleCountry?: (code: string) => void
+  pickableCountries?: typeof COUNTRIES
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const globeRef = React.useRef<GlobeMethods | undefined>(undefined)
@@ -110,8 +118,8 @@ export function CountryGlobe({
   }, [])
 
   const markers = React.useMemo(
-    () => buildMarkers(selectedCountries),
-    [selectedCountries]
+    () => buildMarkers(selectedCountries, pickableCountries),
+    [selectedCountries, pickableCountries]
   )
 
   // Slow idle spin so the globe reads as alive/interactive even before the

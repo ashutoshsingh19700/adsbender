@@ -6,6 +6,7 @@ import {
 import { CampaignStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../src/prisma/prisma.service';
+import { PlatformSettingsService } from '../src/platform-settings/platform-settings.service';
 import { WalletManager } from '../src/wallet/wallet-manager.service';
 
 /**
@@ -27,7 +28,7 @@ describe('Wallet/billing subsystem (real Postgres)', () => {
   beforeAll(async () => {
     prisma = new PrismaService();
     await prisma.$connect();
-    walletManager = new WalletManager(prisma);
+    walletManager = new WalletManager(prisma, new PlatformSettingsService(prisma));
   });
 
   afterAll(async () => {

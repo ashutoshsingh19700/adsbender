@@ -91,6 +91,9 @@ export class PublisherService {
         verificationMethod: 'ADS_TXT',
         ...(dto.category !== undefined ? { category: dto.category } : {}),
         ...(dto.adultAds !== undefined ? { adultAds: dto.adultAds } : {}),
+        ...(dto.country !== undefined
+          ? { country: dto.country.toUpperCase() }
+          : {}),
       },
       create: {
         publisherId,
@@ -102,6 +105,7 @@ export class PublisherService {
         verificationMethod: 'ADS_TXT',
         category: dto.category,
         adultAds: dto.adultAds ?? false,
+        country: dto.country?.toUpperCase(),
       },
     });
   }
@@ -140,6 +144,9 @@ export class PublisherService {
         status: dto.status,
         category: dto.category,
         adultAds: dto.adultAds,
+        ...(dto.country !== undefined
+          ? { country: dto.country.toUpperCase() }
+          : {}),
       },
     });
   }

@@ -282,6 +282,16 @@ export class AdminService {
     return this.platformSettingsService.updateUsdToInrRate(rate);
   }
 
+  async getMinAdvertiserBalance() {
+    const minAdvertiserBalanceUsd =
+      await this.platformSettingsService.getMinAdvertiserBalanceUsd();
+    return { minAdvertiserBalanceUsd: minAdvertiserBalanceUsd.toString() };
+  }
+
+  async updateMinAdvertiserBalance(amount: number) {
+    return this.platformSettingsService.updateMinAdvertiserBalanceUsd(amount);
+  }
+
   // --- Revenue (platform-wide financial rollup) ---
   // Lifetime totals pulled straight from the Postgres ledger (source of
   // truth for money), not ClickHouse - ClickHouse's spend/payout columns

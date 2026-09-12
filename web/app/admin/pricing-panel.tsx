@@ -6,7 +6,9 @@ import { Save } from "lucide-react"
 
 import {
   adminGetAdFormatPricing,
+  adminGetMinAdvertiserBalance,
   adminUpdateAdFormatPricing,
+  adminUpdateMinAdvertiserBalance,
   ApiError,
   type AdFormatRate,
 } from "@/lib/api"
@@ -51,6 +53,10 @@ export function PricingPanel() {
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState<Record<string, boolean>>({})
 
+  const [minBalance, setMinBalance] = React.useState("")
+  const [minBalanceLoading, setMinBalanceLoading] = React.useState(true)
+  const [minBalanceSaving, setMinBalanceSaving] = React.useState(false)
+
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     ;(async () => {
@@ -76,7 +82,46 @@ export function PricingPanel() {
         setLoading(false)
       }
     })()
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    ;(async () => {
+      setMinBalanceLoading(true)
+      try {
+        const { minAdvertiserBalanceUsd } = await adminGetMinAdvertiserBalance()
+        setMinBalance(minAdvertiserBalanceUsd)
+      } catch (error) {
+        toast.error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not load the minimum advertiser balance"
+        )
+      } finally {
+        setMinBalanceLoading(false)
+      }
+    })()
   }, [])
+
+  async function handleSaveMinBalance() {
+    const parsed = Number(minBalance)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error("Enter a valid, non-negative amount")
+      return
+    }
+
+    setMinBalanceSaving(true)
+    try {
+      const { minAdvertiserBalanceUsd } =
+        await adminUpdateMinAdvertiserBalance(parsed)
+      setMinBalance(minAdvertiserBalanceUsd)
+      toast.success("Minimum advertiser balance updated")
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not save"
+      )
+    } finally {
+      setMinBalanceSaving(false)
+    }
+  }
 
   const updateField = (
     value: string,
@@ -118,6 +163,43 @@ export function PricingPanel() {
         model. Changes appear in the campaign wizard&apos;s &quot;Ad
         format&quot; step within a few seconds.
       </p>
+
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <div>
+            <p className="text-sm font-medium">Minimum advertiser balance</p>
+            <p className="text-sm text-muted-foreground">
+              An advertiser must keep at least this much free (unreserved)
+              in their wallet, on top of any campaign budget, to submit or
+              have a campaign approved. This money is never itself spendable
+              or reservable by a campaign. Defaults to $10.
+            </p>
+          </div>
+          {minBalanceLoading ? (
+            <Skeleton className="h-10 w-48" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">$</span>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                className="w-32"
+                value={minBalance}
+                onChange={(e) => setMinBalance(e.target.value)}
+              />
+              <Button
+                size="sm"
+                onClick={handleSaveMinBalance}
+                disabled={minBalanceSaving}
+              >
+                <Save className="size-4" />
+                {minBalanceSaving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="pt-6">

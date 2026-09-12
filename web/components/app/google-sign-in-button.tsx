@@ -30,6 +30,9 @@ interface GoogleSignInButtonProps {
   // account signs in - picks which side of the marketplace a brand-new
   // account belongs to. Ignored for an existing account.
   role: UserRole
+  // ISO 3166-1 alpha-2 code from the shared country picker, only set (and
+  // only required server-side) on the register tab - same as `role`.
+  country?: string
   onSuccess: (user: Awaited<ReturnType<typeof googleAuth>>["user"]) => void
   onError: (message: string) => void
   // Matches the surrounding form's mode so the button reads "Sign up with
@@ -40,6 +43,7 @@ interface GoogleSignInButtonProps {
 
 export function GoogleSignInButton({
   role,
+  country,
   onSuccess,
   onError,
   mode = "login",
@@ -61,6 +65,7 @@ export function GoogleSignInButton({
           const { user } = await googleAuth({
             idToken: response.credential,
             role,
+            country,
           })
           onSuccess(user)
         } catch (error) {
@@ -79,7 +84,7 @@ export function GoogleSignInButton({
       text: mode === "register" ? "signup_with" : "signin_with",
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptReady, clientId, role, mode])
+  }, [scriptReady, clientId, role, country, mode])
 
   if (!clientId) {
     // Not configured - hide the option entirely rather than rendering a

@@ -122,6 +122,9 @@ export type RegisterInput = {
   email: string
   password: string
   role: UserRole
+  // ISO 3166-1 alpha-2 code picked on the signup form - drives GST on
+  // wallet top-ups later (see the Add funds page) and nothing else yet.
+  country?: string
   captchaToken: string
 }
 
@@ -171,6 +174,7 @@ export type VerifyPhoneOtpInput = {
   token: string
   name?: string
   role?: UserRole
+  country?: string
 }
 
 export function verifyPhoneOtp(input: VerifyPhoneOtpInput) {
@@ -180,7 +184,11 @@ export function verifyPhoneOtp(input: VerifyPhoneOtpInput) {
   )
 }
 
-export function googleAuth(input: { idToken: string; role?: UserRole }) {
+export function googleAuth(input: {
+  idToken: string
+  role?: UserRole
+  country?: string
+}) {
   return apiFetch<{ message: string; user: AuthUser }>("/api/v1/auth/google", {
     method: "POST",
     body: JSON.stringify(input),
@@ -200,6 +208,7 @@ export type ValidateDomainInput = {
   expectedText?: string
   category?: string
   adultAds?: boolean
+  country?: string
 }
 
 export function validateDomain(input: ValidateDomainInput) {
@@ -245,10 +254,24 @@ export function getPublisherSite(siteId: string) {
   return apiFetch<PublisherSite>(`/api/v1/publisher/sites/${siteId}`)
 }
 
-export function updatePublisherSite(siteId: string, status: SiteStatus) {
+export type UpdatePublisherSiteInput = {
+  status?: SiteStatus
+  category?: string
+  adultAds?: boolean
+  // ISO 3166-1 alpha-2 code for this site's primary traffic country - lets a
+  // publisher fill this in on a site that predates the field (see
+  // PublisherSite.country in the backend schema).
+  country?: string
+}
+
+export function updatePublisherSite(
+  siteId: string,
+  input: SiteStatus | UpdatePublisherSiteInput
+) {
+  const body = typeof input === "string" ? { status: input } : input
   return apiFetch<PublisherSite>(`/api/v1/publisher/sites/${siteId}`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(body),
   })
 }
 
@@ -484,6 +507,16 @@ export function getCampaignSpend(campaignId: string) {
   )
 }
 
+// Countries the network actually has publisher supply in - see
+// AdvertiserService.getAvailableCountries. `null` means "no restriction
+// yet" (no site has declared a country), so the campaign wizard should show
+// its full static country list in that case.
+export function getAvailableCountries() {
+  return apiFetch<{ countries: string[] | null }>(
+    "/api/v1/advertiser/campaigns/meta/available-countries"
+  )
+}
+
 export function getCampaignBudgetStatus(campaignId: string) {
   return apiFetch<CampaignBudgetStatus>(
     `/api/v1/advertiser/campaigns/${campaignId}/budget-status`
@@ -524,6 +557,11 @@ export type CreatePayPalOrderResult = {
   paypalOrderId: string
   paypalClientId: string
   creditAmountUsd: string
+  // 18% GST added on top for an Indian account (User.country === "IN") -
+  // null for everyone else. Included in payAmount, never in
+  // creditAmountUsd - the wallet is only ever credited what was asked for.
+  gstAmountUsd: string | null
+  payAmount: string
   currency: "USD"
 }
 
@@ -555,6 +593,8 @@ export type CreateRazorpayOrderResult = {
   amount: number
   currency: "INR" | "USD"
   creditAmountUsd: string
+  gstAmountUsd: string | null
+  payAmount: string
 }
 
 export function createRazorpayOrder(input: {
@@ -674,6 +714,25 @@ export function adminUpdateAdFormatPricing(
   return apiFetch<AdFormatPricing>(
     "/api/v1/admin/settings/ad-format-pricing",
     { method: "PATCH", body: JSON.stringify({ adFormat, ...rate }) }
+  )
+}
+
+// --- Admin: minimum advertiser wallet balance ---
+// Floor an advertiser's free wallet balance must stay above of - see
+// PlatformSetting.minAdvertiserBalanceUsd in the backend schema.
+
+export function adminGetMinAdvertiserBalance() {
+  return apiFetch<{ minAdvertiserBalanceUsd: string }>(
+    "/api/v1/admin/settings/min-advertiser-balance"
+  )
+}
+
+export function adminUpdateMinAdvertiserBalance(
+  minAdvertiserBalanceUsd: number
+) {
+  return apiFetch<{ minAdvertiserBalanceUsd: string }>(
+    "/api/v1/admin/settings/min-advertiser-balance",
+    { method: "PATCH", body: JSON.stringify({ minAdvertiserBalanceUsd }) }
   )
 }
 

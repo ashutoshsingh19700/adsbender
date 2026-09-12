@@ -53,11 +53,11 @@ export default function ScheduleMeetingPage() {
             A booking calendar will be embedded here.
           </p>
           <a
-            href="mailto:support@adsbender.example"
+            href="mailto:support@adsbender.com"
             className="inline-flex items-center gap-2 text-sm font-medium text-violet-600 hover:underline"
           >
             <Mail className="size-4" />
-            support@adsbender.example
+            support@adsbender.com
           </a>
         </div>
       </section>

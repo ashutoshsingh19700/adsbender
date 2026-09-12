@@ -17,6 +17,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { parsePagination } from '../common/pagination.util';
 import { PAYOUT_PROVIDER } from './payout-providers/payout-provider.interface';
 import type { PayoutProvider } from './payout-providers/payout-provider.interface';
@@ -60,6 +61,7 @@ export class WalletManager {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly platformSettings: PlatformSettingsService,
     @Optional() @Inject(PAYOUT_PROVIDER) payoutProvider?: PayoutProvider,
   ) {
     this.payoutProvider = payoutProvider ?? new ManualPayoutProvider();
@@ -278,6 +280,10 @@ export class WalletManager {
     amountUsd: WalletAmount,
   ) {
     const amount = this.normalizeAmount(amountUsd);
+    // Read outside the transaction - this is the same short-TTL cached knob
+    // every other billing/settings read in the app uses, not something that
+    // needs to be read under the row lock below.
+    const minBalance = await this.platformSettings.getMinAdvertiserBalanceUsd();
 
     return this.prisma.$transaction(async (tx) => {
       await this.lockUser(tx, advertiserId);
@@ -295,6 +301,16 @@ export class WalletManager {
 
       if (available.lessThan(amount)) {
         throw new ConflictException('INSUFFICIENT_AVAILABLE_BALANCE');
+      }
+
+      // The advertiser-wide floor (PlatformSetting.minAdvertiserBalanceUsd,
+      // default $10) must survive this reservation too - it's never itself
+      // spendable/reservable by any campaign. This is the one place actual
+      // money moves out of `balance_usd` for a campaign, so it's the real
+      // enforcement point (AdvertiserService.createCampaign only does an
+      // early, best-effort check at submission time for UX).
+      if (available.minus(amount).lessThan(minBalance)) {
+        throw new ConflictException('BELOW_MINIMUM_RESERVE');
       }
 
       await this.recordTransaction(tx, {

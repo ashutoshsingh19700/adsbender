@@ -11,6 +11,7 @@ import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { assertTransition } from '../common/status-transition.util';
 import { parsePagination } from '../common/pagination.util';
 
@@ -28,6 +29,7 @@ export class AdvertiserService {
     private readonly prisma: PrismaService,
     private readonly analyticsService: AnalyticsService,
     private readonly walletManager: WalletManager,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   // --- Profile ---
@@ -58,6 +60,9 @@ export class AdvertiserService {
     if (dto.dailyBudget > dto.totalBudget) {
       throw new BadRequestException('DAILY_BUDGET_EXCEEDS_TOTAL_BUDGET');
     }
+
+    await this.assertCountriesAllowed(dto.targetCountries);
+    await this.assertMinimumFreeBalance(advertiserId, dto.totalBudget);
 
     if (
       (dto.creativeType === 'image' || dto.creativeType === 'video') &&
@@ -179,6 +184,10 @@ export class AdvertiserService {
 
     if (dto.startMode === 'SCHEDULE' && !dto.scheduledAt) {
       throw new BadRequestException('SCHEDULED_AT_REQUIRED');
+    }
+
+    if (dto.targetCountries) {
+      await this.assertCountriesAllowed(dto.targetCountries);
     }
 
     return this.prisma.campaign.update({
@@ -418,6 +427,89 @@ export class AdvertiserService {
       dailyBudgetExhausted: spentToday >= dailyBudget,
       totalBudgetExhausted: spentTotal >= totalBudget,
     };
+  }
+
+  // --- Country targeting ---
+
+  // Distinct set of countries the network actually has publisher supply in
+  // (verified, active sites that declared a primary traffic country - see
+  // PublisherSite.country in schema.prisma), so an advertiser can only ever
+  // target a country that will actually see their ad. Returns null (meaning
+  // "no restriction, show every country") when no site has declared a
+  // country yet, so this never blocks campaign creation outright while the
+  // network is still onboarding publishers who set that field.
+  async getAvailableCountries(): Promise<string[] | null> {
+    const rows = await this.prisma.publisherSite.findMany({
+      where: {
+        status: 'ACTIVE',
+        verified: true,
+        country: { not: null },
+      },
+      distinct: ['country'],
+      select: { country: true },
+    });
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    return rows
+      .map((row) => row.country as string)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  private async assertCountriesAllowed(targetCountries: string[]) {
+    const allowed = await this.getAvailableCountries();
+    if (!allowed) {
+      return;
+    }
+
+    const allowedSet = new Set(allowed);
+    const disallowed = this.normalizeList(targetCountries).filter(
+      (code) => !allowedSet.has(code),
+    );
+
+    if (disallowed.length > 0) {
+      throw new BadRequestException(
+        `TARGET_COUNTRY_NOT_AVAILABLE: ${disallowed.join(', ')}`,
+      );
+    }
+  }
+
+  // --- Wallet floor ---
+
+  // Enforces PlatformSetting.minAdvertiserBalanceUsd (default $10) at
+  // submission time, purely as early UX feedback - the real, race-safe
+  // enforcement is inside WalletManager.reserveCampaignBudget, which runs
+  // when an admin approves the campaign and actually reserves the budget.
+  // This check can't be the source of truth on its own because balance_usd
+  // isn't touched until approval, so nothing stops an advertiser submitting
+  // several campaigns against the same unreserved balance in the meantime.
+  private async assertMinimumFreeBalance(
+    advertiserId: string,
+    totalBudget: number,
+  ) {
+    const [user, minBalance] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: advertiserId },
+        select: { balance_usd: true },
+      }),
+      this.platformSettings.getMinAdvertiserBalanceUsd(),
+    ]);
+
+    if (!user) {
+      throw new NotFoundException('Advertiser not found');
+    }
+
+    const freeAfterThisCampaign = new Prisma.Decimal(user.balance_usd).minus(
+      totalBudget,
+    );
+
+    if (freeAfterThisCampaign.lessThan(minBalance)) {
+      throw new BadRequestException(
+        `INSUFFICIENT_FREE_BALANCE: keep at least $${minBalance.toString()} free in your wallet in addition to this campaign's budget`,
+      );
+    }
   }
 
   // --- Helpers ---

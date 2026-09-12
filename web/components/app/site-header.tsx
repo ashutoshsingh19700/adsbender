@@ -33,7 +33,7 @@ export function SiteHeader() {
             <span className="sr-only">AdsBender</span>
           </Link>
           <a
-            href="mailto:support@adsbender.example"
+            href="mailto:support@adsbender.com"
             className="text-sm font-medium tracking-wide text-muted-foreground hover:text-orange-600"
           >
             CONTACT US

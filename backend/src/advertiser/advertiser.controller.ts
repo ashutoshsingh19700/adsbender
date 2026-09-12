@@ -88,6 +88,16 @@ export class AdvertiserController {
     return this.advertiserService.listCampaigns(req.user.id, query);
   }
 
+  // Countries the campaign wizard's targeting picker should offer - see
+  // AdvertiserService.getAvailableCountries for how this list is derived.
+  // Declared before the campaigns/:id route below so "available-countries"
+  // is never swallowed as an :id.
+  @Get('campaigns/meta/available-countries')
+  async getAvailableCountries() {
+    const countries = await this.advertiserService.getAvailableCountries();
+    return { countries };
+  }
+
   @Get('campaigns/:id')
   getCampaign(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.advertiserService.getCampaign(req.user.id, id);

@@ -240,6 +240,57 @@ export class PlatformSettingsService {
     return { usdToInrRate: updated.usdToInrRate!.toString() };
   }
 
+  // Floor on an advertiser's free wallet balance that submitting/approving a
+  // new campaign is never allowed to dip below - see
+  // WalletManager.reserveCampaignBudget and AdvertiserService.createCampaign.
+  // Cached the same short-TTL way as the other knobs above.
+  private cachedMinBalance: Prisma.Decimal | null = null;
+  private cachedMinBalanceAt = 0;
+
+  async getMinAdvertiserBalanceUsd(): Promise<Prisma.Decimal> {
+    const now = Date.now();
+
+    if (
+      this.cachedMinBalance !== null &&
+      now - this.cachedMinBalanceAt < CACHE_TTL_MS
+    ) {
+      return this.cachedMinBalance;
+    }
+
+    const setting = await this.prisma.platformSetting.findUnique({
+      where: { id: PLATFORM_SETTING_ID },
+    });
+    const minBalance = new Prisma.Decimal(
+      setting?.minAdvertiserBalanceUsd ?? 10,
+    );
+
+    this.cachedMinBalance = minBalance;
+    this.cachedMinBalanceAt = now;
+
+    return minBalance;
+  }
+
+  async updateMinAdvertiserBalanceUsd(
+    amount: number,
+  ): Promise<{ minAdvertiserBalanceUsd: string }> {
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100_000) {
+      throw new BadRequestException(
+        'minAdvertiserBalanceUsd must be a non-negative number no greater than 100000',
+      );
+    }
+
+    const updated = await this.prisma.platformSetting.upsert({
+      where: { id: PLATFORM_SETTING_ID },
+      update: { minAdvertiserBalanceUsd: amount },
+      create: { id: PLATFORM_SETTING_ID, minAdvertiserBalanceUsd: amount },
+    });
+
+    this.cachedMinBalance = new Prisma.Decimal(updated.minAdvertiserBalanceUsd);
+    this.cachedMinBalanceAt = Date.now();
+
+    return { minAdvertiserBalanceUsd: updated.minAdvertiserBalanceUsd.toString() };
+  }
+
   // Advertiser is always charged the full `amount` - this is only what the
   // PUBLISHER gets credited after the platform's cut. Rounded to 2dp
   // (half-up) because every amount that reaches WalletManager must be an

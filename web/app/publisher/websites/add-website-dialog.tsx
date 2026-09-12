@@ -12,6 +12,7 @@ import {
   AD_UNIT_FORMAT_OPTIONS,
   WEBSITE_CATEGORIES,
 } from "@/app/publisher/websites/site-meta"
+import { COUNTRIES, countryFlag } from "@/app/advertiser/campaign-fields"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import { Switch } from "@/components/ui/switch"
 const addWebsiteSchema = z.object({
   domain: z.string().min(3, "Enter a website address, e.g. example.com"),
   category: z.string().optional(),
+  country: z.string().optional(),
   adultAds: z.boolean(),
   adUnitFormats: z.array(z.string()),
 })
@@ -80,6 +82,7 @@ export function AddWebsiteDialog({
     defaultValues: {
       domain: "",
       category: undefined,
+      country: undefined,
       adultAds: false,
       adUnitFormats: [],
     },
@@ -95,6 +98,7 @@ export function AddWebsiteDialog({
       const site = await validateDomain({
         domain: values.domain,
         category: values.category,
+        country: values.country,
         adultAds: values.adultAds,
       })
 
@@ -185,6 +189,37 @@ export function AddWebsiteDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="sr-only">
+                    Primary traffic country
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-11 w-full rounded-lg px-3.5 text-sm">
+                        <SelectValue placeholder="Primary traffic country (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {countryFlag(country.value)} {country.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Helps advertisers only target countries this site actually
+                    reaches.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

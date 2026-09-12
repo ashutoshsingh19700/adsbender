@@ -17,11 +17,17 @@ import {
   X,
 } from "lucide-react"
 
-import { ApiError, listAdZones, listPublisherSites } from "@/lib/api"
+import {
+  ApiError,
+  listAdZones,
+  listPublisherSites,
+  updatePublisherSite,
+} from "@/lib/api"
 import type { AdZone, AdZoneStatus, PublisherSite } from "@/lib/types"
 import { AddWebsiteDialog } from "@/app/publisher/websites/add-website-dialog"
 import { ZoneSnippetDialog } from "@/app/publisher/ad-zone-manager"
 import { AD_UNIT_FORMAT_OPTIONS } from "@/app/publisher/websites/site-meta"
+import { COUNTRIES, countryFlag } from "@/app/advertiser/campaign-fields"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -83,6 +89,9 @@ export function WebsitesPage() {
     new Set()
   )
   const [snippetZone, setSnippetZone] = React.useState<AdZone | null>(null)
+  const [savingCountryId, setSavingCountryId] = React.useState<string | null>(
+    null
+  )
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -134,6 +143,26 @@ export function WebsitesPage() {
     window.localStorage.removeItem(TIPS_DISMISSED_KEY)
   }
 
+  // Lets a publisher fill in the traffic country on a site that predates
+  // this field (or fix one they got wrong) - see PublisherSite.country in
+  // the backend schema for why this matters to advertiser targeting.
+  async function updateSiteCountry(siteId: string, country: string) {
+    setSavingCountryId(siteId)
+    try {
+      const updated = await updatePublisherSite(siteId, { country })
+      setSites((prev) =>
+        prev.map((site) => (site.id === siteId ? updated : site))
+      )
+      toast.success("Country updated")
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not update country"
+      )
+    } finally {
+      setSavingCountryId(null)
+    }
+  }
+
   function resetFilters() {
     setSearch("")
     setStatusFilter("all")
@@ -141,11 +170,12 @@ export function WebsitesPage() {
 
   function exportWebsites() {
     if (visibleSites.length === 0) return
-    const header = ["Domain", "Category", "Adult ads", "Status"]
+    const header = ["Domain", "Category", "Country", "Adult ads", "Status"]
     const lines = visibleSites.map((site) =>
       [
         site.domain,
         site.category ?? "",
+        site.country ?? "",
         site.adultAds ? "Yes" : "No",
         site.verified ? "Verified" : "Pending",
       ].join(",")
@@ -293,6 +323,7 @@ export function WebsitesPage() {
               <TableRow>
                 <TableHead>Website</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Country</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -343,6 +374,38 @@ export function WebsitesPage() {
                         </span>
                       </TableCell>
                       <TableCell>
+                        <Select
+                          value={site.country ?? undefined}
+                          onValueChange={(value) =>
+                            updateSiteCountry(site.id, value)
+                          }
+                          disabled={savingCountryId === site.id}
+                        >
+                          <SelectTrigger className="h-8 w-40 text-sm">
+                            <SelectValue placeholder="Not set">
+                              {site.country ? (
+                                <span>
+                                  {countryFlag(site.country)}{" "}
+                                  {COUNTRIES.find(
+                                    (c) => c.value === site.country
+                                  )?.label ?? site.country}
+                                </span>
+                              ) : undefined}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COUNTRIES.map((country) => (
+                              <SelectItem
+                                key={country.value}
+                                value={country.value}
+                              >
+                                {countryFlag(country.value)} {country.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
                         <Badge
                           variant="outline"
                           className={
@@ -380,6 +443,7 @@ export function WebsitesPage() {
                                 {formatZoneLayoutLabel(zone.layoutType)}
                               </span>
                             </TableCell>
+                            <TableCell />
                             <TableCell />
                             <TableCell className="py-2">
                               <Badge

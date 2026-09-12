@@ -14,6 +14,7 @@ import { ApiError, login, register } from "@/lib/api"
 import { ROLE_HOME } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import type { AuthUser, UserRole } from "@/lib/types"
+import { COUNTRIES, countryFlag } from "@/app/advertiser/campaign-fields"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -24,6 +25,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   PasswordStrength,
   passwordMeetsAllRules,
@@ -109,6 +117,12 @@ export function LoginForm() {
     defaultValues: { name: "", email: "", password: "" },
   })
 
+  // Country is shared across all three sign-up paths (email/password, phone
+  // OTP, Google) rather than living inside registerForm - phone and Google
+  // never go through that form at all, so a single piece of state here is
+  // simpler than duplicating the field into each sub-flow.
+  const [country, setCountry] = React.useState("")
+
   const registerPassword = registerForm.watch("password")
 
   function resetCaptcha() {
@@ -178,13 +192,17 @@ export function LoginForm() {
   }
 
   async function onRegister(values: z.infer<typeof registerSchema>) {
+    if (!country) {
+      toast.error("Please select your country")
+      return
+    }
     if (!captchaToken) {
       toast.error("Please complete the security check")
       return
     }
 
     try {
-      await register({ ...values, role, captchaToken })
+      await register({ ...values, role, country, captchaToken })
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : "Registration failed"
@@ -285,9 +303,31 @@ export function LoginForm() {
         )}
       </p>
 
+      {mode === "register" ? (
+        <div className="mt-5 space-y-1.5">
+          <label className="sr-only">Country</label>
+          <Select value={country} onValueChange={setCountry}>
+            <SelectTrigger className="h-12 w-full rounded-xl px-3.5 text-base">
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRIES.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {countryFlag(option.value)} {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
       {method === "phone" ? (
         <div className="mt-6">
-          <PhoneOtpForm role={role} onSuccess={handleExternalAuthSuccess} />
+          <PhoneOtpForm
+            role={role}
+            country={mode === "register" ? country : undefined}
+            onSuccess={handleExternalAuthSuccess}
+          />
         </div>
       ) : mode === "login" ? (
         <Form {...loginForm}>
@@ -488,6 +528,7 @@ export function LoginForm() {
         <GoogleSignInButton
           role={role}
           mode={mode}
+          country={mode === "register" ? country : undefined}
           onSuccess={handleExternalAuthSuccess}
           onError={(message) => toast.error(message)}
         />

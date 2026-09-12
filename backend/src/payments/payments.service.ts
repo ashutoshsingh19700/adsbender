@@ -13,6 +13,12 @@ import { WalletManager } from '../wallet/wallet-manager.service';
 import { PayPalService, PayPalOrder } from './paypal.service';
 import { RazorpayService } from './razorpay.service';
 
+// India-specific GST surcharge on every wallet top-up, regardless of
+// gateway. Charged on top of what the advertiser asked to add - the wallet
+// is only ever credited `creditAmountUsd`, never creditAmountUsd + GST, so
+// this is purely an extra cost to the advertiser, not part of the top-up.
+const GST_RATE = new Prisma.Decimal('0.18');
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -33,6 +39,10 @@ export class PaymentsService {
   // is no FX logic here at all, unlike the Razorpay INR flow below.
   async createTopupOrder(userId: string, amountUsd: number) {
     const creditAmountUsd = new Prisma.Decimal(amountUsd).toDecimalPlaces(2);
+    const gstAmountUsd = await this.computeGst(userId, creditAmountUsd);
+    const payAmount = gstAmountUsd
+      ? creditAmountUsd.plus(gstAmountUsd)
+      : creditAmountUsd;
 
     // Placeholder id, replaced with the real PayPal order id right after -
     // needed because the PaymentOrder row and the PayPal order reference
@@ -43,8 +53,9 @@ export class PaymentsService {
         userId,
         provider: 'paypal',
         payCurrency: 'USD',
-        payAmount: creditAmountUsd,
+        payAmount,
         creditAmountUsd,
+        gstAmountUsd,
         fxRate: null,
         providerOrderId: `pending:${randomUUID()}`,
       },
@@ -52,7 +63,7 @@ export class PaymentsService {
 
     try {
       const paypalOrder = await this.paypal.createOrder(
-        creditAmountUsd.toFixed(2),
+        payAmount.toFixed(2),
         order.id,
       );
 
@@ -66,6 +77,8 @@ export class PaymentsService {
         paypalOrderId: paypalOrder.id,
         paypalClientId: this.paypal.publicClientId,
         creditAmountUsd: creditAmountUsd.toString(),
+        gstAmountUsd: gstAmountUsd?.toString() ?? null,
+        payAmount: payAmount.toString(),
         currency: 'USD' as const,
       };
     } catch (error) {
@@ -218,13 +231,17 @@ export class PaymentsService {
     payCurrency: 'INR' | 'USD',
   ) {
     const creditAmountUsd = new Prisma.Decimal(amountUsd).toDecimalPlaces(2);
+    const gstAmountUsd = await this.computeGst(userId, creditAmountUsd);
+    const chargeAmountUsd = gstAmountUsd
+      ? creditAmountUsd.plus(gstAmountUsd)
+      : creditAmountUsd;
 
-    let payAmount = creditAmountUsd;
+    let payAmount = chargeAmountUsd;
     let fxRate: Prisma.Decimal | null = null;
 
     if (payCurrency === 'INR') {
       fxRate = await this.platformSettings.getUsdToInrRate();
-      payAmount = creditAmountUsd
+      payAmount = chargeAmountUsd
         .times(fxRate)
         .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
     }
@@ -236,6 +253,7 @@ export class PaymentsService {
         payCurrency,
         payAmount,
         creditAmountUsd,
+        gstAmountUsd,
         fxRate,
         providerOrderId: `pending:${randomUUID()}`,
       },
@@ -267,6 +285,8 @@ export class PaymentsService {
         amount: amountMinorUnits,
         currency: payCurrency,
         creditAmountUsd: creditAmountUsd.toString(),
+        gstAmountUsd: gstAmountUsd?.toString() ?? null,
+        payAmount: payAmount.toString(),
       };
     } catch (error) {
       await this.failDanglingOrder(order.id, error);
@@ -352,6 +372,29 @@ export class PaymentsService {
   }
 
   // --- Shared ---
+
+  // 18% GST on top of `creditAmountUsd` for an advertiser whose account
+  // country (set at signup - see RegisterDto.country) is India, applied
+  // identically regardless of which gateway or currency they pay in. Null
+  // for everyone else, which callers treat as "no GST line at all" rather
+  // than a zero-dollar one.
+  private async computeGst(
+    userId: string,
+    creditAmountUsd: Prisma.Decimal,
+  ): Promise<Prisma.Decimal | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { country: true },
+    });
+
+    if (user?.country?.toUpperCase() !== 'IN') {
+      return null;
+    }
+
+    return creditAmountUsd
+      .times(GST_RATE)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  }
 
   private async findOrderForUser(userId: string, providerOrderId: string) {
     const order = await this.prisma.paymentOrder.findUnique({

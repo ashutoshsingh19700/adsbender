@@ -16,6 +16,7 @@ import { RejectCampaignDto } from './dto/reject-campaign.dto';
 import { UpdateAdFormatPricingDto } from './dto/update-ad-format-pricing.dto';
 import { UpdatePlatformFeeDto } from './dto/update-platform-fee.dto';
 import { UpdateUsdToInrRateDto } from './dto/update-usd-to-inr-rate.dto';
+import { UpdateMinAdvertiserBalanceDto } from './dto/update-min-advertiser-balance.dto';
 import { AdminUpdateSiteStatusDto } from './dto/update-site-status.dto';
 import { AdminScopes } from '../auth/decorators/admin-scopes.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -147,6 +148,22 @@ export class AdminController {
   @Patch('settings/usd-to-inr-rate')
   updateUsdToInrRate(@Body() dto: UpdateUsdToInrRateDto) {
     return this.adminService.updateUsdToInrRate(dto.usdToInrRate);
+  }
+
+  // Floor on an advertiser's free wallet balance - see PlatformSetting.
+  // minAdvertiserBalanceUsd in schema.prisma for what this actually gates.
+  @AdminScopes('MASTER')
+  @Get('settings/min-advertiser-balance')
+  getMinAdvertiserBalance() {
+    return this.adminService.getMinAdvertiserBalance();
+  }
+
+  @AdminScopes('MASTER')
+  @Patch('settings/min-advertiser-balance')
+  updateMinAdvertiserBalance(@Body() dto: UpdateMinAdvertiserBalanceDto) {
+    return this.adminService.updateMinAdvertiserBalance(
+      dto.minAdvertiserBalanceUsd,
+    );
   }
 
   // --- Users ---

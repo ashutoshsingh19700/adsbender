@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { WalletManager } from './wallet-manager.service';
 
 class Mutex {
@@ -42,6 +43,16 @@ describe('WalletManager', () => {
         {
           provide: PrismaService,
           useValue: prismaService,
+        },
+        {
+          // Every existing test here reserves/spends against a fresh mocked
+          // wallet with no real minimum-balance floor to worry about, so a
+          // permissive stub (floor of $0) keeps them all behaving exactly as
+          // before this dependency was added.
+          provide: PlatformSettingsService,
+          useValue: {
+            getMinAdvertiserBalanceUsd: jest.fn().mockResolvedValue(new Prisma.Decimal(0)),
+          },
         },
       ],
     }).compile();

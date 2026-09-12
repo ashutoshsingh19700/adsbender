@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 import { PublicRegisterRole } from './register.dto';
 
@@ -22,4 +22,10 @@ export class VerifyPhoneOtpDto {
   @IsOptional()
   @IsEnum(PublicRegisterRole)
   role?: PublicRegisterRole;
+
+  // Same as RegisterDto.country - only used on first-time signup.
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  country?: string;
 }

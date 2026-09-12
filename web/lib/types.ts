@@ -12,6 +12,10 @@ export type AuthUser = {
   role: UserRole
   name?: string
   adminScope?: AdminScope
+  // ISO 3166-1 alpha-2 code picked at signup, or null/undefined if never
+  // set. India ("IN") is charged 18% GST on wallet top-ups - see the Add
+  // funds page.
+  country?: string | null
 }
 
 // Returned by GET /publisher/me and /advertiser/me.
@@ -127,6 +131,9 @@ export type PublisherSite = {
   // rather than a fixed enum.
   category: string | null
   adultAds: boolean
+  // ISO 3166-1 alpha-2 code for this site's primary traffic country, if the
+  // publisher set one - feeds the advertiser-facing country allow-list.
+  country: string | null
   createdAt: string
   updatedAt: string
 }

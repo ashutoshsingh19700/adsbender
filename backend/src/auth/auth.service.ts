@@ -68,6 +68,7 @@ export class AuthService {
         name: registerDto.name,
         email: registerDto.email,
         role: registerDto.role,
+        country: registerDto.country,
       });
 
       return {
@@ -108,6 +109,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         adminScope: user.adminScope,
+        country: user.country,
       },
     };
   }
@@ -224,6 +226,7 @@ export class AuthService {
         email: data.user.email ?? `${data.user.id}@phone.adnetwork.local`,
         role: dto.role,
         phone: dto.phone,
+        country: dto.country,
       });
     } else if (!user.phone) {
       user = await this.usersService.setPhone(user.id, dto.phone);
@@ -239,6 +242,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         adminScope: user.adminScope,
+        country: user.country,
       },
     };
   }
@@ -316,6 +320,7 @@ export class AuthService {
           name: payload.name ?? payload.email,
           email: payload.email,
           role: dto.role,
+          country: dto.country,
         });
       } catch (dbError) {
         await this.supabase.admin.auth.admin.deleteUser(data.user.id);
@@ -354,6 +359,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         adminScope: user.adminScope,
+        country: user.country,
       },
     };
   }

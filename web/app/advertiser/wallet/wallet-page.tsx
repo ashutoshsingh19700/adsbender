@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 
+import { Landmark, PiggyBank, ShieldCheck, Wallet as WalletIcon } from "lucide-react"
+
+import { useAuth } from "@/app/providers/auth-provider"
 import {
   ApiError,
   capturePayPalPayment,
@@ -84,7 +87,16 @@ const TRANSACTION_LABELS: Record<TransactionType, string> = {
 
 const CREDIT_TYPES: TransactionType[] = ["DEPOSIT", "REFUND"]
 
+// Client-side preview only, shown while the advertiser is still typing an
+// amount - the real charge (and the GST line on it) is computed and
+// persisted server-side in PaymentsService.computeGst, this just mirrors
+// that 18% rate so the on-screen total doesn't visibly jump once an order
+// is actually created.
+const GST_PREVIEW_RATE = 0.18
+
 export function AdvertiserWalletPage() {
+  const { user } = useAuth()
+  const isIndianAccount = user?.country?.toUpperCase() === "IN"
   const [summary, setSummary] = React.useState<AdvertiserWalletSummary | null>(
     null
   )
@@ -104,6 +116,12 @@ export function AdvertiserWalletPage() {
     resolver: zodResolver(depositSchema),
     defaultValues: { amount: 50 },
   })
+
+  const watchedAmount = Number(form.watch("amount")) || 0
+  const gstPreview = isIndianAccount
+    ? Math.round(watchedAmount * GST_PREVIEW_RATE * 100) / 100
+    : 0
+  const totalPreview = watchedAmount + gstPreview
 
   const load = React.useCallback(async () => {
     setLoading(true)
@@ -169,7 +187,11 @@ export function AdvertiserWalletPage() {
         razorpaySignature: result.razorpay_signature,
       })
 
-      toast.success(`Added ${formatCurrency(order.creditAmountUsd)} to your wallet`)
+      toast.success(
+        order.gstAmountUsd
+          ? `Added ${formatCurrency(order.creditAmountUsd)} to your wallet (charged ${formatCurrency(order.payAmount)} incl. ${formatCurrency(order.gstAmountUsd)} GST)`
+          : `Added ${formatCurrency(order.creditAmountUsd)} to your wallet`
+      )
       form.reset({ amount: 50 })
       await load()
     } catch (error) {
@@ -214,7 +236,9 @@ export function AdvertiserWalletPage() {
             try {
               await capturePayPalPayment({ paypalOrderId: data.orderID })
               toast.success(
-                `Added ${formatCurrency(pendingOrder.creditAmountUsd)} to your wallet`
+                pendingOrder.gstAmountUsd
+                  ? `Added ${formatCurrency(pendingOrder.creditAmountUsd)} to your wallet (charged ${formatCurrency(pendingOrder.payAmount)} incl. GST)`
+                  : `Added ${formatCurrency(pendingOrder.creditAmountUsd)} to your wallet`
               )
               setPendingOrder(null)
               form.reset({ amount: 50 })
@@ -253,11 +277,16 @@ export function AdvertiserWalletPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
-        <p className="text-muted-foreground">
-          Manage your advertiser balance, top-ups, and campaign spending.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20">
+          <WalletIcon className="size-5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
+          <p className="text-muted-foreground">
+            Manage your advertiser balance, top-ups, and campaign spending.
+          </p>
+        </div>
       </div>
 
       {loading && !summary ? (
@@ -271,18 +300,26 @@ export function AdvertiserWalletPage() {
           <BalanceTile
             label="Current balance"
             value={summary?.currentBalance}
+            icon={WalletIcon}
+            accent="from-violet-500 to-fuchsia-500"
           />
           <BalanceTile
             label="Available"
             value={summary?.availableBalance}
+            icon={PiggyBank}
+            accent="from-emerald-500 to-teal-500"
           />
           <BalanceTile
             label="Reserved for campaigns"
             value={summary?.reservedBalance}
+            icon={ShieldCheck}
+            accent="from-amber-500 to-orange-500"
           />
           <BalanceTile
             label="Total spent"
             value={summary?.totalSpent}
+            icon={Landmark}
+            accent="from-sky-500 to-blue-500"
           />
         </div>
       )}
@@ -298,11 +335,35 @@ export function AdvertiserWalletPage() {
           {pendingOrder ? (
             <>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Pay {formatCurrency(pendingOrder.creditAmountUsd)} with
-                  PayPal to complete your top-up. Indian PayPal accounts see
-                  an INR estimate at checkout - the charge itself is in USD.
-                </p>
+                {pendingOrder.gstAmountUsd ? (
+                  <div className="space-y-1.5 rounded-xl border bg-muted/30 p-3 text-sm">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Top-up amount</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(pendingOrder.creditAmountUsd)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>GST (18%)</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(pendingOrder.gstAmountUsd)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1.5 font-medium">
+                      <span>Total charged</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(pendingOrder.payAmount)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Pay {formatCurrency(pendingOrder.payAmount)} with PayPal
+                    to complete your top-up. Non-US accounts see a
+                    local-currency estimate at checkout - the charge itself
+                    is in USD.
+                  </p>
+                )}
                 <div ref={buttonsContainerRef} />
               </CardContent>
               <CardFooter>
@@ -368,6 +429,33 @@ export function AdvertiserWalletPage() {
                       </FormItem>
                     )}
                   />
+                  {isIndianAccount && watchedAmount > 0 ? (
+                    <div className="space-y-1.5 rounded-xl border bg-muted/30 p-3 text-sm">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Subtotal</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(watchedAmount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>GST (18%) - India</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(gstPreview)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1.5 font-medium">
+                        <span>You&apos;ll be charged</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(totalPreview)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Your wallet is still credited the full{" "}
+                        {formatCurrency(watchedAmount)} - GST is an extra cost
+                        on top, required for Indian accounts.
+                      </p>
+                    </div>
+                  ) : null}
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" disabled={creatingOrder}>
@@ -518,17 +606,28 @@ export function AdvertiserWalletPage() {
 function BalanceTile({
   label,
   value,
+  icon: Icon,
+  accent,
 }: {
   label: string
   value?: string
+  icon: React.ComponentType<{ className?: string }>
+  accent: string
 }) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums">
-          {value !== undefined ? formatCurrency(value) : "-"}
-        </p>
+    <Card className="overflow-hidden">
+      <CardContent className="flex items-start justify-between gap-3 pt-6">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-2xl font-semibold tabular-nums">
+            {value !== undefined ? formatCurrency(value) : "-"}
+          </p>
+        </div>
+        <div
+          className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white`}
+        >
+          <Icon className="size-4" />
+        </div>
       </CardContent>
     </Card>
   )
