@@ -56,12 +56,12 @@ export class UpdateCampaignDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(1)
+  @Min(0.01)
   totalBudget?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(1)
+  @Min(0.01)
   dailyBudget?: number;
 
   @IsOptional()

@@ -53,11 +53,11 @@ export class CreateCampaignDto {
   campaignName: string;
 
   @IsNumber()
-  @Min(1)
+  @Min(0.01)
   totalBudget: number;
 
   @IsNumber()
-  @Min(1)
+  @Min(0.01)
   dailyBudget: number;
 
   @IsNumber()

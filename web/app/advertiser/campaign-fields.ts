@@ -152,8 +152,12 @@ export const campaignSchema = z
       .string()
       .min(2, "Campaign name must be at least 2 characters")
       .max(120, "Campaign name must be under 120 characters"),
-    totalBudget: z.coerce.number().min(1, "Total budget must be at least 1"),
-    dailyBudget: z.coerce.number().min(1, "Daily budget must be at least 1"),
+    totalBudget: z.coerce
+      .number()
+      .min(0.01, "Total budget must be at least 0.01"),
+    dailyBudget: z.coerce
+      .number()
+      .min(0.01, "Daily budget must be at least 0.01"),
     maxCpc: z.coerce.number().min(0.01, "Max CPC must be at least 0.01"),
     targetCountries: z
       .array(z.string())
