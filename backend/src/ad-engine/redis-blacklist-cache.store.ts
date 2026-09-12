@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import { BlacklistCacheStore } from './blacklist-cache.types';
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 
 export const BLACKLISTED_IPS_SET_KEY = 'adengine:blacklisted_ips';
 const BLACKLISTED_IPS_STAGING_KEY = `${BLACKLISTED_IPS_SET_KEY}:staging`;
@@ -14,10 +15,7 @@ export class RedisBlacklistCacheStore
   implements BlacklistCacheStore, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
   });
 
   async replaceBlacklistedIps(ipAddresses: string[]) {

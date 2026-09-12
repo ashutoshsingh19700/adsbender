@@ -2,16 +2,14 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import type { AdEvent, MessageBrokerPublisher } from './ad-event.types';
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 
 @Injectable()
 export class RedisStreamMessageBrokerPublisher
   implements MessageBrokerPublisher, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
   });
 
   async publish(channel: string, payload: AdEvent) {

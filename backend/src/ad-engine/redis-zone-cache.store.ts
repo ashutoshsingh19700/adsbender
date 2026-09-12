@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import type { CacheableZone, ZoneCacheRecord, ZoneCacheStore } from './zone-cache.types';
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 
 export const ACTIVE_ZONES_SET_KEY = 'adengine:active_zones';
 const ACTIVE_ZONES_STAGING_KEY = `${ACTIVE_ZONES_SET_KEY}:staging`;
@@ -10,10 +11,7 @@ export const zoneCacheKey = (zoneId: string) => `adengine:zone:${zoneId}`;
 @Injectable()
 export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
   });
 
   // Every /serve request calls getActiveZone (see AdTargetingService) -

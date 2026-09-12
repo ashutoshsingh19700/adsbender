@@ -7,6 +7,7 @@ import {
   ParsedCampaignCacheRecord,
 } from './campaign-cache.types';
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 
 export const ACTIVE_CAMPAIGNS_SET_KEY = 'adengine:active_campaigns';
 export const campaignCacheKey = (campaignId: string) =>
@@ -17,10 +18,7 @@ export class RedisCampaignCacheStore
   implements CampaignCacheStore, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
   });
 
   async replaceActiveCampaigns(campaigns: CacheableCampaign[]) {

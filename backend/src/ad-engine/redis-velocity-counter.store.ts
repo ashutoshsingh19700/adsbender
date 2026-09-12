@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 import type {
   FrequencyCapCounterStore,
   VelocityCounterResult,
@@ -11,10 +12,7 @@ export class RedisVelocityCounterStore
   implements FrequencyCapCounterStore, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
   });
 
   async increment(

@@ -6,6 +6,7 @@ import type {
   MessageBrokerConsumer,
 } from './ad-event.types';
 import { RedisRespClient } from './redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
 
 type RedisStreamResponse = [string, Array<[string, string[]]>][];
 
@@ -14,10 +15,7 @@ export class RedisStreamMessageBrokerConsumer
   implements MessageBrokerConsumer, OnModuleDestroy
 {
   private readonly redis = new RedisRespClient({
-    host: process.env.REDIS_HOST ?? '127.0.0.1',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD,
-    tls: process.env.REDIS_TLS === 'true',
+    ...resolveRedisConnectionOptions(),
     timeoutMs: Number(process.env.REDIS_STREAM_READ_TIMEOUT_MS ?? 7000),
   });
 
