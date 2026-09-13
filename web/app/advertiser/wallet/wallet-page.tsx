@@ -6,7 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 
-import { Landmark, PiggyBank, ShieldCheck, Wallet as WalletIcon } from "lucide-react"
+import {
+  CreditCard,
+  Download,
+  Landmark,
+  PiggyBank,
+  ShieldCheck,
+  Wallet as WalletIcon,
+  Zap,
+} from "lucide-react"
 
 import { useAuth } from "@/app/providers/auth-provider"
 import {
@@ -21,6 +29,7 @@ import {
 } from "@/lib/api"
 import type {
   AdvertiserWalletSummary,
+  CampaignStatus,
   TransactionType,
   WalletTransaction,
 } from "@/lib/types"
@@ -86,6 +95,56 @@ const TRANSACTION_LABELS: Record<TransactionType, string> = {
 }
 
 const CREDIT_TYPES: TransactionType[] = ["DEPOSIT", "REFUND"]
+
+const QUICK_AMOUNTS = [10, 25, 50, 100]
+
+const CAMPAIGN_STATUS_BADGE: Record<
+  CampaignStatus,
+  { variant: "default" | "secondary" | "destructive" | "outline"; className?: string }
+> = {
+  DRAFT: { variant: "outline" },
+  PENDING_REVIEW: {
+    variant: "outline",
+    className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
+  },
+  ACTIVE: {
+    variant: "outline",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
+  },
+  PAUSED: { variant: "outline" },
+  COMPLETED: { variant: "secondary" },
+  ARCHIVED: { variant: "outline" },
+}
+
+// Client-side only - re-exports the already-loaded transactions as a CSV so
+// advertisers can keep a local record, without adding a backend export
+// endpoint. Amounts keep the DEPOSIT/REFUND sign convention shown on screen.
+function downloadTransactionsCsv(transactions: WalletTransaction[]) {
+  const header = ["Date", "Type", "Description", "Amount", "Status"]
+  const rows = transactions.map((transaction) => {
+    const isCredit = CREDIT_TYPES.includes(transaction.type)
+    const amount = `${isCredit ? "+" : "-"}${transaction.amount}`
+    return [
+      new Date(transaction.createdAt).toISOString(),
+      TRANSACTION_LABELS[transaction.type],
+      transaction.description ?? "",
+      amount,
+      transaction.status,
+    ]
+  })
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `wallet-statement-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
 
 // Client-side preview only, shown while the advertiser is still typing an
 // amount - the real charge (and the GST line on it) is computed and
@@ -275,53 +334,91 @@ export function AdvertiserWalletPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingOrder])
 
+  const currentBalanceNum = Number(summary?.currentBalance ?? 0)
+  const availableNum = Number(summary?.availableBalance ?? 0)
+  const reservedNum = Number(summary?.reservedBalance ?? 0)
+  const balanceDenominator = currentBalanceNum > 0 ? currentBalanceNum : 1
+  const availablePct = Math.max(
+    0,
+    Math.min(100, (availableNum / balanceDenominator) * 100)
+  )
+  const reservedPct = Math.max(
+    0,
+    Math.min(100 - availablePct, (reservedNum / balanceDenominator) * 100)
+  )
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <div className="flex items-center gap-3">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20">
-          <WalletIcon className="size-5" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
-          <p className="text-muted-foreground">
-            Manage your advertiser balance, top-ups, and campaign spending.
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="brand-gradient flex size-11 items-center justify-center rounded-2xl text-white shadow-lg shadow-orange-500/20">
+            <WalletIcon className="size-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
+            <p className="text-muted-foreground">
+              Manage your advertiser balance, top-ups, and campaign spending.
+            </p>
+          </div>
         </div>
       </div>
 
       {loading && !summary ? (
-        <div className="grid gap-4 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
-        </div>
+        <Skeleton className="h-36 w-full" />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-4">
-          <BalanceTile
-            label="Current balance"
-            value={summary?.currentBalance}
-            icon={WalletIcon}
-            accent="from-violet-500 to-fuchsia-500"
-          />
-          <BalanceTile
-            label="Available"
-            value={summary?.availableBalance}
-            icon={PiggyBank}
-            accent="from-emerald-500 to-teal-500"
-          />
-          <BalanceTile
-            label="Reserved for campaigns"
-            value={summary?.reservedBalance}
-            icon={ShieldCheck}
-            accent="from-amber-500 to-orange-500"
-          />
-          <BalanceTile
-            label="Total spent"
-            value={summary?.totalSpent}
-            icon={Landmark}
-            accent="from-sky-500 to-blue-500"
-          />
-        </div>
+        <Card className="overflow-hidden">
+          <CardContent className="grid grid-cols-2 gap-x-4 gap-y-6 pt-6 sm:grid-cols-4 sm:divide-x sm:divide-border">
+            <BalanceStat
+              label="Current balance"
+              value={summary?.currentBalance}
+              icon={WalletIcon}
+              iconClassName="brand-gradient"
+            />
+            <BalanceStat
+              label="Available"
+              value={summary?.availableBalance}
+              icon={PiggyBank}
+              iconClassName="bg-gradient-to-br from-emerald-500 to-teal-500"
+              padded
+            />
+            <BalanceStat
+              label="Reserved for campaigns"
+              value={summary?.reservedBalance}
+              icon={ShieldCheck}
+              iconClassName="bg-gradient-to-br from-amber-500 to-orange-500"
+              padded
+            />
+            <BalanceStat
+              label="Total spent"
+              value={summary?.totalSpent}
+              icon={Landmark}
+              iconClassName="bg-gradient-to-br from-slate-500 to-slate-700"
+              padded
+            />
+          </CardContent>
+          <div className="space-y-2 border-t bg-muted/20 px-6 py-4">
+            <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                style={{ width: `${availablePct}%` }}
+              />
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                style={{ width: `${reservedPct}%` }}
+              />
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                Available to spend
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-amber-500" />
+                Reserved for active campaigns
+              </span>
+            </div>
+          </div>
+        </Card>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_1fr]">
@@ -378,18 +475,46 @@ export function AdvertiserWalletPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <FormLabel>Payment method</FormLabel>
-                    <Select
-                      value={gateway}
-                      onValueChange={(value) => setGateway(value as Gateway)}
+                    <div
+                      role="radiogroup"
+                      aria-label="Payment method"
+                      className="grid grid-cols-2 gap-2"
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="razorpay">Razorpay</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={gateway === "paypal"}
+                        onClick={() => setGateway("paypal")}
+                        className={
+                          "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors " +
+                          (gateway === "paypal"
+                            ? "border-[#0070ba] bg-[#0070ba]/5 ring-1 ring-[#0070ba]"
+                            : "border-border hover:bg-muted/50")
+                        }
+                      >
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#0070ba] text-white">
+                          <CreditCard className="size-3.5" />
+                        </span>
+                        PayPal
+                      </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={gateway === "razorpay"}
+                        onClick={() => setGateway("razorpay")}
+                        className={
+                          "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition-colors " +
+                          (gateway === "razorpay"
+                            ? "border-[#3395ff] bg-[#3395ff]/5 ring-1 ring-[#3395ff]"
+                            : "border-border hover:bg-muted/50")
+                        }
+                      >
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#3395ff] text-white">
+                          <Zap className="size-3.5" />
+                        </span>
+                        Razorpay
+                      </button>
+                    </div>
                   </div>
                   {gateway === "razorpay" && (
                     <div className="space-y-2">
@@ -410,17 +535,41 @@ export function AdvertiserWalletPage() {
                       </Select>
                     </div>
                   )}
+                  <div className="space-y-2">
+                    <FormLabel>Amount (USD)</FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {QUICK_AMOUNTS.map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() =>
+                            form.setValue("amount", amount, {
+                              shouldValidate: true,
+                            })
+                          }
+                          className={
+                            "rounded-full border px-3 py-1 text-sm font-medium transition-colors " +
+                            (watchedAmount === amount
+                              ? "border-transparent bg-foreground text-background"
+                              : "border-border hover:bg-muted/50")
+                          }
+                        >
+                          ${amount}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <FormField
                     control={form.control}
                     name="amount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount ($)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             step="0.01"
                             min="0.1"
+                            placeholder="Custom amount"
                             {...field}
                             value={(field.value as number | string) ?? ""}
                           />
@@ -458,7 +607,7 @@ export function AdvertiserWalletPage() {
                   ) : null}
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" disabled={creatingOrder}>
+                  <Button type="submit" disabled={creatingOrder} className="w-full">
                     {creatingOrder
                       ? "Starting checkout..."
                       : gateway === "paypal"
@@ -491,35 +640,45 @@ export function AdvertiserWalletPage() {
               </TableHeader>
               <TableBody>
                 {summary?.campaignSpending.length ? (
-                  summary.campaignSpending.map((campaign) => (
-                    <TableRow key={campaign.campaignId}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{campaign.campaignName}</span>
-                          <Badge variant="outline">{campaign.status}</Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(campaign.totalBudget)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(campaign.reserved)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(campaign.spent)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(campaign.remaining)}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  summary.campaignSpending.map((campaign) => {
+                    const statusBadge = CAMPAIGN_STATUS_BADGE[campaign.status]
+                    return (
+                      <TableRow
+                        key={campaign.campaignId}
+                        className="hover:bg-muted/40"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{campaign.campaignName}</span>
+                            <Badge
+                              variant={statusBadge.variant}
+                              className={statusBadge.className}
+                            >
+                              {campaign.status.replace("_", " ")}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(campaign.totalBudget)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(campaign.reserved)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(campaign.spent)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {formatCurrency(campaign.remaining)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-sm text-muted-foreground"
-                    >
-                      No campaigns yet.
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        No campaigns yet - launch one to see spending here.
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -530,9 +689,20 @@ export function AdvertiserWalletPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Transaction history</CardTitle>
-          <CardDescription>Every ledgered event on your wallet.</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Transaction history</CardTitle>
+            <CardDescription>Every ledgered event on your wallet.</CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!transactions.length}
+            onClick={() => downloadTransactionsCsv(transactions)}
+          >
+            <Download className="size-4" />
+            Download statement
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -550,7 +720,7 @@ export function AdvertiserWalletPage() {
                 transactions.map((transaction) => {
                   const isCredit = CREDIT_TYPES.includes(transaction.type)
                   return (
-                    <TableRow key={transaction.id}>
+                    <TableRow key={transaction.id} className="hover:bg-muted/40">
                       <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </TableCell>
@@ -562,7 +732,7 @@ export function AdvertiserWalletPage() {
                       </TableCell>
                       <TableCell
                         className={
-                          "text-right tabular-nums " +
+                          "text-right font-medium tabular-nums " +
                           (isCredit ? "text-emerald-600 dark:text-emerald-400" : "")
                         }
                       >
@@ -587,11 +757,11 @@ export function AdvertiserWalletPage() {
                 })
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center text-sm text-muted-foreground"
-                  >
-                    No transactions yet.
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      No transactions yet - they&apos;ll show up here once you
+                      add funds or run campaigns.
+                    </p>
                   </TableCell>
                 </TableRow>
               )}
@@ -603,32 +773,34 @@ export function AdvertiserWalletPage() {
   )
 }
 
-function BalanceTile({
+function BalanceStat({
   label,
   value,
   icon: Icon,
-  accent,
+  iconClassName,
+  padded = false,
 }: {
   label: string
   value?: string
   icon: React.ComponentType<{ className?: string }>
-  accent: string
+  iconClassName: string
+  padded?: boolean
 }) {
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="flex items-start justify-between gap-3 pt-6">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {value !== undefined ? formatCurrency(value) : "-"}
-          </p>
-        </div>
-        <div
-          className={`flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${accent} text-white`}
-        >
-          <Icon className="size-4" />
-        </div>
-      </CardContent>
-    </Card>
+    <div
+      className={`flex items-start justify-between gap-3 ${padded ? "sm:pl-6" : ""}`}
+    >
+      <div>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-2xl font-semibold tabular-nums">
+          {value !== undefined ? formatCurrency(value) : "-"}
+        </p>
+      </div>
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-xl text-white ${iconClassName}`}
+      >
+        <Icon className="size-4" />
+      </div>
+    </div>
   )
 }
