@@ -1013,6 +1013,7 @@ export function CampaignWizard({
                         src={form.watch("creativeUrl")}
                         controls
                         muted
+                        playsInline
                         className="max-h-64 max-w-full rounded-md"
                         onError={(event) => {
                           event.currentTarget.style.display = "none"
@@ -1207,18 +1208,13 @@ export function CampaignWizard({
             {step === 3 ? (  /* Budget & schedule */
             <>
             <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-              <div className="flex items-start gap-3 border-b p-6 sm:p-7">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-600">
-                  <Coins className="size-5" />
-                </span>
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">
-                    Budget settings
-                  </h3>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Set a budget that fits your goals.
-                  </p>
-                </div>
+              <div className="border-b p-6 sm:p-7">
+                <h3 className="text-xl font-bold tracking-tight text-foreground">
+                  Budget settings
+                </h3>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Set a budget that fits your goals.
+                </p>
               </div>
 
               <div className="space-y-5 p-6 sm:p-7">

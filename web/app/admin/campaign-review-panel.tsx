@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Check, X } from "lucide-react"
+import { Check, ExternalLink, X } from "lucide-react"
 
 import {
   adminApproveCampaign,
@@ -315,7 +315,7 @@ export function CampaignReviewPanel({
         open={!!approveTarget}
         onOpenChange={(open) => !open && setApproveTarget(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Approve &quot;{approveTarget?.campaignName}&quot;?
@@ -327,6 +327,13 @@ export function CampaignReviewPanel({
               wallet balance and makes the campaign go live immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {/* The dialog used to ask for a yes/no on nothing but the name and
+              budget - approving is a decision about the creative itself, so
+              show what's actually about to go live before the confirm
+              button is even clickable. */}
+          {approveTarget ? <CreativePreview campaign={approveTarget} /> : null}
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -402,6 +409,64 @@ export function CampaignReviewPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+// What the advertiser's own campaign wizard shows them while building the
+// creative (see CampaignPreview in campaign-wizard.tsx), reused here so
+// admins reviewing a submission see the same rendering rather than approving
+// on trust alone.
+function CreativePreview({ campaign }: { campaign: AdminCampaign }) {
+  return (
+    <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Creative ({campaign.creativeType})
+      </p>
+
+      {campaign.creativeType === "html" ? (
+        campaign.creativeHtml ? (
+          <iframe
+            srcDoc={campaign.creativeHtml}
+            sandbox=""
+            title={`${campaign.campaignName} creative preview`}
+            className="h-48 w-full rounded-lg border bg-white"
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">No HTML creative was submitted.</p>
+        )
+      ) : campaign.creativeUrl ? (
+        campaign.creativeType === "video" ? (
+          <video
+            src={campaign.creativeUrl}
+            controls
+            muted
+            playsInline
+            className="max-h-56 w-full rounded-lg border bg-black object-contain"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element -- previewing an arbitrary advertiser-hosted URL, not a static asset
+          <img
+            src={campaign.creativeUrl}
+            alt={`${campaign.campaignName} creative`}
+            className="max-h-56 w-full rounded-lg border object-contain"
+          />
+        )
+      ) : (
+        <p className="text-sm text-muted-foreground">No creative file was uploaded.</p>
+      )}
+
+      {campaign.destinationUrl ? (
+        <a
+          href={campaign.destinationUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 hover:underline"
+        >
+          <ExternalLink className="size-3.5" />
+          {campaign.destinationUrl}
+        </a>
+      ) : null}
     </div>
   )
 }

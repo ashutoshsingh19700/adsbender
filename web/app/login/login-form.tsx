@@ -126,13 +126,14 @@ export function LoginForm() {
 
   const registerPassword = registerForm.watch("password")
 
-  // Set right before the post-auth redirect and never cleared - the
-  // component unmounts on navigation anyway, and keeping the overlay up
-  // through that gap (rather than letting it disappear the instant
-  // router.push() is called) is the whole point: client-side navigation to
-  // a role dashboard that hasn't been prefetched yet, plus that dashboard's
-  // own first render, isn't instantaneous, and a frozen-looking screen in
-  // that gap is exactly what this covers.
+  // True for the entire span from "request sent" through the post-auth
+  // redirect, not just the final redirect gap - flipping it on only once
+  // login()/register() resolved meant the overlay had nothing to cover
+  // during the actual network wait (where the screen looked frozen) and
+  // then flashed on-screen for a frame right as an already-prefetched
+  // destination route took over. Cleared on failure (form is still on
+  // screen for the user to retry); left on through success since the
+  // component unmounts on navigation anyway.
   const [redirecting, setRedirecting] = React.useState(false)
 
   // Warms the Next.js router cache for wherever this login is about to land
@@ -204,11 +205,17 @@ export function LoginForm() {
       return
     }
 
+    // Shown from the moment the request goes out, not just once it resolves
+    // - the login + redirect round trip is where the screen would otherwise
+    // sit frozen with no feedback, and that gap is exactly what the overlay
+    // exists to cover.
+    setRedirecting(true)
     try {
       const { user } = await login({ ...values, captchaToken })
       toast.success(`Signed in as ${user.email}`)
       afterAuth(user)
     } catch (error) {
+      setRedirecting(false)
       toast.error(error instanceof ApiError ? error.message : "Login failed")
       resetCaptcha()
     }
@@ -224,9 +231,11 @@ export function LoginForm() {
       return
     }
 
+    setRedirecting(true)
     try {
       await register({ ...values, role, country, captchaToken })
     } catch (error) {
+      setRedirecting(false)
       toast.error(
         error instanceof ApiError ? error.message : "Registration failed"
       )
@@ -246,6 +255,7 @@ export function LoginForm() {
       })
       afterAuth(user)
     } catch {
+      setRedirecting(false)
       toast.error(
         "Account created, but automatic sign-in failed — please log in below."
       )
@@ -266,7 +276,7 @@ export function LoginForm() {
   )
 
   const card = (
-    <div className="w-full max-w-md rounded-3xl border bg-card p-5 shadow-lg shadow-black/[0.03] sm:p-6">
+    <div className="my-auto w-full max-w-md rounded-3xl border bg-card p-5 shadow-lg shadow-black/[0.03]">
       <div className="inline-flex rounded-full border bg-muted/50 p-1">
         {(["ADVERTISER", "PUBLISHER"] as AudienceRole[]).map((option) => (
           <button
@@ -285,7 +295,7 @@ export function LoginForm() {
         ))}
       </div>
 
-      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">
+      <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
         {mode === "login" ? "Log in as " : "Sign up as "}
         {withArticle(role)}{" "}
         <span className="bg-gradient-to-r from-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
