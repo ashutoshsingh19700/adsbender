@@ -20,7 +20,7 @@ export function RoleAwareShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex">
         <PublisherSidebar />
-        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f6fb]">
+        <div className="flex min-w-0 flex-1 flex-col bg-white">
           <PublisherTopbar />
           <div className="min-w-0 flex-1">{children}</div>
         </div>
@@ -32,7 +32,7 @@ export function RoleAwareShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex">
         <AdvertiserSidebar />
-        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f6fb]">
+        <div className="flex min-w-0 flex-1 flex-col bg-white">
           <AdvertiserTopbar />
           <div className="min-w-0 flex-1">{children}</div>
         </div>

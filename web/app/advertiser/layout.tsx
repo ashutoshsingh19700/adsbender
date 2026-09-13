@@ -23,7 +23,7 @@ export default function AdvertiserLayout({
     <RequireRole roles={["ADVERTISER"]}>
       <div className="flex">
         <AdvertiserSidebar />
-        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f6fb]">
+        <div className="flex min-w-0 flex-1 flex-col bg-white">
           <AdvertiserTopbar />
           <div className="min-w-0 flex-1">{children}</div>
         </div>

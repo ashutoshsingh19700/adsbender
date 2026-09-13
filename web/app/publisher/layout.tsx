@@ -24,7 +24,7 @@ export default function PublisherLayout({
     <RequireRole roles={["PUBLISHER"]}>
       <div className="flex">
         <PublisherSidebar />
-        <div className="flex min-w-0 flex-1 flex-col bg-[#f7f6fb]">
+        <div className="flex min-w-0 flex-1 flex-col bg-white">
           <PublisherTopbar />
           <div className="min-w-0 flex-1">{children}</div>
         </div>
