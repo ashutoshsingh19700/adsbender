@@ -1,6 +1,10 @@
 import type {
+  AdminAdvertiserDetail,
+  AdminAdvertiserSummary,
   AdminCampaign,
   AdminPayout,
+  AdminPublisherDetail,
+  AdminPublisherSummary,
   AdminSite,
   AdminUser,
   AdZone,
@@ -799,6 +803,44 @@ export function adminListUsers(params?: {
 
 export function adminGetUser(userId: string) {
   return apiFetch<AdminUser>(`/api/v1/admin/users/${userId}`)
+}
+
+export function adminListAdvertisers(params?: {
+  page?: number
+  pageSize?: number
+  search?: string
+}) {
+  return apiFetch<Paginated<AdminAdvertiserSummary, "advertisers">>(
+    `/api/v1/admin/advertisers${toQueryString(params ?? {})}`
+  )
+}
+
+export function adminGetAdvertiser(
+  advertiserId: string,
+  params?: { startDate?: string; endDate?: string }
+) {
+  return apiFetch<AdminAdvertiserDetail>(
+    `/api/v1/admin/advertisers/${advertiserId}${toQueryString(params ?? {})}`
+  )
+}
+
+export function adminListPublishers(params?: {
+  page?: number
+  pageSize?: number
+  search?: string
+}) {
+  return apiFetch<Paginated<AdminPublisherSummary, "publishers">>(
+    `/api/v1/admin/publishers${toQueryString(params ?? {})}`
+  )
+}
+
+export function adminGetPublisher(
+  publisherId: string,
+  params?: { startDate?: string; endDate?: string }
+) {
+  return apiFetch<AdminPublisherDetail>(
+    `/api/v1/admin/publishers/${publisherId}${toQueryString(params ?? {})}`
+  )
 }
 
 export function adminListSites(params?: {

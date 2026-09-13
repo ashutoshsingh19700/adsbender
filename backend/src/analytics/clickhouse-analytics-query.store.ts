@@ -161,20 +161,27 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
   async getGroupedMetrics(
     params: GroupedMetricsParams,
   ): Promise<GroupedMetricsRow[]> {
-    // No zones (a brand-new publisher, or a placement filter that resolved
-    // to none of theirs) means no rows - and `zone_id IN ()` isn't valid
-    // SQL, so short-circuit instead of sending it.
-    if (params.zoneIds.length === 0) {
+    // Same "defined-but-empty means zero rows" rule as getTrafficQuality
+    // below - a brand-new publisher/advertiser (or a placement filter that
+    // resolved to none of theirs) must short-circuit rather than send an
+    // invalid `zone_id IN ()` / `campaign_id IN ()`, and must never fall
+    // through to an unscoped query that would leak other tenants' numbers.
+    if (params.zoneIds?.length === 0 || params.campaignIds?.length === 0) {
       return [];
     }
 
-    params.zoneIds.forEach((id) => assertSafeId(id, 'zoneId'));
+    (params.zoneIds ?? []).forEach((id) => assertSafeId(id, 'zoneId'));
+    (params.campaignIds ?? []).forEach((id) => assertSafeId(id, 'campaignId'));
 
     const groupExpr = GROUP_EXPRESSIONS[params.groupBy];
 
-    const zoneIdList = params.zoneIds.map((id) => `'${id}'`).join(', ');
     const extraFilter = [
-      `AND zone_id IN (${zoneIdList})`,
+      params.zoneIds
+        ? `AND zone_id IN (${params.zoneIds.map((id) => `'${id}'`).join(', ')})`
+        : '',
+      params.campaignIds
+        ? `AND campaign_id IN (${params.campaignIds.map((id) => `'${id}'`).join(', ')})`
+        : '',
       params.country
         ? `AND country = '${escapeStringLiteral(params.country)}'`
         : '',

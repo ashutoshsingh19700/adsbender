@@ -185,6 +185,44 @@ export class AdminController {
     return this.adminService.getUser(id, req.user.adminScope);
   }
 
+  // --- Advertisers directory ---
+
+  @AdminScopes('MASTER', 'ADVERTISER')
+  @Get('advertisers')
+  listAdvertisers(
+    @Query() query: { page?: string; pageSize?: string; search?: string },
+  ) {
+    return this.adminService.listAdvertisers(query);
+  }
+
+  @AdminScopes('MASTER', 'ADVERTISER')
+  @Get('advertisers/:id')
+  getAdvertiser(
+    @Param('id') id: string,
+    @Query() query: { startDate?: string; endDate?: string },
+  ) {
+    return this.adminService.getAdvertiser(id, query);
+  }
+
+  // --- Publishers directory ---
+
+  @AdminScopes('MASTER', 'PUBLISHER')
+  @Get('publishers')
+  listPublishers(
+    @Query() query: { page?: string; pageSize?: string; search?: string },
+  ) {
+    return this.adminService.listPublishers(query);
+  }
+
+  @AdminScopes('MASTER', 'PUBLISHER')
+  @Get('publishers/:id')
+  getPublisher(
+    @Param('id') id: string,
+    @Query() query: { startDate?: string; endDate?: string },
+  ) {
+    return this.adminService.getPublisher(id, query);
+  }
+
   // --- Publisher sites ---
 
   @AdminScopes('MASTER', 'PUBLISHER')

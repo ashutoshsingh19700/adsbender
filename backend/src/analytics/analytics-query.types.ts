@@ -47,10 +47,14 @@ export type GroupedMetricsRow = {
 export type GroupedMetricsParams = {
   startDate: string;
   endDate: string;
-  // Restricts the query to this publisher's own ad zones. Required (and may
-  // be empty, which short-circuits to no rows) so one publisher can never
-  // see another's numbers.
-  zoneIds: string[];
+  // Scope filters - same "defined-but-empty means zero rows, never falls
+  // back to unscoped" rule as TrafficQualityParams below. PublisherService
+  // (and AdminService's per-publisher drill-down) pass zoneIds; AdvertiserService
+  // (and AdminService's per-advertiser drill-down) pass campaignIds instead.
+  // At least one of the two must be provided - callers own their own
+  // tenant's ids so one publisher/advertiser can never see another's numbers.
+  zoneIds?: string[];
+  campaignIds?: string[];
   groupBy: GroupDimension;
   country?: string;
   domain?: string;

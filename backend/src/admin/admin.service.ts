@@ -33,6 +33,19 @@ const USER_ADMIN_SELECT = {
   createdAt: true,
 } as const;
 
+const USER_DIRECTORY_SELECT = {
+  ...USER_ADMIN_SELECT,
+  country: true,
+} as const;
+
+const EMPTY_GROUPED_TOTALS = {
+  impressions: 0,
+  clicks: 0,
+  spend: 0,
+  payout: 0,
+  ctr: 0,
+};
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -236,6 +249,262 @@ export class AdminService {
       where: { id: siteId },
       data: { status },
     });
+  }
+
+  // --- Advertisers directory (master/advertiser-scoped admin) ---
+  // Everything MASTER needs to know about one advertiser account in one
+  // call: profile, campaigns, lifetime spend, and where in the world their
+  // delivered impressions/clicks are landing (via GeoIpService-tagged
+  // ClickHouse rows, same country data the publisher-side breakdown uses -
+  // see ClickHouseAnalyticsQueryStore).
+
+  async listAdvertisers(query: {
+    page?: string;
+    pageSize?: string;
+    search?: string;
+  }) {
+    const { skip, take, page, pageSize } = parsePagination(query);
+    const where = this.directoryWhere(UserRole.ADVERTISER, query.search);
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: USER_DIRECTORY_SELECT,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const userIds = users.map((u) => u.id);
+    const campaignStats = userIds.length
+      ? await this.prisma.campaign.groupBy({
+          by: ['advertiserId'],
+          where: { advertiserId: { in: userIds } },
+          _count: { _all: true },
+          _sum: { spentAmount: true },
+        })
+      : [];
+    const statsByAdvertiser = new Map(
+      campaignStats.map((s) => [s.advertiserId, s]),
+    );
+
+    const advertisers = users.map((user) => {
+      const stats = statsByAdvertiser.get(user.id);
+      return {
+        ...user,
+        campaignCount: stats?._count._all ?? 0,
+        totalSpend: new Prisma.Decimal(stats?._sum.spentAmount ?? 0),
+      };
+    });
+
+    return { advertisers, page, pageSize, total };
+  }
+
+  async getAdvertiser(
+    advertiserId: string,
+    query: { startDate?: string; endDate?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: advertiserId },
+      select: USER_DIRECTORY_SELECT,
+    });
+
+    if (!user || user.role !== UserRole.ADVERTISER) {
+      throw new NotFoundException('Advertiser not found');
+    }
+
+    const campaigns = await this.prisma.campaign.findMany({
+      where: { advertiserId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        campaignName: true,
+        status: true,
+        totalBudget: true,
+        spentAmount: true,
+        targetCountries: true,
+        createdAt: true,
+      },
+    });
+
+    const { startDate, endDate } = this.resolveDateRange(query);
+    const campaignIds = campaigns.map((c) => c.id);
+
+    const [byCountry, byDate] = campaignIds.length
+      ? await Promise.all([
+          this.analyticsService.getGroupedMetrics({
+            campaignIds,
+            groupBy: 'country',
+            startDate,
+            endDate,
+          }),
+          this.analyticsService.getGroupedMetrics({
+            campaignIds,
+            groupBy: 'date',
+            startDate,
+            endDate,
+          }),
+        ])
+      : [
+          { rows: [], totals: EMPTY_GROUPED_TOTALS },
+          { rows: [], totals: EMPTY_GROUPED_TOTALS },
+        ];
+
+    return {
+      advertiser: user,
+      campaigns,
+      totalSpend: campaigns.reduce(
+        (sum, c) => sum.plus(c.spentAmount),
+        new Prisma.Decimal(0),
+      ),
+      audienceByCountry: byCountry.rows,
+      trafficByDate: byDate.rows,
+      totals: byCountry.totals,
+      range: { startDate, endDate },
+    };
+  }
+
+  // --- Publishers directory (master/publisher-scoped admin) ---
+  // Mirror of the advertiser directory above, but scoped by this
+  // publisher's ad zones (not campaigns) - profile, sites, payout history,
+  // and their audience's country breakdown.
+
+  async listPublishers(query: {
+    page?: string;
+    pageSize?: string;
+    search?: string;
+  }) {
+    const { skip, take, page, pageSize } = parsePagination(query);
+    const where = this.directoryWhere(UserRole.PUBLISHER, query.search);
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: {
+          ...USER_DIRECTORY_SELECT,
+          wallet: {
+            select: {
+              totalEarned: true,
+              totalWithdrawn: true,
+              pendingEarnings: true,
+            },
+          },
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    const userIds = users.map((u) => u.id);
+    const siteStats = userIds.length
+      ? await this.prisma.publisherSite.groupBy({
+          by: ['publisherId'],
+          where: { publisherId: { in: userIds } },
+          _count: { _all: true },
+        })
+      : [];
+    const siteCountByPublisher = new Map(
+      siteStats.map((s) => [s.publisherId, s._count._all]),
+    );
+
+    const publishers = users.map((user) => ({
+      ...user,
+      siteCount: siteCountByPublisher.get(user.id) ?? 0,
+      totalEarned: new Prisma.Decimal(user.wallet?.totalEarned ?? 0),
+      pendingEarnings: new Prisma.Decimal(user.wallet?.pendingEarnings ?? 0),
+      totalWithdrawn: new Prisma.Decimal(user.wallet?.totalWithdrawn ?? 0),
+    }));
+
+    return { publishers, page, pageSize, total };
+  }
+
+  async getPublisher(
+    publisherId: string,
+    query: { startDate?: string; endDate?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: publisherId },
+      select: {
+        ...USER_DIRECTORY_SELECT,
+        wallet: {
+          select: {
+            totalEarned: true,
+            totalWithdrawn: true,
+            pendingEarnings: true,
+          },
+        },
+      },
+    });
+
+    if (!user || user.role !== UserRole.PUBLISHER) {
+      throw new NotFoundException('Publisher not found');
+    }
+
+    const [sites, zones, payouts] = await Promise.all([
+      this.prisma.publisherSite.findMany({
+        where: { publisherId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          domain: true,
+          status: true,
+          verified: true,
+          country: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.adZone.findMany({
+        where: { publisherId },
+        select: { id: true },
+      }),
+      this.prisma.payout.findMany({
+        where: { userId: publisherId },
+        orderBy: { requestedAt: 'desc' },
+        take: 25,
+      }),
+    ]);
+
+    const { startDate, endDate } = this.resolveDateRange(query);
+    const zoneIds = zones.map((z) => z.id);
+
+    const [byCountry, byDate] = zoneIds.length
+      ? await Promise.all([
+          this.analyticsService.getGroupedMetrics({
+            zoneIds,
+            groupBy: 'country',
+            startDate,
+            endDate,
+          }),
+          this.analyticsService.getGroupedMetrics({
+            zoneIds,
+            groupBy: 'date',
+            startDate,
+            endDate,
+          }),
+        ])
+      : [
+          { rows: [], totals: EMPTY_GROUPED_TOTALS },
+          { rows: [], totals: EMPTY_GROUPED_TOTALS },
+        ];
+
+    return {
+      publisher: {
+        ...user,
+        totalEarned: new Prisma.Decimal(user.wallet?.totalEarned ?? 0),
+        pendingEarnings: new Prisma.Decimal(user.wallet?.pendingEarnings ?? 0),
+        totalWithdrawn: new Prisma.Decimal(user.wallet?.totalWithdrawn ?? 0),
+      },
+      sites,
+      payouts,
+      audienceByCountry: byCountry.rows,
+      trafficByDate: byDate.rows,
+      totals: byCountry.totals,
+      range: { startDate, endDate },
+    };
   }
 
   // --- Platform settings ---
@@ -606,6 +875,45 @@ export class AdminService {
     }
 
     return role as UserRole;
+  }
+
+  // Shared by listAdvertisers/listPublishers - filters to one role plus an
+  // optional case-insensitive name/email substring search.
+  private directoryWhere(
+    role: UserRole,
+    search?: string,
+  ): Prisma.UserWhereInput {
+    const trimmed = search?.trim();
+    return {
+      role,
+      ...(trimmed
+        ? {
+            OR: [
+              { name: { contains: trimmed, mode: 'insensitive' } },
+              { email: { contains: trimmed, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+  }
+
+  // Defaults the advertiser/publisher drill-down's traffic window to the
+  // trailing 30 days when the caller doesn't pick a range - mirrors the
+  // publisher Statistics page's default (see PublisherService).
+  private resolveDateRange(query: { startDate?: string; endDate?: string }) {
+    if (query.startDate && query.endDate) {
+      return { startDate: query.startDate, endDate: query.endDate };
+    }
+
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+
+    const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
+    return {
+      startDate: query.startDate ?? toIsoDate(start),
+      endDate: query.endDate ?? toIsoDate(end),
+    };
   }
 
   private parseVerifiedFilter(verified?: string) {

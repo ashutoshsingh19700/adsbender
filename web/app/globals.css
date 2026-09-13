@@ -161,6 +161,22 @@
   }
 }
 
+/* Sweeping progress bar on the post-login/register loading overlay
+   (auth-loading-overlay.tsx) - the login/redirect gap has no real percent
+   to report, so this just needs to read as "actively working". */
+@keyframes loading-bar-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar-sweep 1.1s ease-in-out infinite;
+}
+
 /* Exact brand CTA gradient — orange → pink → blue, matched to the
    reference "Get Started" button. Used on every primary CTA so the
    sweep is identical pixel-for-pixel everywhere. */

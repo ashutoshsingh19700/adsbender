@@ -354,6 +354,76 @@ export type AdminSite = PublisherSite & { publisher: UserSummary }
 // GET /wallet/admin/payouts
 export type AdminPayout = Payout & { wallet: { user: UserSummary } }
 
+// GET /admin/advertisers, /admin/publishers - country/date breakdown row,
+// same shape the publisher Statistics screen groups by (see StatisticsRow)
+// but unlabeled - `key` is a raw country code ("US") or date ("YYYY-MM-DD").
+export type AdminGroupedRow = {
+  key: string
+  impressions: number
+  clicks: number
+  ctr: number
+  spend: number
+  payout: number
+}
+
+// GET /admin/advertisers
+export type AdminAdvertiserSummary = AdminUser & {
+  country: string | null
+  campaignCount: number
+  totalSpend: string
+}
+
+// GET /admin/advertisers/:id
+export type AdminAdvertiserDetail = {
+  advertiser: AdminUser & { country: string | null }
+  campaigns: {
+    id: string
+    campaignName: string
+    status: CampaignStatus
+    totalBudget: string
+    spentAmount: string
+    targetCountries: string[]
+    createdAt: string
+  }[]
+  totalSpend: string
+  audienceByCountry: AdminGroupedRow[]
+  trafficByDate: AdminGroupedRow[]
+  totals: AnalyticsTotals
+  range: { startDate: string; endDate: string }
+}
+
+// GET /admin/publishers
+export type AdminPublisherSummary = AdminUser & {
+  country: string | null
+  siteCount: number
+  totalEarned: string
+  pendingEarnings: string
+  totalWithdrawn: string
+}
+
+// GET /admin/publishers/:id
+export type AdminPublisherDetail = {
+  publisher: AdminUser & {
+    country: string | null
+    totalEarned: string
+    pendingEarnings: string
+    totalWithdrawn: string
+  }
+  sites: {
+    id: string
+    domain: string
+    status: SiteStatus
+    verified: boolean
+    country: string | null
+    createdAt: string
+  }[]
+  payouts: Payout[]
+  audienceByCountry: AdminGroupedRow[]
+  trafficByDate: AdminGroupedRow[]
+  totals: AnalyticsTotals
+  range: { startDate: string; endDate: string }
+}
+
 // GET /admin/revenue/summary - lifetime, platform-wide financial rollup.
 // All amounts are decimal strings, same convention as the rest of the API.
 export type RevenueSummary = {

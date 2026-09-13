@@ -42,6 +42,7 @@ import {
 } from "@/components/app/turnstile-widget"
 import { GoogleSignInButton } from "@/components/app/google-sign-in-button"
 import { PhoneOtpForm } from "@/components/app/phone-otp-form"
+import { AuthLoadingOverlay } from "@/components/app/auth-loading-overlay"
 import { SignupBenefits } from "./signup-benefits"
 
 type AudienceRole = Extract<UserRole, "ADVERTISER" | "PUBLISHER">
@@ -125,6 +126,27 @@ export function LoginForm() {
 
   const registerPassword = registerForm.watch("password")
 
+  // Set right before the post-auth redirect and never cleared - the
+  // component unmounts on navigation anyway, and keeping the overlay up
+  // through that gap (rather than letting it disappear the instant
+  // router.push() is called) is the whole point: client-side navigation to
+  // a role dashboard that hasn't been prefetched yet, plus that dashboard's
+  // own first render, isn't instantaneous, and a frozen-looking screen in
+  // that gap is exactly what this covers.
+  const [redirecting, setRedirecting] = React.useState(false)
+
+  // Warms the Next.js router cache for wherever this login is about to land
+  // (both role homes - the role toggle can still change right up until
+  // submit - plus the current role's Wallet/Websites-equivalent second
+  // stop) as soon as the form mounts, so by the time login() actually
+  // resolves the destination route's payload is already in hand instead of
+  // being fetched from a standing start after the redirect fires.
+  React.useEffect(() => {
+    router.prefetch(ROLE_HOME.ADVERTISER)
+    router.prefetch(ROLE_HOME.PUBLISHER)
+    router.prefetch(ROLE_HOME.ADMIN)
+  }, [router])
+
   function resetCaptcha() {
     captchaTokenRef.current = null
     setCaptchaToken(null)
@@ -161,6 +183,7 @@ export function LoginForm() {
   // of the one login() just made) purely to fetch data already in hand,
   // which was adding a very noticeable extra delay before the redirect.
   function afterAuth(user: AuthUser) {
+    setRedirecting(true)
     setUser(user)
     const next = searchParams.get("next")
     router.push(next && next.startsWith("/") ? next : ROLE_HOME[user.role])
@@ -536,16 +559,29 @@ export function LoginForm() {
     </div>
   )
 
+  const overlay = (
+    <AuthLoadingOverlay
+      active={redirecting}
+      label={redirecting ? "Signing you in..." : undefined}
+    />
+  )
+
   if (mode === "register") {
     return (
-      <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-stretch">
-        {card}
-        <SignupBenefits role={role} />
-      </div>
+      <>
+        {overlay}
+        <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-stretch">
+          {card}
+          <SignupBenefits role={role} />
+        </div>
+      </>
     )
   }
 
   return (
-    <div className="flex w-full max-w-md justify-center">{card}</div>
+    <>
+      {overlay}
+      <div className="flex w-full max-w-md justify-center">{card}</div>
+    </>
   )
 }

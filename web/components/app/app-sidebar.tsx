@@ -1,13 +1,16 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   BarChart3,
   Globe2,
   LayoutDashboard,
   LineChart,
+  Megaphone,
   Shield,
+  Users2,
   Wallet,
 } from "lucide-react"
 
@@ -27,6 +30,12 @@ type SidebarLink = {
   // under it (e.g. "/publisher/websites/123" should still light up
   // "Websites") - exact-match links (the role home) opt out of that.
   exactMatch?: boolean
+  // Further restricts an ADMIN-role link to specific admin scopes, mirroring
+  // AdminController's @AdminScopes guards (see admin-dashboard.tsx for the
+  // same MASTER/PUBLISHER/ADVERTISER tab-visibility rule) - a scoped admin
+  // hitting a link they can't use would just get a 403 from the API.
+  // Omitted (or the link's roles don't include "ADMIN") means unrestricted.
+  adminScopes?: ("MASTER" | "PUBLISHER" | "ADVERTISER")[]
 }
 
 // Same destinations the old top nav (site-header.tsx) exposed, just
@@ -40,6 +49,8 @@ const LINKS: SidebarLink[] = [
   { href: "/advertiser", label: "Advertiser Studio", icon: LayoutDashboard, roles: ["ADVERTISER"], exactMatch: true },
   { href: "/advertiser/wallet", label: "Wallet", icon: Wallet, roles: ["ADVERTISER"] },
   { href: "/admin", label: "Admin", icon: Shield, roles: ["ADMIN"], exactMatch: true },
+  { href: "/admin/advertisers", label: "Advertisers", icon: Megaphone, roles: ["ADMIN"], adminScopes: ["MASTER", "ADVERTISER"] },
+  { href: "/admin/publishers", label: "Publishers", icon: Users2, roles: ["ADMIN"], adminScopes: ["MASTER", "PUBLISHER"] },
   { href: "/analytics", label: "Analytics", icon: LineChart, roles: ["ADVERTISER", "PUBLISHER", "ADMIN"] },
 ]
 
@@ -48,10 +59,37 @@ const LINKS: SidebarLink[] = [
 export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth()
   const pathname = usePathname()
+  const router = useRouter()
+
+  // A legacy admin with no adminScope set is unrestricted, same as the
+  // backend's AdminScopeGuard MASTER bypass (see admin-dashboard.tsx).
+  const scope = user?.adminScope ?? "MASTER"
+  const links = user
+    ? LINKS.filter(
+        (link) =>
+          link.roles.includes(user.role) &&
+          (!link.adminScopes || link.adminScopes.includes(scope))
+      )
+    : []
+
+  // The current page is already loaded - warm the router cache for every
+  // OTHER link this sidebar shows while the user reads/works on this one,
+  // so switching sections later feels instant instead of triggering a fresh
+  // fetch + render. Deferred with a short timeout (rather than firing
+  // immediately on mount) so it never competes with the current page's own
+  // data requests for bandwidth/main-thread time.
+  const linkHrefs = links.map((l) => l.href).join(",")
+  React.useEffect(() => {
+    if (!linkHrefs) return
+    const timer = setTimeout(() => {
+      for (const href of linkHrefs.split(",")) {
+        if (href !== pathname) router.prefetch(href)
+      }
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [linkHrefs, pathname, router])
 
   if (!user) return null
-
-  const links = LINKS.filter((link) => link.roles.includes(user.role))
 
   return (
     <nav className="flex h-full flex-col gap-0.5 overflow-y-auto px-3 py-5">
