@@ -188,6 +188,7 @@ model User {
   wallet             Wallet?
   paymentOrders      PaymentOrder[]
   beneficiaryAccount BeneficiaryAccount?
+  campaignDraft      CampaignDraft?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -403,6 +404,24 @@ model Campaign {
   @@index([advertiserId])
   @@index([status])
   @@index([advertiserId, status])
+}
+
+// Autosaves the in-progress "New Campaign" wizard so an advertiser never
+// loses partially-filled-in work to a refresh, a closed tab, or a dropped
+// connection - restorable from any device/browser since it lives here
+// rather than in localStorage. One draft per advertiser (upserted on every
+// autosave); deliberately NOT validated against CreateCampaignDto since a
+// draft is by definition incomplete. Deleted once the wizard's campaign is
+// actually submitted (see AdvertiserService.createCampaign).
+model CampaignDraft {
+  advertiserId String @id
+  advertiser   User   @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+
+  // Arbitrary partial wizard form state, shaped like CampaignFormInput on
+  // the frontend (web/app/advertiser/campaign-fields.ts).
+  data Json
+
+  updatedAt DateTime @updatedAt
 }
 
 model AdZone {

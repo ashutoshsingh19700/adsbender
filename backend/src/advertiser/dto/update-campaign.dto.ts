@@ -55,9 +55,10 @@ export class UpdateCampaignDto {
   @MaxLength(120)
   campaignName?: string;
 
+  // Same $10 floor as CreateCampaignDto.totalBudget - see the comment there.
   @IsOptional()
   @IsNumber()
-  @Min(0.01)
+  @Min(10)
   totalBudget?: number;
 
   @IsOptional()

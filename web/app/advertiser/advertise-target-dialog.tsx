@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export type AdvertiseTarget = "website" | "app" | "social_media"
@@ -116,21 +115,29 @@ export function AdvertiseTargetDialog({
 
           <div className="grid gap-1.5">
             <Label htmlFor="intake-landing-url">Landing URL</Label>
-            <Input
-              id="intake-landing-url"
-              placeholder="https://fakirefashion.com"
-              value={landingUrl}
-              onChange={(e) => {
-                setLandingUrl(e.target.value)
-                if (error) setError(null)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  handleNext()
-                }
-              }}
-            />
+            {/* https:// is fixed - only the rest of the address is typed. */}
+            <div className="flex items-stretch overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring">
+              <span className="flex items-center border-r bg-muted px-3 text-sm text-muted-foreground">
+                https://
+              </span>
+              <input
+                id="intake-landing-url"
+                className="w-full bg-transparent px-3 py-2 text-sm outline-none"
+                placeholder="fakirefashion.com"
+                value={landingUrl.replace(/^https?:\/\//i, "")}
+                onChange={(e) => {
+                  const rest = e.target.value.replace(/^https?:\/\//i, "")
+                  setLandingUrl(rest ? `https://${rest}` : "")
+                  if (error) setError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    handleNext()
+                  }
+                }}
+              />
+            </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </div>
         </div>

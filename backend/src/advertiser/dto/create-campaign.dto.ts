@@ -53,8 +53,12 @@ export class CreateCampaignDto {
   @MaxLength(120)
   campaignName: string;
 
+  // $10 floor mirrors the platform's minimum free-wallet-balance requirement
+  // to launch a campaign at all (see AdvertiserService.assertMinimumFreeBalance) -
+  // no point letting someone set up a campaign with a budget smaller than
+  // the balance they'd need anyway.
   @IsNumber()
-  @Min(0.01)
+  @Min(10)
   totalBudget: number;
 
   @IsNumber()

@@ -82,6 +82,20 @@ export const OPERATING_SYSTEMS = [
   { value: "OTHER", label: "Other" },
 ]
 
+// The wizard no longer asks the advertiser to pick devices/OS/connection -
+// there's rarely a reason to narrow reach on day one, and the picker itself
+// added friction. Every campaign now targets all of them by default; these
+// are still stored on the campaign row (and could be exposed as an
+// "edit targeting" advanced option later) so nothing downstream changes.
+export const ALL_DEVICE_VALUES = ["mobile", "desktop", "tablet"] as const
+export const ALL_OS_VALUES = [
+  "IOS",
+  "ANDROID",
+  "WINDOWS",
+  "LINUX",
+  "OTHER",
+] as const
+
 export const CONNECTION_TYPES = [
   { value: "WIFI", label: "Wi-Fi" },
   { value: "MOBILE_DATA", label: "Mobile Data" },
@@ -152,9 +166,11 @@ export const campaignSchema = z
       .string()
       .min(2, "Campaign name must be at least 2 characters")
       .max(120, "Campaign name must be under 120 characters"),
+    // $10 minimum mirrors the wallet balance an advertiser must keep free to
+    // launch a campaign at all - see assertMinimumFreeBalance on the backend.
     totalBudget: z.coerce
       .number()
-      .min(0.01, "Total budget must be at least 0.01"),
+      .min(10, "Total budget must be at least $10"),
     dailyBudget: z.coerce
       .number()
       .min(0.01, "Daily budget must be at least 0.01"),

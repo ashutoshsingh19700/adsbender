@@ -123,10 +123,50 @@ export class AdvertiserService {
       },
     });
 
+    // The wizard's autosaved draft (if any) is now redundant - the real
+    // campaign row exists.
+    await this.prisma.campaignDraft
+      .delete({ where: { advertiserId } })
+      .catch(() => {
+        // No draft to delete - fine, submitting straight from a fresh
+        // wizard session never created one.
+      });
+
     return {
       message: 'Campaign submitted for review',
       campaign,
     };
+  }
+
+  // --- Campaign wizard autosave draft ---
+  // One draft per advertiser, upserted on every autosave from the frontend
+  // (see campaign-wizard.tsx). Not validated as a CreateCampaignDto - a
+  // draft is by definition incomplete - so this is intentionally a raw JSON
+  // passthrough, never touched by AdEngine or any other serving path.
+
+  async getCampaignDraft(advertiserId: string) {
+    const draft = await this.prisma.campaignDraft.findUnique({
+      where: { advertiserId },
+    });
+    return { draft: draft ? draft.data : null, updatedAt: draft?.updatedAt };
+  }
+
+  async saveCampaignDraft(advertiserId: string, data: Record<string, unknown>) {
+    const draft = await this.prisma.campaignDraft.upsert({
+      where: { advertiserId },
+      create: { advertiserId, data: data as Prisma.InputJsonValue },
+      update: { data: data as Prisma.InputJsonValue },
+    });
+    return { updatedAt: draft.updatedAt };
+  }
+
+  async deleteCampaignDraft(advertiserId: string) {
+    await this.prisma.campaignDraft
+      .delete({ where: { advertiserId } })
+      .catch(() => {
+        // Already gone - fine.
+      });
+    return { message: 'Draft cleared' };
   }
 
   // --- List / get ---

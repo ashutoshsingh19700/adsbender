@@ -424,6 +424,28 @@ export function createCampaign(input: CreateCampaignInput) {
   )
 }
 
+// Autosaved "New Campaign" wizard draft - see campaign-wizard.tsx. Restorable
+// from any device/browser since it's backend-persisted rather than kept in
+// localStorage; survives a refresh, a closed tab, or a dropped connection.
+export function getCampaignDraft() {
+  return apiFetch<{ draft: Record<string, unknown> | null; updatedAt?: string }>(
+    "/api/v1/advertiser/campaigns/draft"
+  )
+}
+
+export function saveCampaignDraft(data: Record<string, unknown>) {
+  return apiFetch<{ updatedAt: string }>("/api/v1/advertiser/campaigns/draft", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteCampaignDraft() {
+  return apiFetch<{ message: string }>("/api/v1/advertiser/campaigns/draft", {
+    method: "DELETE",
+  })
+}
+
 export function getAdvertiserProfile() {
   return apiFetch<Profile>("/api/v1/advertiser/me")
 }

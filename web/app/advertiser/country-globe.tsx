@@ -10,22 +10,18 @@ import { cn } from "@/lib/utils"
 
 // react-globe.gl renders to a WebGL canvas and touches `document` on import,
 // so it can only run in the browser - load it client-side only, after
-// mount, never during SSR.
-const Globe = dynamic(() => import("react-globe.gl"), { ssr: false })
+// mount, never during SSR. The wizard kicks this import off as soon as it
+// mounts (see the preloadCountryGlobe() call in campaign-wizard.tsx) instead
+// of waiting for the advertiser to reach the Countries step, so by the time
+// they get there the chunk is usually already warm and the globe doesn't
+// sit on a blank/loading state.
+const loadGlobe = () => import("react-globe.gl")
+const Globe = dynamic(loadGlobe, { ssr: false })
+export function preloadCountryGlobe() {
+  void loadGlobe()
+}
 
 const caveat = Caveat({ subsets: ["latin"], weight: ["600", "700"] })
-
-// A handful of always-visible "showcase" pins (shown even before the
-// advertiser has picked anything) so the globe reads as reaching a global
-// audience from the first render, each in its own accent color. Selected
-// countries always render in the brand orange with a pulsing halo, taking
-// priority over a showcase color for the same country.
-const SHOWCASE_CODES: { code: string; color: string }[] = [
-  { code: "GB", color: "#6366f1" },
-  { code: "US", color: "#8b5cf6" },
-  { code: "JP", color: "#f59e0b" },
-  { code: "AU", color: "#14b8a6" },
-]
 
 const SELECTED_COLOR = "#f43f5e"
 
@@ -45,11 +41,9 @@ function buildMarkers(
   const byCode = new Map(pickableCountries.map((c) => [c.value, c]))
   const markers = new Map<string, Marker>()
 
-  for (const { code, color } of SHOWCASE_CODES) {
-    const c = byCode.get(code)
-    if (!c) continue
-    markers.set(code, { code, lat: c.lat, lng: c.lng, label: c.label, color, selected: false })
-  }
+  // Only countries the advertiser has actually picked get a pin - no
+  // pre-marked "showcase" countries, which used to make the globe look like
+  // something was already selected before the advertiser touched anything.
   for (const code of selectedCountries) {
     const c = byCode.get(code)
     if (!c) continue
@@ -179,7 +173,14 @@ export function CountryGlobe({
         />
       </svg>
 
-      <div ref={containerRef} className="absolute inset-[8%] overflow-visible">
+      <div
+        ref={containerRef}
+        className="absolute inset-[8%] overflow-visible"
+        // The stock earth-blue-marble texture reads a bit muddy/dull at this
+        // size - punch up saturation/contrast/brightness so the globe feels
+        // more lively without swapping the texture itself.
+        style={{ filter: "saturate(1.5) brightness(1.12) contrast(1.08)" }}
+      >
         {mounted ? (
           <Globe
             ref={globeRef}
@@ -189,8 +190,8 @@ export function CountryGlobe({
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
             bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
             showAtmosphere
-            atmosphereColor="#7dd3fc"
-            atmosphereAltitude={0.22}
+            atmosphereColor="#38bdf8"
+            atmosphereAltitude={0.25}
             htmlElementsData={markers}
             htmlLat="lat"
             htmlLng="lng"

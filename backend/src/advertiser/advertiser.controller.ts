@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -86,6 +87,28 @@ export class AdvertiserController {
     @Query() query: { page?: string; pageSize?: string; status?: string },
   ) {
     return this.advertiserService.listCampaigns(req.user.id, query);
+  }
+
+  // Autosaved "New Campaign" wizard draft - lets an advertiser resume a
+  // half-filled-in campaign after a refresh, a closed tab, a dropped
+  // connection, or from a different device entirely. Declared before
+  // campaigns/:id below so "draft" is never swallowed as an :id.
+  @Get('campaigns/draft')
+  getCampaignDraft(@Req() req: AuthenticatedRequest) {
+    return this.advertiserService.getCampaignDraft(req.user.id);
+  }
+
+  @Put('campaigns/draft')
+  saveCampaignDraft(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.advertiserService.saveCampaignDraft(req.user.id, body);
+  }
+
+  @Delete('campaigns/draft')
+  deleteCampaignDraft(@Req() req: AuthenticatedRequest) {
+    return this.advertiserService.deleteCampaignDraft(req.user.id);
   }
 
   // Countries the campaign wizard's targeting picker should offer - see
