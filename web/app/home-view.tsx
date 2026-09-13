@@ -29,6 +29,58 @@ const SIGNUP_OFFERS = [
   },
 ] as const
 
+// Extracted hero video into its own component so it can manage a ref for
+// manual looping — the native `loop` attribute restarts playback so fast
+// that the first frame renders twice back-to-back (the "double-start"
+// stutter). Listening for `ended` + seeking + replaying after one rAF
+// avoids that. The watermark-covering overlay is co-located here too.
+function HeroVideo() {
+  const ref = React.useRef<HTMLVideoElement>(null)
+
+  React.useEffect(() => {
+    const v = ref.current
+    if (!v) return
+
+    function handleEnded() {
+      if (!v) return
+      v.currentTime = 0
+      requestAnimationFrame(() => {
+        v.play().catch(() => {})
+      })
+    }
+
+    v.addEventListener("ended", handleEnded)
+    return () => v.removeEventListener("ended", handleEnded)
+  }, [])
+
+  return (
+    <div className="relative overflow-hidden">
+      <video
+        ref={ref}
+        src="/hero/hero-explainer.mp4"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        disableRemotePlayback
+        controlsList="nodownload nofullscreen noremoteplayback"
+        x-webkit-airplay="deny"
+        aria-label="AdsBender product explainer: too many ad platforms, too much complexity, brought together into one dashboard for better results"
+        className="h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_22%,black_78%,transparent),linear-gradient(to_right,transparent,black_20%,black_80%,transparent)] [mask-composite:intersect] [-webkit-mask-composite:source-in]"
+      />
+      {/* Watermark cover — opaque background-colored rectangle over the
+          bottom-right area where the Gemini logo sits in the mp4. The
+          gradient feathers its edges so it blends invisibly into the
+          already-faded video edge. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-0 right-0 h-[60px] w-[160px] bg-gradient-to-tl from-background via-background/90 to-transparent"
+      />
+    </div>
+  )
+}
+
 export function HomeView() {
   const { user, loading } = useAuth()
   const router = useRouter()
@@ -65,19 +117,11 @@ export function HomeView() {
                 page background rather than boxed in a card, so it reads as
                 part of the page rather than a video embed. */}
             <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-              <video
-                src="/hero/hero-explainer.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                disablePictureInPicture
-                disableRemotePlayback
-                controlsList="nodownload nofullscreen noremoteplayback"
-                aria-label="AdsBender product explainer: too many ad platforms, too much complexity, brought together into one dashboard for better results"
-                className="h-auto w-full [mask-image:linear-gradient(to_bottom,transparent,black_22%,black_78%,transparent),linear-gradient(to_right,transparent,black_20%,black_80%,transparent)] [mask-composite:intersect] [-webkit-mask-composite:source-in]"
-              />
+              {/* Wrapper handles watermark masking — the ::after overlay
+                  paints a background-colored patch over the bottom-right
+                  corner where the Gemini watermark is baked into the mp4.
+                  pointer-events:none so nothing underneath is blocked. */}
+              <HeroVideo />
             </div>
 
             {/* Right: copy */}
