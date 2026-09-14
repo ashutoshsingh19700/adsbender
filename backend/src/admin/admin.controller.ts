@@ -47,6 +47,15 @@ export class AdminController {
     return this.adminService.listCampaigns(query);
   }
 
+  // Declared before campaigns/:id - Nest matches routes in registration
+  // order, so this literal segment must come first or campaigns/:id would
+  // swallow it (id = "status-counts").
+  @AdminScopes('MASTER', 'ADVERTISER')
+  @Get('campaigns/status-counts')
+  getCampaignStatusCounts() {
+    return this.adminService.getCampaignStatusCounts();
+  }
+
   @AdminScopes('MASTER', 'ADVERTISER')
   @Get('campaigns/:id')
   getCampaign(@Param('id') id: string) {

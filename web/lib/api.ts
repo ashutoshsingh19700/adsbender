@@ -834,6 +834,14 @@ export function adminListCampaigns(params?: {
   )
 }
 
+// One groupBy on the backend instead of a separate listCampaigns call per
+// status - see AdminOverview, the only current caller.
+export function adminGetCampaignStatusCounts() {
+  return apiFetch<Record<CampaignStatus, number>>(
+    "/api/v1/admin/campaigns/status-counts"
+  )
+}
+
 export function adminGetCampaign(campaignId: string) {
   return apiFetch<AdminCampaign>(`/api/v1/admin/campaigns/${campaignId}`)
 }

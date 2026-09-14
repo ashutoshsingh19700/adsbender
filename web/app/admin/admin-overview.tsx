@@ -4,21 +4,13 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import {
-  adminListCampaigns,
+  adminGetCampaignStatusCounts,
   adminListSites,
   adminListUsers,
   ApiError,
 } from "@/lib/api"
 import type { CampaignStatus } from "@/lib/types"
 import { StatCard } from "@/components/app/stat-card"
-
-const STATUSES: CampaignStatus[] = [
-  "PENDING_REVIEW",
-  "ACTIVE",
-  "PAUSED",
-  "COMPLETED",
-  "ARCHIVED",
-]
 
 // Platform-wide oversight numbers - only ADMIN-role accounts ever reach
 // this page (see <RequireRole> in admin/page.tsx), but a PUBLISHER- or
@@ -49,23 +41,13 @@ export function AdminOverview({
     setLoading(true)
 
     Promise.all([
-      canSeeCampaigns
-        ? Promise.all(
-            STATUSES.map((status) =>
-              adminListCampaigns({ status, pageSize: 1 }).then(
-                (r) => [status, r.total] as const
-              )
-            )
-          )
-        : Promise.resolve(null),
+      canSeeCampaigns ? adminGetCampaignStatusCounts() : Promise.resolve(null),
       adminListUsers({ pageSize: 1 }),
       canSeeSites ? adminListSites({ pageSize: 1 }) : Promise.resolve(null),
     ])
-      .then(([statusPairs, users, sites]) => {
+      .then(([statusCounts, users, sites]) => {
         if (cancelled) return
-        if (statusPairs) {
-          setCounts(Object.fromEntries(statusPairs) as Record<CampaignStatus, number>)
-        }
+        if (statusCounts) setCounts(statusCounts)
         setUserCount(users.total)
         if (sites) setSiteCount(sites.total)
       })

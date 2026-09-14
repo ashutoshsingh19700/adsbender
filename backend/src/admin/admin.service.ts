@@ -86,6 +86,25 @@ export class AdminService {
     return { campaigns, page, pageSize, total };
   }
 
+  // Backs AdminOverview's stat cards - used to be 5 separate
+  // listCampaigns({status, pageSize: 1}) calls (one per CampaignStatus)
+  // just to read off each .total, one groupBy instead.
+  async getCampaignStatusCounts(): Promise<Record<CampaignStatus, number>> {
+    const grouped = await this.prisma.campaign.groupBy({
+      by: ['status'],
+      _count: { _all: true },
+    });
+    const counts = Object.fromEntries(
+      grouped.map((g) => [g.status, g._count._all]),
+    ) as Record<CampaignStatus, number>;
+
+    for (const status of Object.values(CampaignStatus)) {
+      counts[status] ??= 0;
+    }
+
+    return counts;
+  }
+
   async getCampaign(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
