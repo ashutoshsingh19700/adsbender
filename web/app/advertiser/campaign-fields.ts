@@ -139,8 +139,16 @@ export const AD_FORMAT_VALUES = AD_FORMATS.map((f) => f.value) as [
 // AD_FORMAT_VALUES and schema.prisma for any campaign that already uses it.
 const PICKER_HIDDEN_AD_FORMATS = new Set(["FLOATING_SIDEBAR"])
 
+// Legacy (Social Bar / Native Banner / In-Page Push) is deliberately NOT
+// offered here even though the values stay valid in AD_FORMATS/
+// AD_FORMAT_VALUES/schema.prisma for existing campaigns - a publisher's
+// zone-creation picker has no corresponding option for any of these three
+// (see zone-form.ts's own, unrelated "Legacy" category), so a NEW campaign
+// built with one could never actually match a zone and would just never
+// serve. Same FLOATING_SIDEBAR-style "still valid, not offered" pattern as
+// PICKER_HIDDEN_AD_FORMATS below, just for a whole category instead of one
+// value.
 export const GROUPED_AD_FORMATS = [
-  { category: "Legacy" as const, formats: LEGACY_AD_FORMATS },
   ...AD_FORMAT_CATEGORIES.map((category) => ({
     category,
     formats: AD_FORMAT_CATALOG.filter(
