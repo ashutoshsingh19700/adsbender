@@ -68,6 +68,34 @@ export type RenderFamily =
   | "video_overlay"
   | "newsletter"
 
+// Where this format actually lands on a real page, used to draw the
+// phone/laptop "where will my ad show up" preview (see
+// components/app/ad-format-device-preview.tsx). More specific than
+// RenderFamily - two "inline" formats can render in completely different
+// spots (a leaderboard sits under the header, a medium rectangle sits mid-
+// article), so the preview needs its own placement per format.
+export type PreviewSlot =
+  | "top-banner"
+  | "hero-banner"
+  | "sticky-top"
+  | "sticky-bottom"
+  | "sidebar"
+  | "floating-side"
+  | "floating-corner"
+  | "in-content"
+  | "native-feed"
+  | "modal"
+  | "exit-intent"
+  | "popunder"
+  | "welcome-overlay"
+  | "fullscreen-interstitial"
+  | "page-transition"
+  | "video-preroll"
+  | "video-midroll"
+  | "video-postroll"
+  | "video-overlay"
+  | "email"
+
 export type AdFormatDefinition = {
   value: string
   label: string
@@ -77,6 +105,7 @@ export type AdFormatDefinition = {
   recommendedWidth: number
   recommendedHeight: number
   renderFamily: RenderFamily
+  previewSlot: PreviewSlot
 }
 
 export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
@@ -90,6 +119,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 728,
     recommendedHeight: 90,
     renderFamily: "inline",
+    previewSlot: "top-banner",
   },
   {
     value: "LEADERBOARD",
@@ -100,6 +130,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 970,
     recommendedHeight: 90,
     renderFamily: "inline",
+    previewSlot: "top-banner",
   },
   {
     value: "MEDIUM_RECTANGLE_300X250",
@@ -110,6 +141,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 250,
     renderFamily: "inline",
+    previewSlot: "in-content",
   },
   {
     value: "LARGE_RECTANGLE_336X280",
@@ -120,6 +152,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 336,
     recommendedHeight: 280,
     renderFamily: "inline",
+    previewSlot: "in-content",
   },
   {
     value: "STICKY_BANNER",
@@ -130,6 +163,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 320,
     recommendedHeight: 50,
     renderFamily: "sticky",
+    previewSlot: "sticky-bottom",
   },
 
   // --- Sidebar Ads ---
@@ -142,6 +176,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 160,
     recommendedHeight: 600,
     renderFamily: "inline",
+    previewSlot: "sidebar",
   },
   {
     value: "WIDE_SKYSCRAPER_300X600",
@@ -152,6 +187,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 600,
     renderFamily: "inline",
+    previewSlot: "sidebar",
   },
   {
     value: "STICKY_SIDEBAR",
@@ -162,6 +198,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 600,
     renderFamily: "sticky",
+    previewSlot: "sidebar",
   },
   {
     value: "FLOATING_SIDEBAR",
@@ -172,6 +209,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 160,
     recommendedHeight: 600,
     renderFamily: "floating",
+    previewSlot: "floating-side",
   },
 
   // --- Native Ads ---
@@ -184,6 +222,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 728,
     recommendedHeight: 250,
     renderFamily: "native",
+    previewSlot: "in-content",
   },
   {
     value: "IN_FEED",
@@ -194,6 +233,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 250,
     renderFamily: "native",
+    previewSlot: "native-feed",
   },
   {
     value: "RECOMMENDED_CONTENT",
@@ -204,6 +244,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 250,
     renderFamily: "native",
+    previewSlot: "native-feed",
   },
   {
     value: "SPONSORED_WIDGET",
@@ -214,6 +255,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 300,
     renderFamily: "native",
+    previewSlot: "sidebar",
   },
 
   // --- Popup & Overlay Ads ---
@@ -226,6 +268,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 500,
     recommendedHeight: 400,
     renderFamily: "popup",
+    previewSlot: "modal",
   },
   {
     value: "POPUNDER",
@@ -236,6 +279,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 800,
     recommendedHeight: 600,
     renderFamily: "popunder",
+    previewSlot: "popunder",
   },
   {
     value: "EXIT_INTENT_POPUP",
@@ -246,6 +290,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 500,
     recommendedHeight: 400,
     renderFamily: "exit_intent",
+    previewSlot: "exit-intent",
   },
   {
     value: "FLOATING_OVERLAY",
@@ -256,6 +301,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 300,
     recommendedHeight: 250,
     renderFamily: "floating",
+    previewSlot: "floating-corner",
   },
   {
     value: "WELCOME_SCREEN",
@@ -266,6 +312,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 640,
     recommendedHeight: 480,
     renderFamily: "welcome_screen",
+    previewSlot: "welcome-overlay",
   },
 
   // --- Interstitial Ads ---
@@ -278,6 +325,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 1024,
     recommendedHeight: 768,
     renderFamily: "interstitial",
+    previewSlot: "fullscreen-interstitial",
   },
   {
     value: "PAGE_TRANSITION_INTERSTITIAL",
@@ -288,6 +336,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 1024,
     recommendedHeight: 768,
     renderFamily: "page_transition",
+    previewSlot: "page-transition",
   },
 
   // --- Video Ads ---
@@ -300,6 +349,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 640,
     recommendedHeight: 360,
     renderFamily: "video",
+    previewSlot: "video-preroll",
   },
   {
     value: "MID_ROLL",
@@ -310,6 +360,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 640,
     recommendedHeight: 360,
     renderFamily: "video",
+    previewSlot: "video-midroll",
   },
   {
     value: "POST_ROLL",
@@ -320,6 +371,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 640,
     recommendedHeight: 360,
     renderFamily: "video",
+    previewSlot: "video-postroll",
   },
   {
     value: "VIDEO_OVERLAY",
@@ -330,6 +382,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 480,
     recommendedHeight: 70,
     renderFamily: "video_overlay",
+    previewSlot: "video-overlay",
   },
 
   // --- Premium Inventory ---
@@ -342,6 +395,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 1200,
     recommendedHeight: 400,
     renderFamily: "inline",
+    previewSlot: "hero-banner",
   },
   {
     value: "NEWSLETTER_SPONSORSHIP",
@@ -352,6 +406,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 600,
     recommendedHeight: 200,
     renderFamily: "newsletter",
+    previewSlot: "email",
   },
   {
     value: "SPONSORED_BLOG_POST",
@@ -362,6 +417,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 728,
     recommendedHeight: 90,
     renderFamily: "inline",
+    previewSlot: "in-content",
   },
   {
     value: "SPONSORED_SECTION",
@@ -372,6 +428,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 970,
     recommendedHeight: 250,
     renderFamily: "inline",
+    previewSlot: "in-content",
   },
   {
     value: "STICKY_BOTTOM_BANNER",
@@ -382,6 +439,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 320,
     recommendedHeight: 50,
     renderFamily: "floating",
+    previewSlot: "sticky-bottom",
   },
   {
     value: "FLOATING_CORNER_AD",
@@ -392,6 +450,7 @@ export const AD_FORMAT_CATALOG: AdFormatDefinition[] = [
     recommendedWidth: 250,
     recommendedHeight: 250,
     renderFamily: "floating",
+    previewSlot: "floating-corner",
   },
 ]
 

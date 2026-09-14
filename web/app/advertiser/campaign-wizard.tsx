@@ -48,6 +48,7 @@ import {
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
+import { AdFormatDevicePreview } from "@/components/app/ad-format-device-preview"
 import {
   AdvertiseTargetDialog,
   type AdvertiseTarget,
@@ -743,70 +744,80 @@ export function CampaignWizard({
                       </p>
                     </div>
 
-                    <div className="mt-5 flex gap-4">
-                      {/* Category rail - one icon per ad-unit category; pick
-                          one to reveal its tiles alongside it. Replaces the
-                          old dropdown so every category is visible at a
-                          glance instead of hidden behind a click. */}
-                      <div className="flex shrink-0 flex-col gap-1.5">
-                        {GROUPED_AD_FORMATS.map((group) => {
-                          const Icon = CATEGORY_ICONS[group.category] ?? Layers
-                          const active = group.category === adFormatCategory
-                          return (
-                            <button
-                              key={group.category}
-                              type="button"
-                              title={group.category}
-                              aria-label={group.category}
-                              aria-pressed={active}
-                              onClick={() => setAdFormatCategory(group.category)}
-                              className={cn(
-                                "flex size-11 items-center justify-center rounded-xl border transition-colors sm:size-12",
-                                active
-                                  ? "tile-select"
-                                  : "border-border text-muted-foreground tile-select-hover"
-                              )}
-                            >
-                              <Icon className="size-5" />
-                            </button>
-                          )
-                        })}
-                      </div>
+                    <div className="mt-5 flex flex-col gap-6 lg:flex-row">
+                      <div className="flex flex-1 gap-4">
+                        {/* Category rail - one icon per ad-unit category; pick
+                            one to reveal its tiles alongside it. Replaces the
+                            old dropdown so every category is visible at a
+                            glance instead of hidden behind a click. */}
+                        <div className="flex shrink-0 flex-col gap-1.5">
+                          {GROUPED_AD_FORMATS.map((group) => {
+                            const Icon = CATEGORY_ICONS[group.category] ?? Layers
+                            const active = group.category === adFormatCategory
+                            return (
+                              <button
+                                key={group.category}
+                                type="button"
+                                title={group.category}
+                                aria-label={group.category}
+                                aria-pressed={active}
+                                onClick={() => setAdFormatCategory(group.category)}
+                                className={cn(
+                                  "flex size-11 items-center justify-center rounded-xl border transition-colors sm:size-12",
+                                  active
+                                    ? "tile-select"
+                                    : "border-border text-muted-foreground tile-select-hover"
+                                )}
+                              >
+                                <Icon className="size-5" />
+                              </button>
+                            )
+                          })}
+                        </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-3 text-sm font-medium text-foreground">
-                          {activeGroup.category}
-                        </p>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {activeGroup.formats.map((format) => (
-                            <AdUnitTile
-                              key={format.value}
-                              icon={AD_FORMAT_ICONS[format.value] ?? Layers}
-                              label={format.label}
-                              sublabel={
-                                getAdFormat(format.value)
-                                  ? `${getAdFormat(format.value)!.recommendedWidth}×${
-                                      getAdFormat(format.value)!.recommendedHeight
-                                    }`
-                                  : undefined
-                              }
-                              description={
-                                getAdFormat(format.value)?.description ??
-                                LEGACY_AD_FORMAT_DESCRIPTIONS[format.value]
-                              }
-                              badge={AD_FORMAT_BADGE[format.value]}
-                              rate={adFormatPricing[format.value]}
-                              selected={adFormat === format.value}
-                              onClick={() =>
-                                form.setValue("adFormat", format.value, {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                })
-                              }
-                            />
-                          ))}
+                        <div className="min-w-0 flex-1">
+                          <p className="mb-3 text-sm font-medium text-foreground">
+                            {activeGroup.category}
+                          </p>
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {activeGroup.formats.map((format) => (
+                              <AdUnitTile
+                                key={format.value}
+                                icon={AD_FORMAT_ICONS[format.value] ?? Layers}
+                                label={format.label}
+                                sublabel={
+                                  getAdFormat(format.value)
+                                    ? `${getAdFormat(format.value)!.recommendedWidth}×${
+                                        getAdFormat(format.value)!.recommendedHeight
+                                      }`
+                                    : undefined
+                                }
+                                description={
+                                  getAdFormat(format.value)?.description ??
+                                  LEGACY_AD_FORMAT_DESCRIPTIONS[format.value]
+                                }
+                                badge={AD_FORMAT_BADGE[format.value]}
+                                rate={adFormatPricing[format.value]}
+                                selected={adFormat === format.value}
+                                onClick={() =>
+                                  form.setValue("adFormat", format.value, {
+                                    shouldValidate: true,
+                                    shouldDirty: true,
+                                  })
+                                }
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Real preview of the currently-selected format on a
+                          phone/laptop screen, not just the dimensions - see
+                          components/app/ad-format-device-preview.tsx. */}
+                      <AdFormatDevicePreview
+                        format={getAdFormat(adFormat)}
+                        className="w-full shrink-0 lg:w-[280px]"
+                      />
                     </div>
                     <FormMessage />
                   </FormItem>

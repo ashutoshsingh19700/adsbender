@@ -55,6 +55,7 @@ import { AdZoneManager } from "@/app/publisher/ad-zone-manager"
 import { PublisherOverview } from "@/app/publisher/publisher-overview"
 import { GROUPED_LAYOUT_TYPES, zoneSchema } from "@/app/publisher/zone-form"
 import { getAdFormat, type AdFormatCategory } from "@/lib/ad-formats"
+import { AdFormatDevicePreview } from "@/components/app/ad-format-device-preview"
 
 // Same tile-shade / tile-hover selectable-card treatment as the advertiser's
 // "What do you want to advertise?" picker (see
@@ -810,10 +811,15 @@ export function PublisherDashboard() {
               />
               </div>
 
-              <ZonePreview
-                width={Number(zoneForm.watch("width")) || 0}
-                height={Number(zoneForm.watch("height")) || 0}
-              />
+              <div className="flex flex-col gap-4 sm:w-40 lg:w-[260px]">
+                <ZonePreview
+                  width={Number(zoneForm.watch("width")) || 0}
+                  height={Number(zoneForm.watch("height")) || 0}
+                />
+                {/* Where this format actually lands on a real page - see
+                    components/app/ad-format-device-preview.tsx. */}
+                <AdFormatDevicePreview format={getAdFormat(zoneForm.watch("layoutType"))} />
+              </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={zoneForm.formState.isSubmitting}>

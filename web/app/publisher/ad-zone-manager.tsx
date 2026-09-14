@@ -33,7 +33,8 @@ import {
   zoneSchema,
   type ZoneFormOutput,
 } from "@/app/publisher/zone-form"
-import { adFormatLabel } from "@/lib/ad-formats"
+import { adFormatLabel, getAdFormat } from "@/lib/ad-formats"
+import { AdFormatDevicePreview } from "@/components/app/ad-format-device-preview"
 
 import {
   AlertDialog,
@@ -531,6 +532,7 @@ function ZoneEditDialog({
                 </FormItem>
               )}
             />
+            <AdFormatDevicePreview format={getAdFormat(form.watch("layoutType"))} />
             <DialogFooter>
               <Button
                 type="button"
