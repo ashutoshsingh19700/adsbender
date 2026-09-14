@@ -11,7 +11,7 @@ export const VISITOR_FREQUENCY_CAP_STORE = Symbol(
 // Every campaign is still capped somehow - there's no env var to disable
 // capping globally, only to tune the default.
 const DEFAULT_IMPRESSION_LIMIT = Number(
-  process.env.VISITOR_FREQUENCY_CAP_IMPRESSIONS ?? 3,
+  process.env.VISITOR_FREQUENCY_CAP_IMPRESSIONS ?? 1,
 );
 const DEFAULT_WINDOW_SECONDS = Number(
   process.env.VISITOR_FREQUENCY_CAP_WINDOW_SECONDS ?? 86400,

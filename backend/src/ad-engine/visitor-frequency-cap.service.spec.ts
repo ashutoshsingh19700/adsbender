@@ -30,7 +30,7 @@ describe('VisitorFrequencyCapService', () => {
   });
 
   it('allows a visitor under the platform-default impression limit when the campaign sets no override', async () => {
-    store.get.mockResolvedValue(2);
+    store.get.mockResolvedValue(0);
 
     await expect(service.isCapped('visitor-1', 'campaign-1')).resolves.toBe(
       false,
@@ -38,8 +38,8 @@ describe('VisitorFrequencyCapService', () => {
     expect(store.get).toHaveBeenCalledWith('freqcap:campaign-1:visitor-1');
   });
 
-  it('caps a visitor at the platform-default limit (3) when the campaign sets no override', async () => {
-    store.get.mockResolvedValue(3);
+  it('caps a visitor at the platform-default limit (1) when the campaign sets no override', async () => {
+    store.get.mockResolvedValue(1);
 
     await expect(service.isCapped('visitor-1', 'campaign-1')).resolves.toBe(
       true,
