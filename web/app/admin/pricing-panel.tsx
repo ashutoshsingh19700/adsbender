@@ -7,8 +7,10 @@ import { Save } from "lucide-react"
 import {
   adminGetAdFormatPricing,
   adminGetMinAdvertiserBalance,
+  adminGetPlatformFee,
   adminUpdateAdFormatPricing,
   adminUpdateMinAdvertiserBalance,
+  adminUpdatePlatformFee,
   ApiError,
   type AdFormatRate,
 } from "@/lib/api"
@@ -57,6 +59,14 @@ export function PricingPanel() {
   const [minBalanceLoading, setMinBalanceLoading] = React.useState(true)
   const [minBalanceSaving, setMinBalanceSaving] = React.useState(false)
 
+  // Shown/edited as a percent (e.g. "20") for admin friendliness - the API
+  // itself is basis points (platformFeeBps: 2000 = 20.00%), converted at
+  // the edges below. See MoneyFlowPanel, which reads and displays the same
+  // setting read-only and points here to change it.
+  const [platformFeePercent, setPlatformFeePercent] = React.useState("")
+  const [platformFeeLoading, setPlatformFeeLoading] = React.useState(true)
+  const [platformFeeSaving, setPlatformFeeSaving] = React.useState(false)
+
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     ;(async () => {
@@ -99,6 +109,23 @@ export function PricingPanel() {
         setMinBalanceLoading(false)
       }
     })()
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    ;(async () => {
+      setPlatformFeeLoading(true)
+      try {
+        const { platformFeePercent } = await adminGetPlatformFee()
+        setPlatformFeePercent(String(platformFeePercent))
+      } catch (error) {
+        toast.error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not load the platform fee"
+        )
+      } finally {
+        setPlatformFeeLoading(false)
+      }
+    })()
   }, [])
 
   async function handleSaveMinBalance() {
@@ -120,6 +147,29 @@ export function PricingPanel() {
       )
     } finally {
       setMinBalanceSaving(false)
+    }
+  }
+
+  async function handleSavePlatformFee() {
+    const percent = Number(platformFeePercent)
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      toast.error("Enter a valid percentage between 0 and 100")
+      return
+    }
+
+    setPlatformFeeSaving(true)
+    try {
+      const { platformFeePercent: saved } = await adminUpdatePlatformFee(
+        Math.round(percent * 100)
+      )
+      setPlatformFeePercent(String(saved))
+      toast.success("Platform fee updated")
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not save"
+      )
+    } finally {
+      setPlatformFeeSaving(false)
     }
   }
 
@@ -163,6 +213,43 @@ export function PricingPanel() {
         model. Changes appear in the campaign wizard&apos;s &quot;Ad
         format&quot; step within a few seconds.
       </p>
+
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <div>
+            <p className="text-sm font-medium">Platform fee</p>
+            <p className="text-sm text-muted-foreground">
+              Cut kept from every dollar of ad spend before crediting the
+              publisher (see Money Flow for a worked example). Defaults to
+              20%.
+            </p>
+          </div>
+          {platformFeeLoading ? (
+            <Skeleton className="h-10 w-48" />
+          ) : (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                className="w-32"
+                value={platformFeePercent}
+                onChange={(e) => setPlatformFeePercent(e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+              <Button
+                size="sm"
+                onClick={handleSavePlatformFee}
+                disabled={platformFeeSaving}
+              >
+                <Save className="size-4" />
+                {platformFeeSaving ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="space-y-3 pt-6">

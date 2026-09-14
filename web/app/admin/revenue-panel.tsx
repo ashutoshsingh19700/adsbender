@@ -35,9 +35,12 @@ const chartConfig = {
   margin: { label: "Platform revenue", color: "var(--chart-4)" },
 } satisfies ChartConfig
 
-// Platform-wide margin over time: the same 70/30 split baked into
-// ClickHouseAnalyticsQueryStore (payout = spend * 0.7), shown as the
-// difference so admins can see the take, not just the two inputs.
+// Platform-wide margin over time: `payout` here already reflects the
+// live, configurable platform fee (ClickHouseAnalyticsQueryStore derives
+// it from PlatformSettingsService.platformFeeBps - 80% of spend at the
+// 20% default, not a fixed ratio), shown as spend-minus-payout so admins
+// see the take directly rather than having to subtract the two inputs
+// themselves.
 export function RevenuePanel() {
   const [range, setRange] = React.useState(defaultDateRange)
   const [trend, setTrend] = React.useState<AnalyticsResponse | null>(null)

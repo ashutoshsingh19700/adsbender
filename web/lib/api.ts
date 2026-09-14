@@ -807,6 +807,21 @@ export function adminUpdateMinAdvertiserBalance(
   )
 }
 
+// Basis points, not a float percentage (2000 = 20.00%) - see
+// UpdatePlatformFeeDto/PlatformSetting.platformFeeBps in the backend.
+export function adminGetPlatformFee() {
+  return apiFetch<{ platformFeeBps: number; platformFeePercent: number }>(
+    "/api/v1/admin/settings/platform-fee"
+  )
+}
+
+export function adminUpdatePlatformFee(platformFeeBps: number) {
+  return apiFetch<{ platformFeeBps: number; platformFeePercent: number }>(
+    "/api/v1/admin/settings/platform-fee",
+    { method: "PATCH", body: JSON.stringify({ platformFeeBps }) }
+  )
+}
+
 // --- Admin: campaign review, users, publisher sites ---
 
 export function adminListCampaigns(params?: {
