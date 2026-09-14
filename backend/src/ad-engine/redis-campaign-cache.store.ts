@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import {
   CacheableCampaign,
@@ -17,6 +17,8 @@ export const campaignCacheKey = (campaignId: string) =>
 export class RedisCampaignCacheStore
   implements CampaignCacheStore, OnModuleDestroy
 {
+  private readonly logger = new Logger(RedisCampaignCacheStore.name);
+
   private readonly redis = new RedisRespClient({
     ...resolveRedisConnectionOptions(),
   });
@@ -54,27 +56,39 @@ export class RedisCampaignCacheStore
   }
 
   async getActiveCampaigns(): Promise<ParsedCampaignCacheRecord[]> {
-    const campaignIds =
-      (await this.redis.command<string[]>([
-        'SMEMBERS',
-        ACTIVE_CAMPAIGNS_SET_KEY,
-      ])) ?? [];
-    const campaigns: ParsedCampaignCacheRecord[] = [];
-
-    for (const campaignId of campaignIds) {
-      const values =
+    // Fails to an empty list (no campaigns eligible -> /serve responds with
+    // "no ad", not a 500) rather than throwing - this is called on every
+    // single /serve request, so a Redis outage/quota exhaustion must
+    // degrade to "no fill" rather than take down ad serving entirely. See
+    // RedisVelocityCounterStore for the fuller reasoning.
+    try {
+      const campaignIds =
         (await this.redis.command<string[]>([
-          'HGETALL',
-          campaignCacheKey(campaignId),
+          'SMEMBERS',
+          ACTIVE_CAMPAIGNS_SET_KEY,
         ])) ?? [];
-      const record = this.parseHash(values);
+      const campaigns: ParsedCampaignCacheRecord[] = [];
 
-      if (record) {
-        campaigns.push(record);
+      for (const campaignId of campaignIds) {
+        const values =
+          (await this.redis.command<string[]>([
+            'HGETALL',
+            campaignCacheKey(campaignId),
+          ])) ?? [];
+        const record = this.parseHash(values);
+
+        if (record) {
+          campaigns.push(record);
+        }
       }
-    }
 
-    return campaigns;
+      return campaigns;
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for active campaign cache - reporting no eligible campaigns: ${(error as Error).message}`,
+      );
+      return [];
+    }
   }
 
   onModuleDestroy() {

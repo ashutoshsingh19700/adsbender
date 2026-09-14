@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import { BlacklistCacheStore } from './blacklist-cache.types';
 import { RedisRespClient } from './redis-resp.client';
@@ -14,6 +14,8 @@ const BLACKLISTED_IPS_STAGING_KEY = `${BLACKLISTED_IPS_SET_KEY}:staging`;
 export class RedisBlacklistCacheStore
   implements BlacklistCacheStore, OnModuleDestroy
 {
+  private readonly logger = new Logger(RedisBlacklistCacheStore.name);
+
   private readonly redis = new RedisRespClient({
     ...resolveRedisConnectionOptions(),
   });
@@ -39,13 +41,24 @@ export class RedisBlacklistCacheStore
   }
 
   async isBlacklisted(ipAddress: string): Promise<boolean> {
-    const result = await this.redis.command<number>([
-      'SISMEMBER',
-      BLACKLISTED_IPS_SET_KEY,
-      ipAddress,
-    ]);
+    // Fails OPEN (assume not blacklisted) rather than throwing - this runs
+    // on every /serve and /click, so a Redis outage/quota exhaustion must
+    // not block all ad serving over a check that's almost always a miss
+    // anyway. See RedisVelocityCounterStore for the fuller reasoning.
+    try {
+      const result = await this.redis.command<number>([
+        'SISMEMBER',
+        BLACKLISTED_IPS_SET_KEY,
+        ipAddress,
+      ]);
 
-    return result === 1;
+      return result === 1;
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for blacklist check on "${ipAddress}" - failing open (not blacklisted): ${(error as Error).message}`,
+      );
+      return false;
+    }
   }
 
   onModuleDestroy() {

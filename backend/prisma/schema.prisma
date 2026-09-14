@@ -189,11 +189,45 @@ model User {
   paymentOrders      PaymentOrder[]
   beneficiaryAccount BeneficiaryAccount?
   campaignDraft      CampaignDraft?
+  notifications      Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([role])
+}
+
+// In-app notifications (campaign review decisions, deposits, payouts, ...).
+// Deliberately its own table rather than piggybacking on WalletTransaction
+// or Campaign - notifications are read/unread UI state for a specific user,
+// not part of any financial ledger or campaign history.
+enum NotificationType {
+  CAMPAIGN_APPROVED
+  CAMPAIGN_REJECTED
+  DEPOSIT_CONFIRMED
+  PAYOUT_COMPLETED
+  PAYOUT_FAILED
+}
+
+model Notification {
+  id      String           @id @default(uuid())
+  userId  String
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type    NotificationType
+  title   String
+  message String
+  // Optional in-app path the notification should deep-link to (e.g. a
+  // specific campaign's page) - left null when there's nowhere more
+  // specific to send the user than the notification list itself.
+  link    String?
+  read    Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Listing a user's notifications always orders by recency and often
+  // filters to unread - one composite index serves both.
+  @@index([userId, createdAt])
+  @@index([userId, read])
 }
 
 // One wallet per user. `balance_usd` on User remains the single

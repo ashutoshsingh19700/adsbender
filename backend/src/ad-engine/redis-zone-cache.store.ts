@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import type { CacheableZone, ZoneCacheRecord, ZoneCacheStore } from './zone-cache.types';
 import { RedisRespClient } from './redis-resp.client';
@@ -10,6 +10,8 @@ export const zoneCacheKey = (zoneId: string) => `adengine:zone:${zoneId}`;
 
 @Injectable()
 export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
+  private readonly logger = new Logger(RedisZoneCacheStore.name);
+
   private readonly redis = new RedisRespClient({
     ...resolveRedisConnectionOptions(),
   });
@@ -65,23 +67,34 @@ export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
   }
 
   async getActiveZone(zoneId: string): Promise<ZoneCacheRecord | null> {
-    const isMember = await this.redis.command<number>([
-      'SISMEMBER',
-      ACTIVE_ZONES_SET_KEY,
-      zoneId,
-    ]);
+    // Fails to null (zone treated as not found -> /serve responds with "no
+    // ad", not a 500) rather than throwing - this is called on every single
+    // /serve request. See RedisVelocityCounterStore for the fuller
+    // reasoning.
+    try {
+      const isMember = await this.redis.command<number>([
+        'SISMEMBER',
+        ACTIVE_ZONES_SET_KEY,
+        zoneId,
+      ]);
 
-    if (isMember !== 1) {
+      if (isMember !== 1) {
+        return null;
+      }
+
+      const layoutType = await this.redis.command<string | null>([
+        'HGET',
+        zoneCacheKey(zoneId),
+        'layoutType',
+      ]);
+
+      return { layoutType: layoutType ?? '' };
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for zone cache lookup on "${zoneId}" - reporting not found: ${(error as Error).message}`,
+      );
       return null;
     }
-
-    const layoutType = await this.redis.command<string | null>([
-      'HGET',
-      zoneCacheKey(zoneId),
-      'layoutType',
-    ]);
-
-    return { layoutType: layoutType ?? '' };
   }
 
   onModuleDestroy() {

@@ -375,7 +375,24 @@ export function CampaignWizard({
 
   async function goNext() {
     const valid = await form.trigger(STEPS[step].fields)
-    if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1))
+    if (valid) {
+      setStep((s) => Math.min(s + 1, STEPS.length - 1))
+      return
+    }
+
+    // form.trigger() flags invalid fields but never brings them into view.
+    // On a long step the first error can render well above the fold while
+    // "Save & Next" sits at the bottom, so clicking it looks like nothing
+    // happened. Scroll/focus the first invalid field and say why, once the
+    // error markup has actually painted.
+    toast.error("Please fix the highlighted fields before continuing.")
+    requestAnimationFrame(() => {
+      const firstInvalid = document.querySelector<HTMLElement>(
+        '[aria-invalid="true"]'
+      )
+      firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" })
+      firstInvalid?.focus?.()
+    })
   }
 
   function goBack() {

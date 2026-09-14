@@ -60,41 +60,64 @@ export class ApiError extends Error {
   }
 }
 
+// Dedupes identical concurrent GET requests (e.g. /api/v1/wallet/summary,
+// independently fetched by the topbar and a page that are mounted at the
+// same time) so two components asking for the same data in the same tick
+// share one network round trip instead of doubling load on the backend.
+const inFlightGetRequests = new Map<string, Promise<unknown>>()
+
 async function apiFetch<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  // FormData bodies (file uploads) must NOT get a manual Content-Type -
-  // the browser sets one itself with the multipart boundary, and
-  // overriding it here would drop the boundary and break parsing.
-  const isFormData = init?.body instanceof FormData
+  const method = (init?.method ?? "GET").toUpperCase()
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    credentials: "include",
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...init?.headers,
-    },
-  })
+  const doFetch = async (): Promise<T> => {
+    // FormData bodies (file uploads) must NOT get a manual Content-Type -
+    // the browser sets one itself with the multipart boundary, and
+    // overriding it here would drop the boundary and break parsing.
+    const isFormData = init?.body instanceof FormData
 
-  const isJson = response.headers
-    .get("content-type")
-    ?.includes("application/json")
-  const payload = isJson ? await response.json() : undefined
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      credentials: "include",
+      headers: {
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        ...init?.headers,
+      },
+    })
 
-  if (!response.ok) {
-    const message =
-      (payload && (payload.message?.toString?.() ?? payload.message)) ||
-      response.statusText ||
-      "Request failed"
-    throw new ApiError(
-      Array.isArray(payload?.message) ? payload.message.join(", ") : message,
-      response.status
-    )
+    const isJson = response.headers
+      .get("content-type")
+      ?.includes("application/json")
+    const payload = isJson ? await response.json() : undefined
+
+    if (!response.ok) {
+      const message =
+        (payload && (payload.message?.toString?.() ?? payload.message)) ||
+        response.statusText ||
+        "Request failed"
+      throw new ApiError(
+        Array.isArray(payload?.message) ? payload.message.join(", ") : message,
+        response.status
+      )
+    }
+
+    return payload as T
   }
 
-  return payload as T
+  if (method !== "GET") {
+    return doFetch()
+  }
+
+  const existing = inFlightGetRequests.get(path)
+  if (existing) return existing as Promise<T>
+
+  const promise = doFetch().finally(() => {
+    inFlightGetRequests.delete(path)
+  })
+  inFlightGetRequests.set(path, promise)
+  return promise
 }
 
 // Turns { page: 1, status: "ACTIVE" } into "?page=1&status=ACTIVE",

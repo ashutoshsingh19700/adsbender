@@ -931,6 +931,16 @@ export class WalletManager {
     userId: string,
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
+    // Every read path (getWallet/getSummary/listTransactions) calls this.
+    // Wallets are created once and essentially never missing after that, so
+    // check with a plain read first - an upsert always takes a row-level
+    // write lock even when `update: {}` changes nothing, and duplicate
+    // concurrent reads (e.g. the topbar and a page fetching the summary at
+    // the same time) would otherwise serialize behind each other's lock.
+    // The upsert is kept as a fallback for the genuine first-ever read.
+    const existing = await tx.wallet.findUnique({ where: { userId } });
+    if (existing) return existing;
+
     return tx.wallet.upsert({
       where: { userId },
       update: {},
