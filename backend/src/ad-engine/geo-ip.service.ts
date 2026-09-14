@@ -19,7 +19,10 @@ export class GeoIpService implements OnModuleInit {
   private reader: Reader<CountryResponse> | null = null;
 
   async onModuleInit() {
-    const dbPath = process.env.GEOIP_DB_PATH ?? DEFAULT_TEST_DB_PATH;
+    // `||`, not `??` - an empty-string GEOIP_DB_PATH (e.g. a blank env var
+    // left set on the host rather than actually unset) must fall back the
+    // same as a genuinely missing one, not try to open "" and always fail.
+    const dbPath = process.env.GEOIP_DB_PATH || DEFAULT_TEST_DB_PATH;
 
     try {
       this.reader = await open<CountryResponse>(dbPath);
