@@ -36,7 +36,7 @@ import type {
   CampaignBudgetStatus,
   CampaignSpend,
 } from "@/lib/types"
-import { defaultDateRange, formatCurrency, formatPercent } from "@/lib/utils"
+import { defaultDateRange, formatCurrency } from "@/lib/utils"
 import {
   COUNTRIES,
   DEVICES,
@@ -1466,7 +1466,11 @@ function CampaignPerformanceDialog({
               value={totals.impressions.toLocaleString()}
             />
             <MetricTile label="Clicks" value={totals.clicks.toLocaleString()} />
-            <MetricTile label="CTR" value={formatPercent(totals.ctr)} />
+            {/* totals.ctr is already a percentage number from the backend
+                (e.g. 8.33 meaning 8.33%, not a 0-1 fraction) - formatPercent
+                multiplies by 100 again, which used to show impossible
+                values like 833% for an 8.33% CTR. */}
+            <MetricTile label="CTR" value={`${totals.ctr.toFixed(2)}%`} />
             <MetricTile label="Spend" value={formatCurrency(totals.spend)} />
             <MetricTile
               label="CPC"

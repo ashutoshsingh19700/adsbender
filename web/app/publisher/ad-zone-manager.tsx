@@ -27,7 +27,7 @@ import {
   updateAdZoneStatus,
 } from "@/lib/api"
 import type { AdZone, AdZoneStatus, AnalyticsResponse } from "@/lib/types"
-import { defaultDateRange, formatPercent } from "@/lib/utils"
+import { defaultDateRange } from "@/lib/utils"
 import {
   GROUPED_LAYOUT_TYPES,
   zoneSchema,
@@ -766,7 +766,11 @@ function ZonePerformanceDialog({
               value={totals.impressions.toLocaleString()}
             />
             <MetricTile label="Clicks" value={totals.clicks.toLocaleString()} />
-            <MetricTile label="CTR" value={formatPercent(totals.ctr)} />
+            {/* totals.ctr is already a percentage number from the backend
+                (e.g. 8.33 meaning 8.33%, not a 0-1 fraction) - formatPercent
+                multiplies by 100 again, which used to show impossible
+                values like 833% for an 8.33% CTR. */}
+            <MetricTile label="CTR" value={`${totals.ctr.toFixed(2)}%`} />
           </div>
         ) : (
           <p className="py-6 text-center text-sm text-muted-foreground">

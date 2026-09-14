@@ -80,7 +80,12 @@ export function AnalyticsDashboard() {
     date: row.date,
     impressions: row.impressions,
     clicks: row.clicks,
-    ctr: Number((row.ctr * 100).toFixed(2)),
+    // row.ctr is already a percentage number from the backend (e.g. 8.33
+    // meaning 8.33%, not a 0-1 fraction) - see AnalyticsService/
+    // clickhouse-analytics-query.store.ts, which both compute
+    // (clicks / impressions) * 100 themselves. Multiplying by 100 again
+    // here used to show impossible values like 833% for an 8.33% CTR.
+    ctr: Number(row.ctr.toFixed(2)),
     payout: Number(row.payout.toFixed(2)),
   }))
 
@@ -138,7 +143,7 @@ export function AnalyticsDashboard() {
           <SummaryTile label="Clicks" value={totals?.clicks ?? 0} />
           <SummaryTile
             label="CTR"
-            value={`${((totals?.ctr ?? 0) * 100).toFixed(2)}%`}
+            value={`${(totals?.ctr ?? 0).toFixed(2)}%`}
           />
           <SummaryTile
             label="Spend"
@@ -239,7 +244,7 @@ export function AnalyticsDashboard() {
                       {row.clicks.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {(row.ctr * 100).toFixed(2)}%
+                      {row.ctr.toFixed(2)}%
                     </TableCell>
                     <TableCell className="text-right">
                       ${row.spend.toFixed(2)}
