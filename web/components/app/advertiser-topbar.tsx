@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BellIcon,
   LogOutIcon,
   Search01Icon,
   Wallet01Icon,
@@ -13,8 +12,8 @@ import { useAuth } from "@/app/providers/auth-provider"
 import { ApiError, getWalletSummary } from "@/lib/api"
 import type { AdvertiserWalletSummary } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { HIcon } from "@/components/app/h-icon"
+import { NotificationsBell } from "@/components/app/notifications-bell"
 
 // Top bar for the redesigned advertiser shell: search, account email, role
 // badge, notifications and avatar. Sits to the right of <AdvertiserSidebar>
@@ -103,15 +102,7 @@ export function AdvertiserTopbar() {
           {user?.role ?? "ADVERTISER"}
         </span>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full text-muted-foreground hover:text-foreground"
-          aria-label="Notifications"
-        >
-          <HIcon icon={BellIcon} className="size-5" />
-          <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-rose-500" />
-        </Button>
+        <NotificationsBell />
 
         <div className="relative" ref={menuRef}>
           <button

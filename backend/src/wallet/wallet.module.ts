@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { WalletManager } from './wallet-manager.service';
 import { WalletController } from './wallet.controller';
 import { BeneficiaryAccountService } from './beneficiary-account.service';
@@ -10,7 +11,7 @@ import { RazorpayXPayoutProvider } from './payout-providers/razorpayx-payout.pro
 import { PAYOUT_PROVIDER } from './payout-providers/payout-provider.interface';
 
 @Module({
-  imports: [PlatformSettingsModule],
+  imports: [PlatformSettingsModule, NotificationsModule],
   controllers: [WalletController, RazorpayxPayoutWebhookController],
   providers: [
     WalletManager,

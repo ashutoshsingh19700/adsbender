@@ -3,15 +3,14 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  BellIcon,
   LogOutIcon,
   Mail01Icon,
   Search01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { useAuth } from "@/app/providers/auth-provider"
-import { Button } from "@/components/ui/button"
 import { HIcon } from "@/components/app/h-icon"
+import { NotificationsBell } from "@/components/app/notifications-bell"
 
 // Same identity strip as AdvertiserTopbar (see advertiser-topbar.tsx), kept
 // visually identical so the two dashboards read as one product.
@@ -67,15 +66,7 @@ export function PublisherTopbar() {
           {user?.role ?? "PUBLISHER"}
         </span>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full text-muted-foreground hover:text-foreground"
-          aria-label="Notifications"
-        >
-          <HIcon icon={BellIcon} className="size-5" />
-          <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-rose-500" />
-        </Button>
+        <NotificationsBell />
 
         <div className="relative" ref={menuRef}>
           <button

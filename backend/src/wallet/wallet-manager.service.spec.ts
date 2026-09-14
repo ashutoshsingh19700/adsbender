@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { WalletManager } from './wallet-manager.service';
 
 class Mutex {
@@ -53,6 +54,10 @@ describe('WalletManager', () => {
           useValue: {
             getMinAdvertiserBalanceUsd: jest.fn().mockResolvedValue(new Prisma.Decimal(0)),
           },
+        },
+        {
+          provide: NotificationsService,
+          useValue: { create: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

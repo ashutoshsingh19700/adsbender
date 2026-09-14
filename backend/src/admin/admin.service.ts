@@ -14,6 +14,7 @@ import {
 import { AnalyticsService } from '../analytics/analytics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletManager } from '../wallet/wallet-manager.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { parsePagination } from '../common/pagination.util';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { RejectCampaignDto } from './dto/reject-campaign.dto';
@@ -53,6 +54,7 @@ export class AdminService {
     private readonly walletManager: WalletManager,
     private readonly platformSettingsService: PlatformSettingsService,
     private readonly analyticsService: AnalyticsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // --- Campaign review ---
@@ -116,10 +118,24 @@ export class AdminService {
       campaign.totalBudget,
     );
 
-    return this.prisma.campaign.update({
+    const updated = await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { status: CampaignStatus.ACTIVE },
     });
+
+    this.notifications
+      .create({
+        userId: campaign.advertiserId,
+        type: 'CAMPAIGN_APPROVED',
+        title: 'Campaign approved',
+        message: `"${campaign.campaignName}" was approved and is now live.`,
+        link: `/advertiser/campaigns/${campaign.id}`,
+      })
+      .catch((error: Error) =>
+        console.error('Failed to create notification:', error.message),
+      );
+
+    return updated;
   }
 
   async rejectCampaign(campaignId: string, dto: RejectCampaignDto) {
@@ -131,7 +147,7 @@ export class AdminService {
       );
     }
 
-    return this.prisma.campaign.update({
+    const updated = await this.prisma.campaign.update({
       where: { id: campaignId },
       data: {
         status: CampaignStatus.ARCHIVED,
@@ -140,6 +156,22 @@ export class AdminService {
           : campaign.notes,
       },
     });
+
+    this.notifications
+      .create({
+        userId: campaign.advertiserId,
+        type: 'CAMPAIGN_REJECTED',
+        title: 'Campaign rejected',
+        message: dto.reason
+          ? `"${campaign.campaignName}" was rejected: ${dto.reason}`
+          : `"${campaign.campaignName}" was rejected.`,
+        link: `/advertiser/campaigns/${campaign.id}`,
+      })
+      .catch((error: Error) =>
+        console.error('Failed to create notification:', error.message),
+      );
+
+    return updated;
   }
 
   // --- Users (read-only: no suspend/ban action exists on the backend yet) ---

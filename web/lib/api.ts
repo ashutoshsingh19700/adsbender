@@ -23,6 +23,8 @@ import type {
   CampaignStartMode,
   CampaignStatus,
   CreativeType,
+  Notification,
+  NotificationsResponse,
   Paginated,
   Payout,
   PayoutStatus,
@@ -580,6 +582,26 @@ export function getWallet() {
 
 export function getWalletSummary() {
   return apiFetch<WalletSummary>("/api/v1/wallet/summary")
+}
+
+// --- Notifications ---
+
+export function listNotifications(params?: { page?: number; pageSize?: number }) {
+  return apiFetch<NotificationsResponse>(
+    `/api/v1/notifications${toQueryString(params ?? {})}`
+  )
+}
+
+export function markNotificationRead(id: string) {
+  return apiFetch<Notification>(`/api/v1/notifications/${id}/read`, {
+    method: "PATCH",
+  })
+}
+
+export function markAllNotificationsRead() {
+  return apiFetch<{ updated: number }>("/api/v1/notifications/read-all", {
+    method: "PATCH",
+  })
 }
 
 export function listWalletTransactions(params?: {

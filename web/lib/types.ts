@@ -277,6 +277,32 @@ export type Paginated<T, Key extends string> = { page: number; pageSize: number;
   [K in Key]: T[]
 }
 
+export type NotificationType =
+  | "CAMPAIGN_APPROVED"
+  | "CAMPAIGN_REJECTED"
+  | "DEPOSIT_CONFIRMED"
+  | "PAYOUT_COMPLETED"
+  | "PAYOUT_FAILED"
+
+export type Notification = {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  message: string
+  link: string | null
+  read: boolean
+  createdAt: string
+}
+
+export type NotificationsResponse = {
+  notifications: Notification[]
+  total: number
+  page: number
+  pageSize: number
+  unreadCount: number
+}
+
 export type AnalyticsRow = {
   date: string
   impressions: number

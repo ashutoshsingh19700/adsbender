@@ -18,6 +18,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { parsePagination } from '../common/pagination.util';
 import { PAYOUT_PROVIDER } from './payout-providers/payout-provider.interface';
 import type { PayoutProvider } from './payout-providers/payout-provider.interface';
@@ -62,9 +63,20 @@ export class WalletManager {
   constructor(
     private readonly prisma: PrismaService,
     private readonly platformSettings: PlatformSettingsService,
+    private readonly notifications: NotificationsService,
     @Optional() @Inject(PAYOUT_PROVIDER) payoutProvider?: PayoutProvider,
   ) {
     this.payoutProvider = payoutProvider ?? new ManualPayoutProvider();
+  }
+
+  // Notifications are a side effect of the real action, never a reason to
+  // fail it - a dropped notification is far cheaper than a failed
+  // deposit/payout, so every call site fires this and moves on rather than
+  // awaiting it inline inside the transaction above it.
+  private notifyBestEffort(input: Parameters<NotificationsService['create']>[0]) {
+    this.notifications.create(input).catch((error: Error) => {
+      console.error('Failed to create notification:', error.message);
+    });
   }
 
   // --- Original primitives (unchanged behaviour/signature) ---
@@ -240,7 +252,7 @@ export class WalletManager {
   ) {
     const amount = this.normalizeAmount(amountUsd);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await this.lockUser(tx, userId);
       const wallet = await this.lockOrCreateWallet(tx, userId);
 
@@ -270,6 +282,15 @@ export class WalletManager {
         amount,
       };
     });
+
+    this.notifyBestEffort({
+      userId,
+      type: 'DEPOSIT_CONFIRMED',
+      title: 'Funds added',
+      message: `$${amount.toFixed(2)} was added to your wallet.`,
+    });
+
+    return result;
   }
 
   // --- Campaign budget reservation / spend / refund ---
@@ -677,7 +698,9 @@ export class WalletManager {
 
   // Ops/admin confirms the transfer actually landed.
   async completePayout(payoutId: string, providerRef?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    let didComplete = false;
+
+    const result = await this.prisma.$transaction(async (tx) => {
       const payout = await this.lockPayout(tx, payoutId);
 
       if (payout.status === PayoutStatus.COMPLETED) {
@@ -707,6 +730,8 @@ export class WalletManager {
         description: `Payout completed (${payout.id})`,
       });
 
+      didComplete = true;
+
       return tx.payout.update({
         where: { id: payoutId },
         data: {
@@ -716,12 +741,27 @@ export class WalletManager {
         },
       });
     });
+
+    // Only notify on an actual transition this call made - not the
+    // idempotent "already COMPLETED" early-return above.
+    if (didComplete) {
+      this.notifyBestEffort({
+        userId: result.userId,
+        type: 'PAYOUT_COMPLETED',
+        title: 'Payout completed',
+        message: `Your $${new Prisma.Decimal(result.amount).toFixed(2)} payout has been sent.`,
+      });
+    }
+
+    return result;
   }
 
   // Ops/admin marks a payout as failed - the held funds go back to the
   // publisher's available balance.
   async failPayout(payoutId: string, reason?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    let didFail = false;
+
+    const result = await this.prisma.$transaction(async (tx) => {
       const payout = await this.lockPayout(tx, payoutId);
 
       if (payout.status === PayoutStatus.COMPLETED) {
@@ -753,6 +793,8 @@ export class WalletManager {
         description: reason ?? `Payout failed (${payout.id})`,
       });
 
+      didFail = true;
+
       return tx.payout.update({
         where: { id: payoutId },
         data: {
@@ -762,6 +804,21 @@ export class WalletManager {
         },
       });
     });
+
+    // Only notify on an actual transition this call made - not the
+    // idempotent "already FAILED" early-return above.
+    if (didFail) {
+      this.notifyBestEffort({
+        userId: result.userId,
+        type: 'PAYOUT_FAILED',
+        title: 'Payout failed',
+        message: reason
+          ? `Your payout failed: ${reason}`
+          : 'Your payout failed and the funds were returned to your balance.',
+      });
+    }
+
+    return result;
   }
 
   private async submitToProvider(payout: Payout) {

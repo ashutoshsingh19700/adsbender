@@ -5,9 +5,10 @@ import { AdminService } from './admin.service';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PlatformSettingsModule } from '../platform-settings/platform-settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [WalletModule, PlatformSettingsModule, AnalyticsModule],
+  imports: [WalletModule, PlatformSettingsModule, AnalyticsModule, NotificationsModule],
   controllers: [AdminController],
   providers: [AdminService],
 })
