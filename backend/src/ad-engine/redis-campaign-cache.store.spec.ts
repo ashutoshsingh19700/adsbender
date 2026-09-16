@@ -1,9 +1,8 @@
 import { Prisma } from '@prisma/client';
 
 import {
-  ACTIVE_CAMPAIGNS_SET_KEY,
+  ACTIVE_CAMPAIGNS_KEY,
   RedisCampaignCacheStore,
-  campaignCacheKey,
 } from './redis-campaign-cache.store';
 import { RedisRespClient } from './redis-resp.client';
 
@@ -14,13 +13,7 @@ describe('RedisCampaignCacheStore', () => {
   beforeEach(() => {
     commandSpy = jest
       .spyOn(RedisRespClient.prototype, 'command')
-      .mockImplementation(async (args) => {
-        if (args[0] === 'SMEMBERS') {
-          return ['campaign-1', 'paused-campaign'];
-        }
-
-        return 1;
-      });
+      .mockImplementation(async () => null);
     store = new RedisCampaignCacheStore();
   });
 
@@ -29,7 +22,7 @@ describe('RedisCampaignCacheStore', () => {
     store.onModuleDestroy();
   });
 
-  it('serializes active campaigns into Redis hashes and the active campaign set', async () => {
+  it('serializes the active campaign list into a single JSON blob (one Redis command)', async () => {
     await store.replaceActiveCampaigns([
       {
         id: 'campaign-1',
@@ -48,48 +41,39 @@ describe('RedisCampaignCacheStore', () => {
       },
     ]);
 
-    expect(commandSpy).toHaveBeenCalledWith([
-      'SMEMBERS',
-      ACTIVE_CAMPAIGNS_SET_KEY,
-    ]);
-    expect(commandSpy).toHaveBeenCalledWith([
-      'DEL',
-      campaignCacheKey('paused-campaign'),
-    ]);
-    expect(commandSpy).toHaveBeenCalledWith(['DEL', ACTIVE_CAMPAIGNS_SET_KEY]);
-    expect(commandSpy).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'HSET',
-        campaignCacheKey('campaign-1'),
-        'id',
-        'campaign-1',
-        'status',
-        'ACTIVE',
-        'targetCountries',
-        '["US"]',
-        'targetDevices',
-        '["mobile"]',
-      ]),
-    );
-    expect(commandSpy).toHaveBeenCalledWith([
-      'SADD',
-      ACTIVE_CAMPAIGNS_SET_KEY,
-      'campaign-1',
+    expect(commandSpy).toHaveBeenCalledTimes(1);
+    const [command, key, payload] = commandSpy.mock.calls[0][0];
+    expect(command).toBe('SET');
+    expect(key).toBe(ACTIVE_CAMPAIGNS_KEY);
+    expect(JSON.parse(payload as string)).toEqual([
+      {
+        id: 'campaign-1',
+        advertiserId: 'advertiser-1',
+        campaignName: 'US Mobile Banner',
+        totalBudget: 100,
+        dailyBudget: 10,
+        maxCpc: 1,
+        maxCpm: null,
+        maxCpa: null,
+        targetCountries: ['US'],
+        targetDevices: ['mobile'],
+        status: 'ACTIVE',
+        advertiserBalanceUsd: 5,
+        creativeType: 'html',
+        creativeUrl: null,
+        creativeHtml: '<div>ad</div>',
+        destinationUrl: null,
+        adFormat: null,
+        frequencyCapImpressions: null,
+        frequencyCapWindowSeconds: null,
+      },
     ]);
   });
 
-  it('clears the active set when no active funded campaigns remain', async () => {
+  it('writes an empty JSON array when no active funded campaigns remain', async () => {
     await store.replaceActiveCampaigns([]);
 
-    expect(commandSpy).toHaveBeenCalledWith([
-      'DEL',
-      campaignCacheKey('campaign-1'),
-    ]);
-    expect(commandSpy).toHaveBeenCalledWith([
-      'DEL',
-      campaignCacheKey('paused-campaign'),
-    ]);
-    expect(commandSpy).toHaveBeenCalledWith(['DEL', ACTIVE_CAMPAIGNS_SET_KEY]);
+    expect(commandSpy).toHaveBeenCalledWith(['SET', ACTIVE_CAMPAIGNS_KEY, '[]']);
   });
 
   it('round-trips destinationUrl for a click-tracked image creative', async () => {
@@ -112,57 +96,14 @@ describe('RedisCampaignCacheStore', () => {
       },
     ]);
 
-    expect(commandSpy).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'HSET',
-        campaignCacheKey('campaign-2'),
-        'destinationUrl',
-        'https://advertiser.example/landing',
-      ]),
-    );
+    const [, , payload] = commandSpy.mock.calls[0][0];
+    expect(JSON.parse(payload as string)[0]).toMatchObject({
+      destinationUrl: 'https://advertiser.example/landing',
+    });
   });
 
-  it('reads active campaign hashes back from Redis for serve-time targeting', async () => {
-    commandSpy.mockImplementation(async (args) => {
-      if (args[0] === 'SMEMBERS') {
-        return ['campaign-1'];
-      }
-
-      if (args[0] === 'HGETALL') {
-        return [
-          'id',
-          'campaign-1',
-          'advertiserId',
-          'advertiser-1',
-          'campaignName',
-          'US Mobile Banner',
-          'totalBudget',
-          '100',
-          'dailyBudget',
-          '10',
-          'maxCpc',
-          '2.5',
-          'targetCountries',
-          '["US"]',
-          'targetDevices',
-          '["mobile"]',
-          'status',
-          'ACTIVE',
-          'advertiserBalanceUsd',
-          '25',
-          'creativeType',
-          'html',
-          'creativeUrl',
-          '',
-          'creativeHtml',
-          '<div>ad</div>',
-        ];
-      }
-
-      return 1;
-    });
-
-    await expect(store.getActiveCampaigns()).resolves.toEqual([
+  it('reads the active campaign blob back from Redis for serve-time targeting (one Redis command)', async () => {
+    const stored = [
       {
         id: 'campaign-1',
         advertiserId: 'advertiser-1',
@@ -184,7 +125,24 @@ describe('RedisCampaignCacheStore', () => {
         frequencyCapImpressions: null,
         frequencyCapWindowSeconds: null,
       },
-    ]);
+    ];
+    commandSpy.mockImplementation(async (args) => {
+      if (args[0] === 'GET') {
+        return JSON.stringify(stored);
+      }
+
+      return null;
+    });
+
+    await expect(store.getActiveCampaigns()).resolves.toEqual(stored);
+    expect(commandSpy).toHaveBeenCalledTimes(1);
+    expect(commandSpy).toHaveBeenCalledWith(['GET', ACTIVE_CAMPAIGNS_KEY]);
+  });
+
+  it('returns an empty list when the cache has never been populated', async () => {
+    commandSpy.mockImplementation(async () => null);
+
+    await expect(store.getActiveCampaigns()).resolves.toEqual([]);
   });
 
   it('round-trips a CPM bid', async () => {
@@ -207,14 +165,8 @@ describe('RedisCampaignCacheStore', () => {
       },
     ]);
 
-    expect(commandSpy).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'HSET',
-        campaignCacheKey('campaign-4'),
-        'maxCpm',
-        '2.5',
-      ]),
-    );
+    const [, , payload] = commandSpy.mock.calls[0][0];
+    expect(JSON.parse(payload as string)[0]).toMatchObject({ maxCpm: 2.5 });
   });
 
   it('round-trips a CPA bid', async () => {
@@ -237,14 +189,8 @@ describe('RedisCampaignCacheStore', () => {
       },
     ]);
 
-    expect(commandSpy).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'HSET',
-        campaignCacheKey('campaign-5'),
-        'maxCpa',
-        '15',
-      ]),
-    );
+    const [, , payload] = commandSpy.mock.calls[0][0];
+    expect(JSON.parse(payload as string)[0]).toMatchObject({ maxCpa: 15 });
   });
 
   it('round-trips a per-campaign frequency cap override', async () => {
@@ -268,15 +214,10 @@ describe('RedisCampaignCacheStore', () => {
       },
     ]);
 
-    expect(commandSpy).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        'HSET',
-        campaignCacheKey('campaign-3'),
-        'frequencyCapImpressions',
-        '5',
-        'frequencyCapWindowSeconds',
-        '3600',
-      ]),
-    );
+    const [, , payload] = commandSpy.mock.calls[0][0];
+    expect(JSON.parse(payload as string)[0]).toMatchObject({
+      frequencyCapImpressions: 5,
+      frequencyCapWindowSeconds: 3600,
+    });
   });
 });

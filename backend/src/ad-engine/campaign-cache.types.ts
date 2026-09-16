@@ -38,28 +38,6 @@ export type CacheableCampaign = {
   frequencyCapWindowSeconds?: number | null;
 };
 
-export type CampaignCacheRecord = {
-  id: string;
-  advertiserId: string;
-  campaignName: string;
-  totalBudget: string;
-  dailyBudget: string;
-  maxCpc: string;
-  maxCpm?: string;
-  maxCpa?: string;
-  targetCountries: string;
-  targetDevices: string;
-  status: string;
-  advertiserBalanceUsd: string;
-  creativeType: string;
-  creativeUrl: string;
-  creativeHtml: string;
-  destinationUrl?: string;
-  adFormat?: string;
-  frequencyCapImpressions?: string;
-  frequencyCapWindowSeconds?: string;
-};
-
 export type ParsedCampaignCacheRecord = {
   id: string;
   advertiserId: string;
