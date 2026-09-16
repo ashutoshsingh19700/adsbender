@@ -464,6 +464,30 @@ export const AD_FORMAT_CATEGORIES: AdFormatCategory[] = [
   "Premium Inventory",
 ]
 
+// The formats actually offered when creating a NEW campaign/zone. Trimmed
+// down to the handful that drive most ad-network revenue (standard display,
+// native, popunder, interstitial, and video roll formats) - the other ~20
+// catalog entries (premium inventory, popup/overlay variants, extra
+// sidebar/display sizes, video overlay) are still valid values - kept in
+// AD_FORMAT_CATALOG so existing campaigns/zones using them keep working and
+// the admin pricing panel still shows them - they're just commented out of
+// the picker UI below (see GROUPED_AD_FORMATS / GROUPED_LAYOUT_TYPES).
+// (IN_PAGE_PUSH/SOCIAL_BAR/NATIVE_BANNER are deliberately left out of this
+// set too - they were never offered in either picker to begin with, see the
+// "Legacy" comments in campaign-fields.ts / zone-form.ts.)
+export const CORE_AD_FORMAT_VALUES = new Set<string>([
+  "BANNER_728X90",
+  "MEDIUM_RECTANGLE_300X250",
+  "SKYSCRAPER_160X600",
+  "IN_FEED",
+  "STICKY_BANNER",
+  "POPUNDER",
+  "INTERSTITIAL",
+  "PRE_ROLL",
+  "MID_ROLL",
+  "POST_ROLL",
+])
+
 export function getAdFormat(value: string | null | undefined) {
   return AD_FORMAT_CATALOG.find((f) => f.value === value) ?? null
 }

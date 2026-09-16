@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-import { AD_FORMAT_CATALOG, AD_FORMAT_CATEGORIES } from "@/lib/ad-formats"
+import {
+  AD_FORMAT_CATALOG,
+  AD_FORMAT_CATEGORIES,
+  CORE_AD_FORMAT_VALUES,
+} from "@/lib/ad-formats"
 
 // Shared between the creation wizard (campaign-wizard.tsx) and the edit
 // dialog (campaign-manager.tsx) so both stay in sync with the backend's
@@ -148,16 +152,29 @@ const PICKER_HIDDEN_AD_FORMATS = new Set(["FLOATING_SIDEBAR"])
 // serve. Same FLOATING_SIDEBAR-style "still valid, not offered" pattern as
 // PICKER_HIDDEN_AD_FORMATS below, just for a whole category instead of one
 // value.
+// Trimmed to the "core" formats (see CORE_AD_FORMAT_VALUES in
+// lib/ad-formats.ts) that actually drive most ad-network revenue - the rest
+// of the catalog (LEADERBOARD, LARGE_RECTANGLE_336X280, WIDE_SKYSCRAPER_300X600,
+// STICKY_SIDEBAR, FLOATING_SIDEBAR, IN_ARTICLE, RECOMMENDED_CONTENT,
+// SPONSORED_WIDGET, POPUP, EXIT_INTENT_POPUP, FLOATING_OVERLAY,
+// WELCOME_SCREEN, PAGE_TRANSITION_INTERSTITIAL, VIDEO_OVERLAY, and all of
+// Premium Inventory) is effectively "commented out" of the picker via this
+// filter - the values stay valid in AD_FORMATS/AD_FORMAT_VALUES/
+// schema.prisma for any campaign that already uses them, and still show up
+// in the admin pricing panel.
 export const GROUPED_AD_FORMATS = [
   ...AD_FORMAT_CATEGORIES.map((category) => ({
     category,
     formats: AD_FORMAT_CATALOG.filter(
-      (f) => f.category === category && !PICKER_HIDDEN_AD_FORMATS.has(f.value)
+      (f) =>
+        f.category === category &&
+        !PICKER_HIDDEN_AD_FORMATS.has(f.value) &&
+        CORE_AD_FORMAT_VALUES.has(f.value)
     ).map((f) => ({
       value: f.value,
       label: f.value === "STICKY_SIDEBAR" ? "Sidebar" : f.label,
     })),
-  })),
+  })).filter((group) => group.formats.length > 0),
 ]
 
 export const PRICING_MODELS = ["CPM", "CPA", "CPC"] as const

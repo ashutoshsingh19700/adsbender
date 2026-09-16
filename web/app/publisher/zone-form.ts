@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-import { AD_FORMAT_CATALOG, AD_FORMAT_CATEGORIES } from "@/lib/ad-formats"
+import {
+  AD_FORMAT_CATALOG,
+  AD_FORMAT_CATEGORIES,
+  CORE_AD_FORMAT_VALUES,
+} from "@/lib/ad-formats"
 
 // Shared between the "create ad zone" form (publisher-dashboard.tsx) and the
 // "edit ad zone" dialog (ad-zone-manager.tsx) so both stay in sync with the
@@ -27,13 +31,22 @@ export const LAYOUT_TYPES = [
   })),
 ]
 
-// Same data, grouped for a categorized select UI.
+// Same data, grouped for a categorized select UI. Trimmed to the "core"
+// formats (see CORE_AD_FORMAT_VALUES in lib/ad-formats.ts) that actually
+// drive most ad-network revenue, mirroring the same trim on the advertiser
+// side (campaign-fields.ts's GROUPED_AD_FORMATS) so a publisher's zone
+// options line up with what advertisers can actually target. The rest of
+// the catalog is effectively "commented out" of the picker via this filter -
+// the values stay valid in LAYOUT_TYPES/schema for any zone that already
+// uses them.
 export const GROUPED_LAYOUT_TYPES = [
   { category: "Legacy" as const, formats: LEGACY_LAYOUT_TYPES },
   ...AD_FORMAT_CATEGORIES.map((category) => ({
     category,
-    formats: AD_FORMAT_CATALOG.filter((f) => f.category === category),
-  })),
+    formats: AD_FORMAT_CATALOG.filter(
+      (f) => f.category === category && CORE_AD_FORMAT_VALUES.has(f.value)
+    ),
+  })).filter((group) => group.formats.length > 0),
 ]
 
 export const zoneSchema = z.object({
