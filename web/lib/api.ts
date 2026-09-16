@@ -1,8 +1,10 @@
 import type {
+  AdminAdvertiserCountryBreakdown,
   AdminAdvertiserDetail,
   AdminAdvertiserSummary,
   AdminCampaign,
   AdminPayout,
+  AdminPublisherCountryBreakdown,
   AdminPublisherDetail,
   AdminPublisherSummary,
   AdminSite,
@@ -63,6 +65,15 @@ export class ApiError extends Error {
   }
 }
 
+// Plain fetch() has no default timeout - if the backend (or something it
+// calls, e.g. Supabase Auth) ever stalls instead of erroring, the request
+// just hangs forever with no way for the UI to recover. That's exactly what
+// turned a slow login into a permanently frozen "Signing you in..." screen:
+// login-form.tsx has no way to know the request is stuck, so it never resets
+// its loading state. Every request gets a hard ceiling instead, surfaced as
+// a normal ApiError the caller's existing catch block already handles.
+const REQUEST_TIMEOUT_MS = 20_000
+
 // Dedupes identical concurrent GET requests (e.g. /api/v1/wallet/summary,
 // independently fetched by the topbar and a page that are mounted at the
 // same time) so two components asking for the same data in the same tick
@@ -81,14 +92,23 @@ async function apiFetch<T>(
     // overriding it here would drop the boundary and break parsing.
     const isFormData = init?.body instanceof FormData
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      credentials: "include",
-      headers: {
-        ...(isFormData ? {} : { "Content-Type": "application/json" }),
-        ...init?.headers,
-      },
-    })
+    let response: Response
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        credentials: "include",
+        headers: {
+          ...(isFormData ? {} : { "Content-Type": "application/json" }),
+          ...init?.headers,
+        },
+        signal: init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        throw new ApiError("Request timed out - please try again.", 0)
+      }
+      throw error
+    }
 
     const isJson = response.headers
       .get("content-type")
@@ -896,6 +916,12 @@ export function adminListAdvertisers(params?: {
   )
 }
 
+export function adminGetAdvertiserCountryBreakdown() {
+  return apiFetch<AdminAdvertiserCountryBreakdown>(
+    `/api/v1/admin/advertisers/by-country`
+  )
+}
+
 export function adminGetAdvertiser(
   advertiserId: string,
   params?: { startDate?: string; endDate?: string }
@@ -912,6 +938,12 @@ export function adminListPublishers(params?: {
 }) {
   return apiFetch<Paginated<AdminPublisherSummary, "publishers">>(
     `/api/v1/admin/publishers${toQueryString(params ?? {})}`
+  )
+}
+
+export function adminGetPublisherCountryBreakdown() {
+  return apiFetch<AdminPublisherCountryBreakdown>(
+    `/api/v1/admin/publishers/by-country`
   )
 }
 

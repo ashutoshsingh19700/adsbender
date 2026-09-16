@@ -84,10 +84,19 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, response: Response) {
-    const { data, error } = await this.supabase.anon.auth.signInWithPassword({
-      email: loginDto.email,
-      password: loginDto.password,
-    });
+    // signInWithPassword talks to Supabase's Auth API with no timeout of its
+    // own - if Supabase ever stalls instead of erroring, this call would
+    // hang forever and so would the frontend's login button (its own
+    // request has no timeout either - see login-form.tsx). Race it against
+    // a hard ceiling so a Supabase outage surfaces as a normal failed
+    // login instead of an unrecoverable frozen screen.
+    const { data, error } = await this.withTimeout(
+      this.supabase.anon.auth.signInWithPassword({
+        email: loginDto.email,
+        password: loginDto.password,
+      }),
+      'Login',
+    );
 
     if (error || !data.session || !data.user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -362,6 +371,31 @@ export class AuthService {
         country: user.country,
       },
     };
+  }
+
+  private readonly AUTH_TIMEOUT_MS = 15_000;
+
+  // Bounds an upstream call (Supabase Auth) that has no timeout of its own.
+  // Rejects with a plain Error (not thrown by Supabase) so a stall surfaces
+  // as a 500 rather than hanging the request - see login() for the case
+  // this was added for.
+  private withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new InternalServerErrorException(`${label} timed out - please try again.`));
+      }, this.AUTH_TIMEOUT_MS);
+
+      promise.then(
+        (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        (error) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
   }
 
   // Shared by login/verifyPhoneOtp/googleAuth - see login() for why

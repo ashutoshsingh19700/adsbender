@@ -64,6 +64,28 @@ export class RedisVelocityCounterStore
     }
   }
 
+  // Batched peek - a single MGET instead of N GETs. Preserves key order in
+  // the result so callers can zip it back up against their own key list.
+  async getMany(keys: string[]): Promise<number[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    try {
+      const values = await this.redis.command<Array<string | null>>([
+        'MGET',
+        ...keys,
+      ]);
+
+      return values.map((value) => (value === null ? 0 : Number(value)));
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for batched velocity counter read (${keys.length} keys) - reporting 0: ${(error as Error).message}`,
+      );
+      return keys.map(() => 0);
+    }
+  }
+
   onModuleDestroy() {
     this.redis.destroy();
   }

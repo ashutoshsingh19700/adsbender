@@ -96,14 +96,13 @@ export class AdTargetingService {
       return eligible;
     }
 
-    const cappedFlags = await Promise.all(
-      eligible.map((campaign) =>
-        this.visitorFrequencyCapService.isCapped(
-          visitorId,
-          campaign.id,
-          campaign.frequencyCapImpressions,
-        ),
-      ),
+    // One batched Redis read (MGET) for every eligible campaign instead of
+    // one GET per campaign - this ran on every single /serve request, so
+    // with N eligible campaigns it billed N Redis commands for a single ad
+    // impression.
+    const cappedFlags = await this.visitorFrequencyCapService.filterCapped(
+      visitorId,
+      eligible,
     );
 
     return eligible.filter((_campaign, index) => !cappedFlags[index]);

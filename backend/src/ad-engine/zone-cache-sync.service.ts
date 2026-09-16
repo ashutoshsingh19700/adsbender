@@ -23,6 +23,10 @@ export const ZONE_CACHE_SYNC_INTERVAL_MS = 30_000;
 export class ZoneCacheSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ZoneCacheSyncService.name);
   private interval?: NodeJS.Timeout;
+  // See CampaignCacheSyncService.lastSyncedSnapshot - skips the Redis write
+  // entirely on a tick where nothing changed, instead of billing a command
+  // for it every 30s regardless.
+  private lastSyncedSnapshot?: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -65,8 +69,14 @@ export class ZoneCacheSyncService implements OnModuleInit, OnModuleDestroy {
       where: { status: 'ACTIVE' },
       select: { id: true, layoutType: true },
     });
+    const snapshot = JSON.stringify(
+      [...zones].sort((a, b) => a.id.localeCompare(b.id)),
+    );
 
-    await this.zoneCacheStore.replaceActiveZoneIds(zones);
+    if (snapshot !== this.lastSyncedSnapshot) {
+      await this.zoneCacheStore.replaceActiveZoneIds(zones);
+      this.lastSyncedSnapshot = snapshot;
+    }
 
     return {
       cachedZones: zones.length,

@@ -52,6 +52,28 @@ export class VisitorFrequencyCapService {
     return count >= this.resolveLimit(impressionLimit);
   }
 
+  // Batched form of isCapped for a single visitor across several campaigns -
+  // one MGET instead of one GET per campaign (see
+  // AdTargetingService.filterUnderFrequencyCap, the only caller). Order of
+  // the result matches the order of `campaigns`.
+  async filterCapped(
+    visitorId: string,
+    campaigns: Array<{ id: string; frequencyCapImpressions?: number | null }>,
+  ): Promise<boolean[]> {
+    if (!visitorId || campaigns.length === 0) {
+      return campaigns.map(() => false);
+    }
+
+    const counts = await this.store.getMany(
+      campaigns.map((campaign) => this.keyFor(visitorId, campaign.id)),
+    );
+
+    return campaigns.map(
+      (campaign, index) =>
+        counts[index] >= this.resolveLimit(campaign.frequencyCapImpressions),
+    );
+  }
+
   async recordImpression(
     visitorId: string,
     campaignId: string,

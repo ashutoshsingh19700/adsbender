@@ -18,6 +18,13 @@ export const CAMPAIGN_CACHE_SYNC_INTERVAL_MS = 30_000;
 export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CampaignCacheSyncService.name);
   private interval?: NodeJS.Timeout;
+  // Snapshot of the last payload actually written to Redis - the common
+  // case on every 30s tick is "nothing changed since last time", and
+  // re-issuing the same SET then costs a Redis command for zero effect.
+  // Skipping it when the serialized snapshot is identical is what keeps an
+  // idle app from quietly burning its whole monthly command quota on
+  // no-op syncs.
+  private lastSyncedSnapshot?: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -57,8 +64,14 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
 
   async syncActiveCampaigns() {
     const campaigns = await this.loadFundedActiveCampaigns();
+    const snapshot = JSON.stringify(
+      [...campaigns].sort((a, b) => a.id.localeCompare(b.id)),
+    );
 
-    await this.campaignCacheStore.replaceActiveCampaigns(campaigns);
+    if (snapshot !== this.lastSyncedSnapshot) {
+      await this.campaignCacheStore.replaceActiveCampaigns(campaigns);
+      this.lastSyncedSnapshot = snapshot;
+    }
 
     return {
       cachedCampaigns: campaigns.length,

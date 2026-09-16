@@ -24,6 +24,10 @@ export const BLACKLIST_CACHE_SYNC_INTERVAL_MS = 30_000;
 export class BlacklistCacheSyncService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BlacklistCacheSyncService.name);
   private interval?: NodeJS.Timeout;
+  // See CampaignCacheSyncService.lastSyncedSnapshot - skips the Redis write
+  // entirely on a tick where nothing changed, instead of billing a command
+  // for it every 30s regardless.
+  private lastSyncedSnapshot?: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -63,8 +67,12 @@ export class BlacklistCacheSyncService implements OnModuleInit, OnModuleDestroy 
       select: { ipAddress: true },
     });
     const ipAddresses = entries.map((entry) => entry.ipAddress);
+    const snapshot = JSON.stringify([...ipAddresses].sort());
 
-    await this.blacklistCacheStore.replaceBlacklistedIps(ipAddresses);
+    if (snapshot !== this.lastSyncedSnapshot) {
+      await this.blacklistCacheStore.replaceBlacklistedIps(ipAddresses);
+      this.lastSyncedSnapshot = snapshot;
+    }
 
     return {
       cachedIps: ipAddresses.length,

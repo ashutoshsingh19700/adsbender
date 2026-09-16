@@ -14,4 +14,10 @@ export interface VelocityCounterStore {
 // campaigns that were merely considered but never actually served.
 export interface FrequencyCapCounterStore extends VelocityCounterStore {
   get(key: string): Promise<number>;
+  // Batched form of get() - one Redis command (MGET) for however many keys
+  // are being peeked, instead of one command per key. AdTargetingService
+  // peeks one counter per eligible campaign on every single /serve request,
+  // so this is the difference between O(1) and O(active campaign count)
+  // Redis commands per ad request.
+  getMany(keys: string[]): Promise<number[]>;
 }

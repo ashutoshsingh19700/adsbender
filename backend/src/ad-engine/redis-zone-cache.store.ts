@@ -4,10 +4,15 @@ import type { CacheableZone, ZoneCacheRecord, ZoneCacheStore } from './zone-cach
 import { RedisRespClient } from './redis-resp.client';
 import { resolveRedisConnectionOptions } from '../config/env';
 
-export const ACTIVE_ZONES_SET_KEY = 'adengine:active_zones';
-const ACTIVE_ZONES_STAGING_KEY = `${ACTIVE_ZONES_SET_KEY}:staging`;
-export const zoneCacheKey = (zoneId: string) => `adengine:zone:${zoneId}`;
+export const ACTIVE_ZONES_KEY = 'adengine:active_zones';
 
+// Whole active-zone list as a single JSON blob under one key (1 Redis
+// command either way) instead of a membership set plus one layoutType hash
+// per zone (2 + N commands on every sync, 2 commands on every /serve read) -
+// same reasoning/pattern as RedisCampaignCacheStore. That older per-zone
+// version billed a SMEMBERS + up-to-N DEL + DEL + SADD + RENAME + N*HSET
+// every 30s sync regardless of whether anything changed, which is what ran
+// the Redis command quota dry with near-zero real traffic.
 @Injectable()
 export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
   private readonly logger = new Logger(RedisZoneCacheStore.name);
@@ -16,54 +21,8 @@ export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
     ...resolveRedisConnectionOptions(),
   });
 
-  // Every /serve request calls getActiveZone (see AdTargetingService) -
-  // builds the new membership set under a staging key and RENAMEs it into
-  // place atomically, rather than DEL-then-SADD directly on the live key,
-  // so a request racing a sync never sees an empty set (which would make
-  // every zone briefly look inactive and reject legitimate ad requests).
-  // The per-zone layoutType hash is written after that (same pattern
-  // RedisCampaignCacheStore uses) - a request racing THAT step just reads
-  // a zone as active with a momentarily-stale/missing layoutType, same
-  // staleness budget already accepted for the campaign cache.
   async replaceActiveZoneIds(zones: CacheableZone[]) {
-    const zoneIds = zones.map((zone) => zone.id);
-    const existingZoneIds =
-      (await this.redis.command<string[]>([
-        'SMEMBERS',
-        ACTIVE_ZONES_SET_KEY,
-      ])) ?? [];
-    const nextZoneIds = new Set(zoneIds);
-
-    for (const existingZoneId of existingZoneIds) {
-      if (!nextZoneIds.has(existingZoneId)) {
-        await this.redis.command(['DEL', zoneCacheKey(existingZoneId)]);
-      }
-    }
-
-    await this.redis.command(['DEL', ACTIVE_ZONES_STAGING_KEY]);
-
-    if (zoneIds.length === 0) {
-      // Nothing to RENAME into place - just clear the live set directly,
-      // there's no "briefly empty" race to avoid when the target state
-      // actually is empty.
-      await this.redis.command(['DEL', ACTIVE_ZONES_SET_KEY]);
-    } else {
-      await this.redis.command(['SADD', ACTIVE_ZONES_STAGING_KEY, ...zoneIds]);
-      await this.redis.command([
-        'RENAME',
-        ACTIVE_ZONES_STAGING_KEY,
-        ACTIVE_ZONES_SET_KEY,
-      ]);
-    }
-
-    for (const zone of zones) {
-      await this.redis.command([
-        'HSET',
-        zoneCacheKey(zone.id),
-        'layoutType',
-        zone.layoutType,
-      ]);
-    }
+    await this.redis.command(['SET', ACTIVE_ZONES_KEY, JSON.stringify(zones)]);
   }
 
   async getActiveZone(zoneId: string): Promise<ZoneCacheRecord | null> {
@@ -72,23 +31,19 @@ export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
     // /serve request. See RedisVelocityCounterStore for the fuller
     // reasoning.
     try {
-      const isMember = await this.redis.command<number>([
-        'SISMEMBER',
-        ACTIVE_ZONES_SET_KEY,
-        zoneId,
+      const raw = await this.redis.command<string | null>([
+        'GET',
+        ACTIVE_ZONES_KEY,
       ]);
 
-      if (isMember !== 1) {
+      if (!raw) {
         return null;
       }
 
-      const layoutType = await this.redis.command<string | null>([
-        'HGET',
-        zoneCacheKey(zoneId),
-        'layoutType',
-      ]);
+      const zones = JSON.parse(raw) as CacheableZone[];
+      const zone = zones.find((candidate) => candidate.id === zoneId);
 
-      return { layoutType: layoutType ?? '' };
+      return zone ? { layoutType: zone.layoutType } : null;
     } catch (error) {
       this.logger.warn(
         `Redis unavailable for zone cache lookup on "${zoneId}" - reporting not found: ${(error as Error).message}`,

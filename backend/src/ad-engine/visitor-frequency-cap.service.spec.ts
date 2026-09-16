@@ -13,6 +13,7 @@ describe('VisitorFrequencyCapService', () => {
   beforeEach(async () => {
     store = {
       get: jest.fn(),
+      getMany: jest.fn(),
       increment: jest.fn(),
     };
 
@@ -113,5 +114,32 @@ describe('VisitorFrequencyCapService', () => {
     await expect(
       service.isCapped('visitor-1', 'campaign-fresh'),
     ).resolves.toBe(false);
+  });
+
+  it('batches multiple campaigns into a single MGET-backed getMany call', async () => {
+    store.getMany.mockResolvedValue([1, 0]);
+
+    await expect(
+      service.filterCapped('visitor-1', [
+        { id: 'campaign-capped', frequencyCapImpressions: 1 },
+        { id: 'campaign-fresh' },
+      ]),
+    ).resolves.toEqual([true, false]);
+    expect(store.getMany).toHaveBeenCalledWith([
+      'freqcap:campaign-capped:visitor-1',
+      'freqcap:campaign-fresh:visitor-1',
+    ]);
+  });
+
+  it('does not call the store when batching with no visitor identity', async () => {
+    await expect(
+      service.filterCapped('', [{ id: 'campaign-1' }]),
+    ).resolves.toEqual([false]);
+    expect(store.getMany).not.toHaveBeenCalled();
+  });
+
+  it('does not call the store when batching an empty campaign list', async () => {
+    await expect(service.filterCapped('visitor-1', [])).resolves.toEqual([]);
+    expect(store.getMany).not.toHaveBeenCalled();
   });
 });

@@ -28,7 +28,11 @@ describe('AdTargetingService', () => {
     visitorFrequencyCapService = {
       // Defaults to "nothing is capped" so existing rotation/targeting
       // tests below don't each need to know about frequency capping.
-      isCapped: jest.fn().mockResolvedValue(false),
+      filterCapped: jest
+        .fn()
+        .mockImplementation(async (_visitorId, campaigns) =>
+          campaigns.map(() => false),
+        ),
       recordImpression: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<VisitorFrequencyCapService>;
 
@@ -280,28 +284,25 @@ describe('AdTargetingService', () => {
         campaignA,
         campaignB,
       ]);
-      visitorFrequencyCapService.isCapped.mockImplementation(
-        async (_visitorId, campaignId) => campaignId === 'campaign-a',
+      visitorFrequencyCapService.filterCapped.mockImplementation(
+        async (_visitorId, campaigns) =>
+          campaigns.map((campaign) => campaign.id === 'campaign-a'),
       );
 
       const result = await service.selectCampaign(request);
 
       expect(result?.id).toBe('campaign-b');
-      expect(visitorFrequencyCapService.isCapped).toHaveBeenCalledWith(
+      expect(visitorFrequencyCapService.filterCapped).toHaveBeenCalledWith(
         'visitor-1',
-        'campaign-a',
-        undefined,
-      );
-      expect(visitorFrequencyCapService.isCapped).toHaveBeenCalledWith(
-        'visitor-1',
-        'campaign-b',
-        undefined,
+        [campaignA, campaignB],
       );
     });
 
     it('returns no ad when every eligible campaign is capped for the visitor', async () => {
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([campaignA]);
-      visitorFrequencyCapService.isCapped.mockResolvedValue(true);
+      visitorFrequencyCapService.filterCapped.mockImplementation(
+        async (_visitorId, campaigns) => campaigns.map(() => true),
+      );
 
       await expect(service.selectCampaign(request)).resolves.toBeNull();
       expect(visitorFrequencyCapService.recordImpression).not.toHaveBeenCalled();
@@ -324,7 +325,7 @@ describe('AdTargetingService', () => {
 
       await service.selectCampaign({ ...request, visitorId: '' });
 
-      expect(visitorFrequencyCapService.isCapped).not.toHaveBeenCalled();
+      expect(visitorFrequencyCapService.filterCapped).not.toHaveBeenCalled();
       expect(visitorFrequencyCapService.recordImpression).toHaveBeenCalledWith(
         '',
         'campaign-a',
@@ -344,10 +345,9 @@ describe('AdTargetingService', () => {
 
       await service.selectCampaign(request);
 
-      expect(visitorFrequencyCapService.isCapped).toHaveBeenCalledWith(
+      expect(visitorFrequencyCapService.filterCapped).toHaveBeenCalledWith(
         'visitor-1',
-        'campaign-a',
-        1,
+        [campaignWithOverride],
       );
       expect(visitorFrequencyCapService.recordImpression).toHaveBeenCalledWith(
         'visitor-1',
