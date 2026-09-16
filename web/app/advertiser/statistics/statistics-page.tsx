@@ -78,26 +78,34 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
     async (startDate: string, endDate: string) => {
       setLoading(true)
       try {
-        const { campaigns } = await withTimeout(
-          listCampaigns({ pageSize: 100 }),
-          STATS_TIMEOUT_MS,
-          "This is taking longer than expected to load - click Apply to try again."
-        )
-        setRows(campaigns.map((campaign) => ({ campaign, totals: undefined })))
-
-        // One batched request for every campaign's totals instead of firing
-        // a separate performance request per campaign (previously an N+1
-        // into ClickHouse - see AdvertiserService.getCampaignsPerformance).
-        try {
-          const byCampaignId = await withTimeout(
+        // Neither request depends on the other's result (performance is
+        // keyed by date range, not by the campaign list), so fire them
+        // together instead of waterfalling one full round trip after the
+        // other before the ClickHouse query even starts.
+        const [{ campaigns }, perfResult] = await Promise.all([
+          withTimeout(
+            listCampaigns({ pageSize: 100 }),
+            STATS_TIMEOUT_MS,
+            "This is taking longer than expected to load - click Apply to try again."
+          ),
+          // One batched request for every campaign's totals instead of firing
+          // a separate performance request per campaign (previously an N+1
+          // into ClickHouse - see AdvertiserService.getCampaignsPerformance).
+          withTimeout(
             getCampaignsPerformance(startDate, endDate),
             STATS_TIMEOUT_MS,
             "Statistics are taking longer than expected to load - click Apply to try again."
-          )
-          setRows((current) =>
-            current.map((row) => ({
-              ...row,
-              totals: byCampaignId[row.campaign.id] ?? {
+          ).then(
+            (byCampaignId) => ({ ok: true as const, byCampaignId }),
+            (perfError) => ({ ok: false as const, perfError })
+          ),
+        ])
+
+        if (perfResult.ok) {
+          setRows(
+            campaigns.map((campaign) => ({
+              campaign,
+              totals: perfResult.byCampaignId[campaign.id] ?? {
                 impressions: 0,
                 clicks: 0,
                 ctr: 0,
@@ -106,15 +114,15 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
               },
             }))
           )
-        } catch (perfError) {
-          setRows((current) =>
-            current.map((row) => ({ ...row, totals: "error" }))
+        } else {
+          setRows(
+            campaigns.map((campaign) => ({ campaign, totals: "error" as const }))
           )
           toast.error(
-            perfError instanceof ApiError
-              ? perfError.message
-              : perfError instanceof Error
-                ? perfError.message
+            perfResult.perfError instanceof ApiError
+              ? perfResult.perfError.message
+              : perfResult.perfError instanceof Error
+                ? perfResult.perfError.message
                 : "Could not load campaign statistics"
           )
         }

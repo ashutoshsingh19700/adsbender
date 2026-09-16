@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
+
+import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 import type {
   AnalyticsQueryStore,
@@ -10,6 +12,19 @@ import type {
   TrafficQualityParams,
   TrafficQualityRow,
 } from './analytics-query.types';
+import { RedisRespClient } from '../ad-engine/redis-resp.client';
+import { resolveRedisConnectionOptions } from '../config/env';
+
+// Dashboards re-run the exact same aggregation on every mount/tab-switch
+// within the same date range, and each one is a full ClickHouse table scan
+// (see the FULL OUTER JOIN queries below) - short-lived result caching turns
+// repeat views inside this window into a single Redis GET instead of another
+// scan. 30s keeps numbers close to live (an in-progress ad campaign is still
+// updating every second) while absorbing the "open tab, switch away, come
+// back" and double-render cases that otherwise double the ClickHouse load
+// for no new data. Two Redis commands per unique query per 30s window is
+// negligible next to the ClickHouse round trip it replaces.
+const RESULT_CACHE_TTL_SECONDS = 30;
 
 // Every id in this app is a Prisma-generated UUID. We build ClickHouse SQL
 // by string interpolation (no query-parameter support in the raw HTTP
@@ -60,13 +75,21 @@ const GROUP_EXPRESSIONS: Record<GroupDimension, string> = {
 };
 
 @Injectable()
-export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
+export class ClickHouseAnalyticsQueryStore
+  implements AnalyticsQueryStore, OnModuleDestroy
+{
+  private readonly logger = new Logger(ClickHouseAnalyticsQueryStore.name);
+
   private readonly options = {
     url: process.env.CLICKHOUSE_URL ?? 'http://127.0.0.1:8123',
     database: process.env.CLICKHOUSE_DB ?? 'analytics',
     username: process.env.CLICKHOUSE_USER ?? 'default',
     password: process.env.CLICKHOUSE_PASSWORD,
   };
+
+  private readonly redis = new RedisRespClient({
+    ...resolveRedisConnectionOptions(),
+  });
 
   async getDailyMetrics(params: DailyMetricsParams): Promise<MetricsRow[]> {
     if (params.campaignId) {
@@ -322,6 +345,12 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
   }
 
   private async query(sql: string) {
+    const cacheKey = `analytics:ch:${createHash('sha1').update(sql).digest('hex')}`;
+    const cached = await this.readCache(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const url = new URL('/', this.options.url);
     url.searchParams.set('query', sql);
 
@@ -333,15 +362,62 @@ export class ClickHouseAnalyticsQueryStore implements AnalyticsQueryStore {
       ).toString('base64')}`;
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw new Error('ClickHouse analytics query timed out after 10s');
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       throw new Error(`ClickHouse analytics query failed: ${response.status}`);
     }
 
-    return response.text();
+    const text = await response.text();
+    await this.writeCache(cacheKey, text);
+    return text;
+  }
+
+  // Caching is a pure speed optimization on top of a correct, uncached
+  // ClickHouse query - a Redis hiccup must never turn into a broken
+  // dashboard, so every failure here just falls back to hitting ClickHouse
+  // directly (same "fail to null/skip" rule RedisZoneCacheStore uses on the
+  // ad-serving hot path).
+  private async readCache(key: string): Promise<string | null> {
+    try {
+      return await this.redis.command<string | null>(['GET', key]);
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for analytics cache read - querying ClickHouse directly: ${(error as Error).message}`,
+      );
+      return null;
+    }
+  }
+
+  private async writeCache(key: string, value: string): Promise<void> {
+    try {
+      await this.redis.command([
+        'SET',
+        key,
+        value,
+        'EX',
+        RESULT_CACHE_TTL_SECONDS,
+      ]);
+    } catch (error) {
+      this.logger.warn(
+        `Redis unavailable for analytics cache write - result will not be cached: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  onModuleDestroy() {
+    this.redis.destroy();
   }
 }

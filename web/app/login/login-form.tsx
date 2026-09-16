@@ -422,16 +422,14 @@ export function LoginForm() {
               </Link>
             </div>
             {/* Cloudflare Turnstile - blocks scripted login attempts */}
-            <div className="rounded-2xl border bg-muted/30 p-2">
-              <TurnstileWidget
-                ref={turnstileRef}
-                onVerify={handleCaptchaVerify}
-                onExpire={() => {
-                  captchaTokenRef.current = null
-                  setCaptchaToken(null)
-                }}
-              />
-            </div>
+            <TurnstileWidget
+              ref={turnstileRef}
+              onVerify={handleCaptchaVerify}
+              onExpire={() => {
+                captchaTokenRef.current = null
+                setCaptchaToken(null)
+              }}
+            />
             <Button
               type="submit"
               className="brand-gradient btn-shine h-12 w-full rounded-xl border-0 text-base font-semibold text-white"
@@ -515,16 +513,14 @@ export function LoginForm() {
               )}
             />
             {/* Cloudflare Turnstile - blocks scripted/bot sign-ups */}
-            <div className="rounded-2xl border bg-muted/30 p-2">
-              <TurnstileWidget
-                ref={turnstileRef}
-                onVerify={handleCaptchaVerify}
-                onExpire={() => {
-                  captchaTokenRef.current = null
-                  setCaptchaToken(null)
-                }}
-              />
-            </div>
+            <TurnstileWidget
+              ref={turnstileRef}
+              onVerify={handleCaptchaVerify}
+              onExpire={() => {
+                captchaTokenRef.current = null
+                setCaptchaToken(null)
+              }}
+            />
             <Button
               type="submit"
               className="brand-gradient btn-shine h-12 w-full rounded-xl border-0 text-base font-semibold text-white"
