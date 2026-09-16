@@ -250,6 +250,71 @@ export class AdminService {
     return undefined;
   }
 
+  // Signup-country breakdown for the publisher directory - mirror of
+  // getAdvertiserCountryBreakdown above, keyed by wallet earnings/pending
+  // instead of campaign spend and site count instead of campaign count.
+  async getPublisherCountryBreakdown() {
+    const users = await this.prisma.user.findMany({
+      where: { role: UserRole.PUBLISHER },
+      select: {
+        id: true,
+        country: true,
+        wallet: {
+          select: { totalEarned: true, pendingEarnings: true },
+        },
+      },
+    });
+
+    const userIds = users.map((u) => u.id);
+    const siteStats = userIds.length
+      ? await this.prisma.publisherSite.groupBy({
+          by: ['publisherId'],
+          where: { publisherId: { in: userIds } },
+          _count: { _all: true },
+        })
+      : [];
+    const siteCountByPublisher = new Map(
+      siteStats.map((s) => [s.publisherId, s._count._all]),
+    );
+
+    const byCountry = new Map<
+      string,
+      {
+        country: string;
+        userCount: number;
+        siteCount: number;
+        totalEarned: Prisma.Decimal;
+        pendingEarnings: Prisma.Decimal;
+      }
+    >();
+
+    for (const user of users) {
+      const key = user.country ?? 'Unknown';
+      const entry = byCountry.get(key) ?? {
+        country: key,
+        userCount: 0,
+        siteCount: 0,
+        totalEarned: new Prisma.Decimal(0),
+        pendingEarnings: new Prisma.Decimal(0),
+      };
+      entry.userCount += 1;
+      entry.siteCount += siteCountByPublisher.get(user.id) ?? 0;
+      entry.totalEarned = entry.totalEarned.plus(
+        user.wallet?.totalEarned ?? 0,
+      );
+      entry.pendingEarnings = entry.pendingEarnings.plus(
+        user.wallet?.pendingEarnings ?? 0,
+      );
+      byCountry.set(key, entry);
+    }
+
+    const rows = [...byCountry.values()].sort(
+      (a, b) => b.userCount - a.userCount,
+    );
+
+    return { rows, totalUsers: users.length };
+  }
+
   // --- Publisher sites (cross-publisher moderation) ---
 
   async listSites(query: {
@@ -415,6 +480,63 @@ export class AdminService {
       totals: byCountry.totals,
       range: { startDate, endDate },
     };
+  }
+
+  // Signup-country breakdown for the advertiser directory - "how many
+  // advertisers do we have per country", not the delivery-side audience
+  // breakdown getAdvertiser() returns for one advertiser's campaigns.
+  async getAdvertiserCountryBreakdown() {
+    const users = await this.prisma.user.findMany({
+      where: { role: UserRole.ADVERTISER },
+      select: { id: true, country: true, balance_usd: true },
+    });
+
+    const userIds = users.map((u) => u.id);
+    const campaignStats = userIds.length
+      ? await this.prisma.campaign.groupBy({
+          by: ['advertiserId'],
+          where: { advertiserId: { in: userIds } },
+          _count: { _all: true },
+          _sum: { spentAmount: true },
+        })
+      : [];
+    const statsByAdvertiser = new Map(
+      campaignStats.map((s) => [s.advertiserId, s]),
+    );
+
+    const byCountry = new Map<
+      string,
+      {
+        country: string;
+        userCount: number;
+        campaignCount: number;
+        totalSpend: Prisma.Decimal;
+        totalBalance: Prisma.Decimal;
+      }
+    >();
+
+    for (const user of users) {
+      const key = user.country ?? 'Unknown';
+      const stats = statsByAdvertiser.get(user.id);
+      const entry = byCountry.get(key) ?? {
+        country: key,
+        userCount: 0,
+        campaignCount: 0,
+        totalSpend: new Prisma.Decimal(0),
+        totalBalance: new Prisma.Decimal(0),
+      };
+      entry.userCount += 1;
+      entry.campaignCount += stats?._count._all ?? 0;
+      entry.totalSpend = entry.totalSpend.plus(stats?._sum.spentAmount ?? 0);
+      entry.totalBalance = entry.totalBalance.plus(user.balance_usd);
+      byCountry.set(key, entry);
+    }
+
+    const rows = [...byCountry.values()].sort(
+      (a, b) => b.userCount - a.userCount,
+    );
+
+    return { rows, totalUsers: users.length };
   }
 
   // --- Publishers directory (master/publisher-scoped admin) ---

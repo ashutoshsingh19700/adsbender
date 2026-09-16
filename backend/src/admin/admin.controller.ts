@@ -204,6 +204,14 @@ export class AdminController {
     return this.adminService.listAdvertisers(query);
   }
 
+  // Declared before advertisers/:id - same ordering reason as
+  // campaigns/status-counts above (literal segment must match first).
+  @AdminScopes('MASTER', 'ADVERTISER')
+  @Get('advertisers/by-country')
+  getAdvertiserCountryBreakdown() {
+    return this.adminService.getAdvertiserCountryBreakdown();
+  }
+
   @AdminScopes('MASTER', 'ADVERTISER')
   @Get('advertisers/:id')
   getAdvertiser(
@@ -221,6 +229,14 @@ export class AdminController {
     @Query() query: { page?: string; pageSize?: string; search?: string },
   ) {
     return this.adminService.listPublishers(query);
+  }
+
+  // Declared before publishers/:id - same ordering reason as
+  // campaigns/status-counts above.
+  @AdminScopes('MASTER', 'PUBLISHER')
+  @Get('publishers/by-country')
+  getPublisherCountryBreakdown() {
+    return this.adminService.getPublisherCountryBreakdown();
   }
 
   @AdminScopes('MASTER', 'PUBLISHER')

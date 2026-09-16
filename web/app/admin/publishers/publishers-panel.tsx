@@ -4,8 +4,17 @@ import * as React from "react"
 import { toast } from "sonner"
 import { Globe2, Search, Wallet } from "lucide-react"
 
-import { adminGetPublisher, adminListPublishers, ApiError } from "@/lib/api"
-import type { AdminPublisherDetail, AdminPublisherSummary } from "@/lib/types"
+import {
+  adminGetPublisher,
+  adminGetPublisherCountryBreakdown,
+  adminListPublishers,
+  ApiError,
+} from "@/lib/api"
+import type {
+  AdminPublisherCountryRow,
+  AdminPublisherDetail,
+  AdminPublisherSummary,
+} from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
 import { countryFlag, COUNTRIES } from "@/app/advertiser/campaign-fields"
 
@@ -80,6 +89,8 @@ export function PublishersPanel() {
 
   return (
     <div className="space-y-4">
+      <PublisherCountryReport />
+
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 font-medium text-foreground/75" />
         <Input
@@ -157,6 +168,116 @@ export function PublishersPanel() {
         onClose={() => setSelectedId(null)}
       />
     </div>
+  )
+}
+
+function PublisherCountryReport() {
+  const [rows, setRows] = React.useState<AdminPublisherCountryRow[] | null>(
+    null
+  )
+  const [totalUsers, setTotalUsers] = React.useState(0)
+  const [loading, setLoading] = React.useState(true)
+  const [expanded, setExpanded] = React.useState(false)
+
+  React.useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    adminGetPublisherCountryBreakdown()
+      .then((result) => {
+        if (cancelled) return
+        setRows(result.rows)
+        setTotalUsers(result.totalUsers)
+      })
+      .catch((error) => {
+        if (cancelled) return
+        toast.error(
+          error instanceof ApiError
+            ? error.message
+            : "Could not load country report"
+        )
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const visibleRows = expanded ? rows : rows?.slice(0, 8)
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 py-5">
+        <div className="flex items-center gap-2">
+          <Globe2 className="size-4 font-medium text-foreground/75" />
+          <h3 className="text-sm font-semibold">Publishers by country</h3>
+        </div>
+        {loading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : !rows || rows.length === 0 ? (
+          <p className="text-sm font-medium text-foreground/75">
+            No publisher accounts yet.
+          </p>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Country</TableHead>
+                    <TableHead className="text-right">Publishers</TableHead>
+                    <TableHead className="text-right">% of total</TableHead>
+                    <TableHead className="text-right">Sites</TableHead>
+                    <TableHead className="text-right">Total Earned</TableHead>
+                    <TableHead className="text-right">Pending</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleRows?.map((row) => (
+                    <TableRow key={row.country}>
+                      <TableCell>{countryLabel(row.country)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.userCount}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {totalUsers > 0
+                          ? `${((row.userCount / totalUsers) * 100).toFixed(1)}%`
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.siteCount}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(row.totalEarned)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatCurrency(row.pendingEarnings)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-between text-sm font-medium text-foreground/75">
+              <span>
+                {rows.length} {rows.length === 1 ? "country" : "countries"} ·{" "}
+                {totalUsers} publishers total
+              </span>
+              {rows.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="text-sm font-semibold text-foreground underline-offset-2 hover:underline"
+                >
+                  {expanded ? "Show less" : `Show all ${rows.length}`}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

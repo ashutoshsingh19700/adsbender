@@ -418,6 +418,34 @@ export type AdminAdvertiserDetail = {
   range: { startDate: string; endDate: string }
 }
 
+// GET /admin/advertisers/by-country - one row per advertiser signup country
+export type AdminAdvertiserCountryRow = {
+  country: string
+  userCount: number
+  campaignCount: number
+  totalSpend: string
+  totalBalance: string
+}
+
+export type AdminAdvertiserCountryBreakdown = {
+  rows: AdminAdvertiserCountryRow[]
+  totalUsers: number
+}
+
+// GET /admin/publishers/by-country - one row per publisher signup country
+export type AdminPublisherCountryRow = {
+  country: string
+  userCount: number
+  siteCount: number
+  totalEarned: string
+  pendingEarnings: string
+}
+
+export type AdminPublisherCountryBreakdown = {
+  rows: AdminPublisherCountryRow[]
+  totalUsers: number
+}
+
 // GET /admin/publishers
 export type AdminPublisherSummary = AdminUser & {
   country: string | null
