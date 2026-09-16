@@ -40,6 +40,31 @@ type Row = {
   totals: AnalyticsTotals | "error" | undefined
 }
 
+// The campaign-performance request is backed by ClickHouse, which can take
+// far longer than the rest of this page's (Postgres-backed) data if the
+// analytics warehouse is slow to respond - without a bound, a single slow
+// query left the table stuck on its loading skeleton indefinitely with no
+// way to tell the user anything went wrong or let them retry. This doesn't
+// cancel the underlying request (fetch has no way to do that here), it just
+// stops the UI from waiting on it forever.
+const STATS_TIMEOUT_MS = 20_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      }
+    )
+  })
+}
+
 export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [range, setRange] = React.useState(defaultDateRange)
   const [statusFilter, setStatusFilter] = React.useState<
@@ -53,14 +78,22 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
     async (startDate: string, endDate: string) => {
       setLoading(true)
       try {
-        const { campaigns } = await listCampaigns({ pageSize: 100 })
+        const { campaigns } = await withTimeout(
+          listCampaigns({ pageSize: 100 }),
+          STATS_TIMEOUT_MS,
+          "This is taking longer than expected to load - click Apply to try again."
+        )
         setRows(campaigns.map((campaign) => ({ campaign, totals: undefined })))
 
         // One batched request for every campaign's totals instead of firing
         // a separate performance request per campaign (previously an N+1
         // into ClickHouse - see AdvertiserService.getCampaignsPerformance).
         try {
-          const byCampaignId = await getCampaignsPerformance(startDate, endDate)
+          const byCampaignId = await withTimeout(
+            getCampaignsPerformance(startDate, endDate),
+            STATS_TIMEOUT_MS,
+            "Statistics are taking longer than expected to load - click Apply to try again."
+          )
           setRows((current) =>
             current.map((row) => ({
               ...row,
@@ -73,9 +106,16 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
               },
             }))
           )
-        } catch {
+        } catch (perfError) {
           setRows((current) =>
             current.map((row) => ({ ...row, totals: "error" }))
+          )
+          toast.error(
+            perfError instanceof ApiError
+              ? perfError.message
+              : perfError instanceof Error
+                ? perfError.message
+                : "Could not load campaign statistics"
           )
         }
       } catch (error) {
