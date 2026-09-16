@@ -10,6 +10,7 @@ import type {
   AdZone,
   AdZoneStatus,
   AnalyticsResponse,
+  AnalyticsTotals,
   AuthUser,
   BeneficiaryAccount,
   BlacklistedIp,
@@ -546,6 +547,18 @@ export function getCampaignPerformance(
 ) {
   return apiFetch<AnalyticsResponse>(
     `/api/v1/advertiser/campaigns/${campaignId}/performance${toQueryString({
+      startDate,
+      endDate,
+    })}`
+  )
+}
+
+// Batched counterpart to getCampaignPerformance - totals for every campaign
+// this advertiser owns in one request, keyed by campaign id, instead of the
+// Statistics page firing one performance request per campaign.
+export function getCampaignsPerformance(startDate: string, endDate: string) {
+  return apiFetch<Record<string, AnalyticsTotals>>(
+    `/api/v1/advertiser/campaigns/performance${toQueryString({
       startDate,
       endDate,
     })}`

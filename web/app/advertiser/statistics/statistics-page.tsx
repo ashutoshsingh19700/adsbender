@@ -7,7 +7,7 @@ import { Eye, MousePointerClick, Wallet } from "lucide-react"
 import {
   ApiError,
   getAdvertiserTrafficQuality,
-  getCampaignPerformance,
+  getCampaignsPerformance,
   listCampaigns,
 } from "@/lib/api"
 import type { AnalyticsTotals, Campaign, CampaignStatus } from "@/lib/types"
@@ -56,27 +56,28 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
         const { campaigns } = await listCampaigns({ pageSize: 100 })
         setRows(campaigns.map((campaign) => ({ campaign, totals: undefined })))
 
-        campaigns.forEach((campaign) => {
-          getCampaignPerformance(campaign.id, startDate, endDate)
-            .then((result) => {
-              setRows((current) =>
-                current.map((row) =>
-                  row.campaign.id === campaign.id
-                    ? { ...row, totals: result.totals }
-                    : row
-                )
-              )
-            })
-            .catch(() => {
-              setRows((current) =>
-                current.map((row) =>
-                  row.campaign.id === campaign.id
-                    ? { ...row, totals: "error" }
-                    : row
-                )
-              )
-            })
-        })
+        // One batched request for every campaign's totals instead of firing
+        // a separate performance request per campaign (previously an N+1
+        // into ClickHouse - see AdvertiserService.getCampaignsPerformance).
+        try {
+          const byCampaignId = await getCampaignsPerformance(startDate, endDate)
+          setRows((current) =>
+            current.map((row) => ({
+              ...row,
+              totals: byCampaignId[row.campaign.id] ?? {
+                impressions: 0,
+                clicks: 0,
+                ctr: 0,
+                spend: 0,
+                payout: 0,
+              },
+            }))
+          )
+        } catch {
+          setRows((current) =>
+            current.map((row) => ({ ...row, totals: "error" }))
+          )
+        }
       } catch (error) {
         toast.error(
           error instanceof ApiError ? error.message : "Could not load statistics"

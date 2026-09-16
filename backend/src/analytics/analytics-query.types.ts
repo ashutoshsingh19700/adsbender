@@ -28,7 +28,13 @@ export type DailyMetricsParams = {
 // (see ClickHouseAnalyticsEventStore.ensureSchema) - there's no "browser" or
 // "operating system" dimension because the raw user_agent string is stored
 // but never parsed into either, so those aren't offered as group-by options.
-export type GroupDimension = 'date' | 'domain' | 'placement' | 'country' | 'device';
+export type GroupDimension =
+  | 'date'
+  | 'domain'
+  | 'placement'
+  | 'country'
+  | 'device'
+  | 'campaign';
 
 export type GroupedMetricsRow = {
   // Raw group value - a YYYY-MM-DD date, the request `origin` (domain), a

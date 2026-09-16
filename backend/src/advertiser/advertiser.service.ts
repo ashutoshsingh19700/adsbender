@@ -379,6 +379,51 @@ export class AdvertiserService {
     });
   }
 
+  // Batched counterpart to getCampaignPerformance above - the Statistics
+  // screen used to call the per-campaign endpoint once per campaign (an
+  // N+1 into ClickHouse: one advertiser with 50 campaigns fired 50 separate
+  // queries, each also re-running the auth guard's Supabase check). This
+  // fetches every owned campaign's totals in a single grouped ClickHouse
+  // query instead, keyed by campaign id.
+  async getCampaignsPerformance(
+    advertiserId: string,
+    startDate: string,
+    endDate: string,
+  ) {
+    const campaigns = await this.prisma.campaign.findMany({
+      where: { advertiserId },
+      select: { id: true },
+    });
+    const campaignIds = campaigns.map((campaign) => campaign.id);
+
+    if (campaignIds.length === 0) {
+      return {};
+    }
+
+    const { rows } = await this.analyticsService.getGroupedMetrics({
+      startDate,
+      endDate,
+      campaignIds,
+      groupBy: 'campaign',
+    });
+
+    const byCampaignId: Record<
+      string,
+      { impressions: number; clicks: number; ctr: number; spend: number; payout: number }
+    > = {};
+    for (const row of rows) {
+      byCampaignId[row.key] = {
+        impressions: row.impressions,
+        clicks: row.clicks,
+        ctr: row.ctr,
+        spend: row.spend,
+        payout: row.payout,
+      };
+    }
+
+    return byCampaignId;
+  }
+
   // Powers the "Traffic Quality" panel on the advertiser Statistics screen -
   // clicks blocked/flagged by fraud detection across every campaign this
   // advertiser owns, or just one via `campaignId`, so they can see they were

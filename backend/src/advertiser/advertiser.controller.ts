@@ -121,6 +121,23 @@ export class AdvertiserController {
     return { countries };
   }
 
+  // Totals for every campaign this advertiser owns in one ClickHouse query,
+  // keyed by campaign id - powers the Statistics screen without it looping
+  // over campaigns and firing one request each. Declared before
+  // campaigns/:id below so "performance" is never swallowed as an :id.
+  @Get('campaigns/performance')
+  getCampaignsPerformance(
+    @Req() req: AuthenticatedRequest,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.advertiserService.getCampaignsPerformance(
+      req.user.id,
+      startDate,
+      endDate,
+    );
+  }
+
   @Get('campaigns/:id')
   getCampaign(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.advertiserService.getCampaign(req.user.id, id);

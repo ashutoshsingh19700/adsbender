@@ -56,6 +56,7 @@ const GROUP_EXPRESSIONS: Record<GroupDimension, string> = {
   placement: `concat(${NORMALIZED_DOMAIN_EXPR}, char(1), zone_id)`,
   country: "ifNull(country, 'Unknown')",
   device: 'device',
+  campaign: 'campaign_id',
 };
 
 @Injectable()

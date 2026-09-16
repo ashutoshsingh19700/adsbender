@@ -25,7 +25,7 @@ import {
   BarChartHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 
-import { ApiError, createAdZone, getNewsletterSnippet, getPublisherProfile, validateDomain } from "@/lib/api"
+import { ApiError, createAdZone, getNewsletterSnippet, getPublisherProfile, listAdZones, validateDomain } from "@/lib/api"
 import type { AdZone, PublisherSite } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -379,10 +379,35 @@ export function PublisherDashboard() {
   // per-platform steps are reference material, not something everyone needs
   // to see immediately.
   const [showGuide, setShowGuide] = React.useState(false)
-  // Bumped after a zone is created so <AdZoneManager> re-fetches its list.
+  // Bumped after a zone is created so the ad zone list below re-fetches.
   const [zoneListVersion, setZoneListVersion] = React.useState(0)
   // Which onboarding step is showing - see SETUP_STEPS/WizardSteps above.
   const [step, setStep] = React.useState(0)
+
+  // Fetched once here and passed down to both <PublisherOverview> (for its
+  // zone-count tile) and <AdZoneManager> (for the management table) -
+  // previously each fetched its own copy of the same list on every mount,
+  // firing two identical `listAdZones` requests.
+  const [zones, setZones] = React.useState<AdZone[]>([])
+  const [zonesLoading, setZonesLoading] = React.useState(true)
+
+  const loadZones = React.useCallback(async () => {
+    setZonesLoading(true)
+    try {
+      const result = await listAdZones({ pageSize: 100 })
+      setZones(result.zones)
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Could not load ad zones"
+      )
+    } finally {
+      setZonesLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadZones()
+  }, [loadZones, zoneListVersion])
 
   // Needed so we can show the publisher their default ads.txt token below —
   // otherwise there's no way to know what to put in ads.txt without reading
@@ -497,7 +522,11 @@ export function PublisherDashboard() {
         </p>
       </div>
 
-      <PublisherOverview refreshToken={zoneListVersion} />
+      <PublisherOverview
+        refreshToken={zoneListVersion}
+        zones={zones}
+        zonesLoading={zonesLoading}
+      />
 
       <WizardSteps step={step} onStepClick={setStep} />
 
@@ -884,7 +913,11 @@ export function PublisherDashboard() {
           created.
         </p>
       </div>
-      <AdZoneManager refreshToken={zoneListVersion} />
+      <AdZoneManager
+        zones={zones}
+        loading={zonesLoading}
+        onZonesChange={setZones}
+      />
     </div>
   )
 }

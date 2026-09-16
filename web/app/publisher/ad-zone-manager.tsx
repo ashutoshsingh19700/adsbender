@@ -22,7 +22,6 @@ import {
   getAdZonePerformance,
   getAdZoneSnippet,
   getNewsletterSnippet,
-  listAdZones,
   updateAdZone,
   updateAdZoneStatus,
 } from "@/lib/api"
@@ -95,9 +94,20 @@ const STATUS_BADGE: Record<AdZoneStatus, "default" | "outline" | "secondary"> = 
 
 type ActionKind = "status" | "archive"
 
-export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
-  const [zones, setZones] = React.useState<AdZone[]>([])
-  const [loading, setLoading] = React.useState(true)
+export function AdZoneManager({
+  zones,
+  loading,
+  onZonesChange,
+}: {
+  zones: AdZone[]
+  loading: boolean
+  // Fetched once by the parent <PublisherDashboard> and shared with
+  // <PublisherOverview> - this component used to fetch its own separate
+  // copy of the same list on every mount, doubling that request. Mutations
+  // (toggle/archive/edit) below report back through this setter instead of
+  // keeping their own local copy.
+  onZonesChange: (updater: (zones: AdZone[]) => AdZone[]) => void
+}) {
   const [actionState, setActionState] = React.useState<
     Record<string, ActionKind | undefined>
   >({})
@@ -109,31 +119,12 @@ export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
   )
   const [archiveZone, setArchiveZone] = React.useState<AdZone | null>(null)
 
-  const load = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      const result = await listAdZones({ pageSize: 100 })
-      setZones(result.zones)
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? error.message : "Could not load ad zones"
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    load()
-  }, [load, refreshToken])
-
   async function toggleStatus(zone: AdZone) {
     const next: AdZoneStatus = zone.status === "ACTIVE" ? "PAUSED" : "ACTIVE"
     setActionState((s) => ({ ...s, [zone.id]: "status" }))
     try {
       const updated = await updateAdZoneStatus(zone.id, next)
-      setZones((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
+      onZonesChange((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
       toast.success(
         `"${updated.zoneName}" is now ${updated.status.toLowerCase()}`
       )
@@ -152,7 +143,7 @@ export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
     setActionState((s) => ({ ...s, [zone.id]: "archive" }))
     try {
       const updated = await archiveAdZone(zone.id)
-      setZones((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
+      onZonesChange((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
       toast.success(`"${updated.zoneName}" archived`)
       setArchiveZone(null)
     } catch (error) {
@@ -165,7 +156,7 @@ export function AdZoneManager({ refreshToken = 0 }: { refreshToken?: number }) {
   }
 
   function handleZoneUpdated(updated: AdZone) {
-    setZones((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
+    onZonesChange((zs) => zs.map((z) => (z.id === updated.id ? updated : z)))
   }
 
   if (loading && zones.length === 0) {
