@@ -41,10 +41,10 @@ export default function BlogIndexPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             AdsBender Blog
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Ad formats and pricing, explained
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/70">
             Practical guides for choosing between ad formats and pricing
             models, and for running ad zones without hurting site
             performance.
@@ -53,34 +53,34 @@ export default function BlogIndexPage() {
       </section>
 
       {/* Post list */}
-      <section className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex flex-col divide-y">
+      <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 gap-x-10 gap-y-10 md:grid-cols-2">
           {posts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group py-8 first:pt-0"
+              className="group flex flex-col rounded-2xl border border-border p-6 transition-colors hover:border-violet-300"
             >
               <div className="flex items-center gap-3">
                 <Badge variant="outline" className="text-violet-600">
                   {post.category}
                 </Badge>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1 text-xs font-medium text-foreground/60">
                   <Clock className="size-3.5" />
                   {post.readingTimeMinutes} min read
                 </span>
               </div>
-              <h2 className="mt-3 text-xl font-semibold tracking-tight group-hover:text-violet-600">
+              <h2 className="mt-3 text-xl font-bold tracking-tight text-foreground group-hover:text-violet-600">
                 {post.title}
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm font-medium text-foreground/70">
                 {post.description}
               </p>
-              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+              <div className="mt-4 flex items-center justify-between text-xs font-medium text-foreground/60">
                 <time dateTime={post.publishedAt}>
                   {dateFormatter.format(new Date(post.publishedAt))}
                 </time>
-                <span className="inline-flex items-center gap-1 font-medium text-violet-600">
+                <span className="inline-flex items-center gap-1 font-semibold text-violet-600">
                   Read
                   <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                 </span>

@@ -228,8 +228,8 @@ export function PublisherEarningsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Earnings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Earnings</h1>
+        <p className="font-medium text-foreground/75">
           Track what you&apos;ve earned and request payouts.
         </p>
       </div>
@@ -442,7 +442,7 @@ export function PublisherEarningsPage() {
                 {payouts.length ? (
                   payouts.map((payout) => (
                     <TableRow key={payout.id}>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(payout.requestedAt).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -459,7 +459,7 @@ export function PublisherEarningsPage() {
                   <TableRow>
                     <TableCell
                       colSpan={3}
-                      className="text-center text-sm text-muted-foreground"
+                      className="text-center text-sm font-medium text-foreground/75"
                     >
                       No payouts yet.
                     </TableCell>
@@ -493,13 +493,13 @@ export function PublisherEarningsPage() {
                   const isCredit = CREDIT_TYPES.includes(transaction.type)
                   return (
                     <TableRow key={transaction.id}>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {TRANSACTION_LABELS[transaction.type]}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm font-medium text-foreground/75">
                         {transaction.description ?? "-"}
                       </TableCell>
                       <TableCell
@@ -531,7 +531,7 @@ export function PublisherEarningsPage() {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center text-sm text-muted-foreground"
+                    className="text-center text-sm font-medium text-foreground/75"
                   >
                     No transactions yet.
                   </TableCell>
@@ -555,8 +555,8 @@ function BalanceTile({
   return (
     <Card>
       <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums">
+        <p className="text-sm font-medium text-foreground/75">{label}</p>
+        <p className="text-2xl font-bold tabular-nums text-foreground">
           {value !== undefined ? formatCurrency(value) : "-"}
         </p>
       </CardContent>

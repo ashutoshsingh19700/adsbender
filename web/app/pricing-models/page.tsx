@@ -102,10 +102,10 @@ export default function PricingModelsPage() {
             <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
               AdsBender Pricing
             </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
               Get Premium-Quality Traffic With Full Spending Transparency
             </h1>
-            <p className="mt-5 max-w-md text-muted-foreground">
+            <p className="mt-5 max-w-md font-medium text-foreground/75">
               With AdsBender&apos;s pricing models, you can target wisely and
               optimize your advertising budgets while accessing top traffic
               sources for your offers. Stay safe from overspending with our
@@ -140,7 +140,7 @@ export default function PricingModelsPage() {
 
       {/* Section heading */}
       <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Which <span className="text-violet-500">AdsBender pricing model</span>{" "}
           fits your vertical best?
         </h2>
@@ -156,14 +156,14 @@ export default function PricingModelsPage() {
             <div className="mx-auto grid max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] gap-8 px-4 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <div>
                 <p className="text-2xl font-bold text-violet-500">{model.name}</p>
-                <p className="mt-1 text-sm font-medium text-muted-foreground">
+                <p className="mt-1 text-sm font-medium text-foreground/75">
                   {model.tagline}
                 </p>
                 <p className="mt-4 text-sm leading-relaxed text-foreground/90">
                   {model.description}
                 </p>
                 {model.tip && (
-                  <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+                  <p className="mt-4 flex items-start gap-2 text-sm font-medium text-foreground/75">
                     <Lightbulb className="mt-0.5 size-4 shrink-0 text-violet-500" />
                     {model.tip}
                   </p>
@@ -172,7 +172,7 @@ export default function PricingModelsPage() {
 
               <div className="space-y-6">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground/75">
                     Verticals:
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -187,7 +187,7 @@ export default function PricingModelsPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground/75">
                     Ad formats:
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -212,10 +212,10 @@ export default function PricingModelsPage() {
       {/* CTA band */}
       <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Ready to launch a campaign?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Pick the pricing model that matches your vertical and start
             buying traffic in minutes.
           </p>

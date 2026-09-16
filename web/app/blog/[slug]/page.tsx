@@ -65,7 +65,7 @@ export default async function BlogPostPage({ params }: Props) {
       />
 
       <article>
-        <section className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
           <Breadcrumbs
             items={[
               { name: "Home", path: "/" },
@@ -78,18 +78,18 @@ export default async function BlogPostPage({ params }: Props) {
             <Badge variant="outline" className="text-violet-600">
               {meta.category}
             </Badge>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 text-xs font-medium text-foreground/60">
               <Clock className="size-3.5" />
               {meta.readingTimeMinutes} min read
             </span>
           </div>
 
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             {meta.title}
           </h1>
           <time
             dateTime={meta.publishedAt}
-            className="mt-3 block text-sm text-muted-foreground"
+            className="mt-3 block text-sm font-medium text-foreground/60"
           >
             {dateFormatter.format(new Date(meta.publishedAt))}
           </time>
@@ -100,13 +100,13 @@ export default async function BlogPostPage({ params }: Props) {
         </section>
       </article>
 
-      <Separator className="mx-auto max-w-2xl" />
+      <Separator className="mx-auto max-w-4xl" />
 
       {/* Related posts / CTA */}
-      <section className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-12">
+      <section className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
         {related.length > 0 && (
           <div className="mb-10">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground/70">
               More on {meta.category.toLowerCase()}
             </p>
             <div className="mt-4 flex flex-col gap-3">
@@ -116,7 +116,7 @@ export default async function BlogPostPage({ params }: Props) {
                   href={`/blog/${post.slug}`}
                   className="group flex items-center justify-between gap-4 rounded-xl border p-4 hover:border-violet-300"
                 >
-                  <span className="text-sm font-medium">{post.title}</span>
+                  <span className="text-sm font-semibold text-foreground">{post.title}</span>
                   <ArrowRight className="size-4 shrink-0 text-violet-600 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               ))}
@@ -126,8 +126,8 @@ export default async function BlogPostPage({ params }: Props) {
 
         <div className="flex flex-col items-start gap-4 rounded-2xl border bg-violet-50/60 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Ready to put this into practice?</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="font-bold text-foreground">Ready to put this into practice?</p>
+            <p className="mt-1 text-sm font-medium text-foreground/70">
               Browse every ad format and pricing model in one place.
             </p>
           </div>

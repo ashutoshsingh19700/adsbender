@@ -599,7 +599,7 @@ export function CampaignWizard({
         onClose={onCancel}
       />
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm font-medium text-foreground/75">
         Campaigns <span className="mx-1">›</span> New Campaign
       </p>
 
@@ -637,7 +637,7 @@ export function CampaignWizard({
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
               Create campaign
             </h2>
-            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            <p className="mt-1 max-w-md text-sm font-medium text-foreground/75">
               {STEP_DESCRIPTIONS[step]}
             </p>
           </div>
@@ -667,7 +667,7 @@ export function CampaignWizard({
                         ? "bg-white/25 text-white"
                         : status === "done"
                           ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
-                          : "bg-muted text-muted-foreground"
+                          : "bg-muted font-medium text-foreground/75"
                     )}
                   >
                     {status === "done" ? (
@@ -682,14 +682,14 @@ export function CampaignWizard({
                         ? "text-white"
                         : status === "done"
                           ? "text-violet-600"
-                          : "text-muted-foreground"
+                          : "font-medium text-foreground/75"
                     )}
                   >
                     {s.title}
                   </span>
                 </li>
                 {i < STEPS.length - 1 ? (
-                  <ArrowRight className="hidden size-3.5 shrink-0 text-muted-foreground/50 sm:block" />
+                  <ArrowRight className="hidden size-3.5 shrink-0 font-medium text-foreground/75/50 sm:block" />
                 ) : null}
               </React.Fragment>
             )
@@ -766,7 +766,7 @@ export function CampaignWizard({
                                   "flex size-11 items-center justify-center rounded-xl border transition-colors sm:size-12",
                                   active
                                     ? "tile-select"
-                                    : "border-border text-muted-foreground tile-select-hover"
+                                    : "border-border font-medium text-foreground/75 tile-select-hover"
                                 )}
                               >
                                 <Icon className="size-5" />
@@ -863,7 +863,7 @@ export function CampaignWizard({
             {getAdFormat(adFormat)?.renderFamily === "newsletter" ? (
               <div className="mb-6 rounded-lg border border-border bg-muted/40 p-4 text-sm text-foreground">
                 <p className="font-medium">Delivered as a copy-paste HTML snippet</p>
-                <p className="mt-1 text-muted-foreground">
+                <p className="mt-1 font-medium text-foreground/75">
                   Newsletter Sponsorship doesn&apos;t run through a publisher&apos;s live JS tag
                   (email clients block scripts). Instead, the publisher pastes a static HTML
                   snippet built from this creative into their email tool - the same image/HTML
@@ -887,7 +887,7 @@ export function CampaignWizard({
                         {/* https:// is fixed - the advertiser only types the
                             rest of the address. */}
                         <div className="flex items-stretch overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring">
-                          <span className="flex items-center border-r bg-muted px-3 text-sm text-muted-foreground">
+                          <span className="flex items-center border-r bg-muted px-3 text-sm font-medium text-foreground/75">
                             https://
                           </span>
                           <input
@@ -979,7 +979,7 @@ export function CampaignWizard({
                         {/* The size limit only shows up once it's actually
                             been hit - no permanent "up to 5 MB" clutter. */}
                         {uploading ? (
-                          <p className="text-sm text-muted-foreground">Uploading...</p>
+                          <p className="text-sm font-medium text-foreground/75">Uploading...</p>
                         ) : uploadSizeError ? (
                           <p className="text-sm font-medium text-destructive">
                             {uploadSizeError}
@@ -1032,7 +1032,7 @@ export function CampaignWizard({
                 <p className="mb-3 text-sm font-semibold text-foreground">Preview</p>
                 <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed bg-background p-4">
                   {creativeType === "html" ? (
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-center text-sm font-medium text-foreground/75">
                       HTML creatives don&apos;t have a visual preview here.
                     </p>
                   ) : form.watch("creativeUrl") ? (
@@ -1065,7 +1065,7 @@ export function CampaignWizard({
                       />
                     )
                   ) : (
-                    <p className="text-center text-sm text-muted-foreground">
+                    <p className="text-center text-sm font-medium text-foreground/75">
                       Upload or paste a creative URL to see it here.
                     </p>
                   )}
@@ -1088,7 +1088,7 @@ export function CampaignWizard({
                       <h3 className="text-xl font-bold tracking-tight text-foreground">
                         Countries
                       </h3>
-                      <p className="mt-0.5 text-sm text-muted-foreground">
+                      <p className="mt-0.5 text-sm font-medium text-foreground/75">
                         Pick a country — it lights up on the globe.
                       </p>
                     </div>
@@ -1125,7 +1125,7 @@ export function CampaignWizard({
                         title="Your bid for this country - what you're willing to pay per unit of the pricing model you picked (e.g. per 1,000 impressions for CPM). Overrides your default Max CPC for that country; countries you don't set this for fall back to it."
                       >
                         Price (USD)
-                        <Info className="size-3.5 text-muted-foreground" />
+                        <Info className="size-3.5 font-medium text-foreground/75" />
                       </FormLabel>
                       <Input
                         type="number"
@@ -1185,7 +1185,7 @@ export function CampaignWizard({
                                   type="button"
                                   onClick={() => removeCountry(code)}
                                   aria-label={`Remove ${label}`}
-                                  className="text-muted-foreground transition-colors hover:text-destructive"
+                                  className="font-medium text-foreground/75 transition-colors hover:text-destructive"
                                 >
                                   <X className="size-4" />
                                 </button>
@@ -1195,7 +1195,7 @@ export function CampaignWizard({
                         })}
                       </div>
                     ) : (
-                      <p className="mt-2 rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                      <p className="mt-2 rounded-xl border border-dashed p-4 text-center text-sm font-medium text-foreground/75">
                         No countries selected yet.
                       </p>
                     )}
@@ -1212,7 +1212,7 @@ export function CampaignWizard({
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-foreground">Tip</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         You can add multiple countries to target a global
                         audience.
                       </p>
@@ -1240,7 +1240,7 @@ export function CampaignWizard({
                 <h3 className="text-xl font-bold tracking-tight text-foreground">
                   Budget settings
                 </h3>
-                <p className="mt-0.5 text-sm text-muted-foreground">
+                <p className="mt-0.5 text-sm font-medium text-foreground/75">
                   Set a budget that fits your goals.
                 </p>
               </div>
@@ -1274,7 +1274,7 @@ export function CampaignWizard({
           <FormLabel>Total budget (USD)</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
                                 $
                               </span>
                               <Input
@@ -1287,7 +1287,7 @@ export function CampaignWizard({
                               />
                             </div>
                           </FormControl>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs font-medium text-foreground/75">
                             Minimum $10 - also the free wallet balance needed to launch.
                           </p>
                           <FormMessage />
@@ -1302,7 +1302,7 @@ export function CampaignWizard({
                           <FormLabel>Daily budget (USD)</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
                                 $
                               </span>
                               <Input
@@ -1326,7 +1326,7 @@ export function CampaignWizard({
                           <FormLabel>Max CPC (USD)</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
                                 $
                               </span>
                               <Input
@@ -1356,7 +1356,7 @@ export function CampaignWizard({
                   <h3 className="text-xl font-bold tracking-tight text-foreground">
                     Start time
                   </h3>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
+                  <p className="mt-0.5 text-sm font-medium text-foreground/75">
                     Choose when you want your campaign to go live.
                   </p>
                 </div>
@@ -1407,7 +1407,7 @@ export function CampaignWizard({
                   <h3 className="text-xl font-bold tracking-tight text-foreground">
                     Locations &amp; notes
                   </h3>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
+                  <p className="mt-0.5 text-sm font-medium text-foreground/75">
                     Optional - narrow targeting to specific regions/cities, or
                     leave a note for the review team.
                   </p>
@@ -1630,7 +1630,7 @@ export function CampaignWizard({
                     <p className="text-sm font-semibold text-foreground">
                       You&apos;re almost there!
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm font-medium text-foreground/75">
                       Just a few more steps to launch your campaign.
                     </p>
                   </div>
@@ -1773,7 +1773,7 @@ function AdUnitTile({
         <p className="text-base font-semibold text-foreground">
           {label}
           {sublabel ? (
-            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+            <span className="ml-1.5 text-sm font-normal font-medium text-foreground/75">
               {sublabel}
             </span>
           ) : null}
@@ -1783,7 +1783,7 @@ function AdUnitTile({
         ) : null}
       </div>
       {rate ? (
-        <p className="mt-auto text-xs text-muted-foreground">
+        <p className="mt-auto text-xs font-medium text-foreground/75">
           From{" "}
           <span className="font-semibold text-foreground">
             ${rate.cpm.toFixed(2)}
@@ -1825,7 +1825,7 @@ function StartModeCard({
         </span>
       ) : null}
       <p className="text-sm font-semibold text-foreground">{label}</p>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="text-sm font-medium text-foreground/75">{description}</p>
     </button>
   )
 }
@@ -1862,7 +1862,7 @@ function PricingCard({
           "flex size-9 shrink-0 items-center justify-center rounded-full",
           selected
             ? "brand-gradient text-white"
-            : "bg-muted text-muted-foreground"
+            : "bg-muted font-medium text-foreground/75"
         )}
       >
         <Icon className="size-4" />
@@ -1904,7 +1904,7 @@ function SummaryRow({
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="flex items-center gap-2 text-foreground">
-        {Icon ? <Icon className="size-3.5 text-muted-foreground" /> : null}
+        {Icon ? <Icon className="size-3.5 font-medium text-foreground/75" /> : null}
         {label}
       </span>
       <span className="max-w-[60%] truncate text-right font-semibold">

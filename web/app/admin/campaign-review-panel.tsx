@@ -196,7 +196,7 @@ export function CampaignReviewPanel({
         </div>
       ) : !loading && campaigns.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No campaigns match this filter.
           </CardContent>
         </Card>
@@ -225,7 +225,7 @@ export function CampaignReviewPanel({
                       </TableCell>
                       <TableCell className="text-sm">
                         <div>{campaign.advertiser.name}</div>
-                        <div className="text-muted-foreground">
+                        <div className="font-medium text-foreground/75">
                           {campaign.advertiser.email}
                         </div>
                       </TableCell>
@@ -243,7 +243,7 @@ export function CampaignReviewPanel({
                           {campaign.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(campaign.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -268,7 +268,7 @@ export function CampaignReviewPanel({
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">{campaign.campaignName}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         {campaign.advertiser.name} ·{" "}
                         {campaign.advertiser.email}
                       </p>
@@ -279,19 +279,19 @@ export function CampaignReviewPanel({
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">Budget</p>
+                      <p className="text-xs font-medium text-foreground/75">Budget</p>
                       <p className="tabular-nums">
                         {formatCurrency(campaign.totalBudget)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Daily</p>
+                      <p className="text-xs font-medium text-foreground/75">Daily</p>
                       <p className="tabular-nums">
                         {formatCurrency(campaign.dailyBudget)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Max CPC</p>
+                      <p className="text-xs font-medium text-foreground/75">Max CPC</p>
                       <p className="tabular-nums">
                         {formatCurrency(campaign.maxCpc)}
                       </p>
@@ -420,7 +420,7 @@ export function CampaignReviewPanel({
 function CreativePreview({ campaign }: { campaign: AdminCampaign }) {
   return (
     <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-xs font-semibold uppercase tracking-wide font-medium text-foreground/75">
         Creative ({campaign.creativeType})
       </p>
 
@@ -433,7 +433,7 @@ function CreativePreview({ campaign }: { campaign: AdminCampaign }) {
             className="h-48 w-full rounded-lg border bg-white"
           />
         ) : (
-          <p className="text-sm text-muted-foreground">No HTML creative was submitted.</p>
+          <p className="text-sm font-medium text-foreground/75">No HTML creative was submitted.</p>
         )
       ) : campaign.creativeUrl ? (
         campaign.creativeType === "video" ? (
@@ -453,7 +453,7 @@ function CreativePreview({ campaign }: { campaign: AdminCampaign }) {
           />
         )
       ) : (
-        <p className="text-sm text-muted-foreground">No creative file was uploaded.</p>
+        <p className="text-sm font-medium text-foreground/75">No creative file was uploaded.</p>
       )}
 
       {campaign.destinationUrl ? (
@@ -485,7 +485,7 @@ function ReviewActions({
   wrap?: boolean
 }) {
   if (campaign.status !== "PENDING_REVIEW") {
-    return <span className="text-sm text-muted-foreground">-</span>
+    return <span className="text-sm font-medium text-foreground/75">-</span>
   }
 
   return (

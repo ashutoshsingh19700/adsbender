@@ -59,7 +59,7 @@ const TIPS_DISMISSED_KEY = "adnetwork.publisher.websiteTipsDismissed"
 const ZONE_STATUS_STYLES: Record<AdZoneStatus, string> = {
   ACTIVE: "border-emerald-300 text-emerald-700",
   PAUSED: "border-amber-300 text-amber-700",
-  ARCHIVED: "border-muted-foreground/30 text-muted-foreground",
+  ARCHIVED: "border-muted-foreground/30 font-medium text-foreground/75",
 }
 
 // AD_UNIT_FORMAT_OPTIONS covers the values this dialog itself creates
@@ -208,8 +208,8 @@ export function WebsitesPage() {
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Websites</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Websites</h1>
+          <p className="font-medium text-foreground/75">
             Add the sites you want to monetize and manage their ad units.
           </p>
         </div>
@@ -225,7 +225,7 @@ export function WebsitesPage() {
             <button
               type="button"
               onClick={hideTips}
-              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground"
             >
               <EyeOff className="size-3.5" /> Hide tips
             </button>
@@ -245,13 +245,13 @@ export function WebsitesPage() {
         // always-visible affordance to bring it back, same as Adsterra's
         // "SHOW TIPS" link on collapsed sections.
         <Card className="flex items-center justify-between px-5 py-3">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-foreground/75">
             3 steps to monetize your website
           </p>
           <button
             type="button"
             onClick={showTips}
-            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 text-xs font-medium text-foreground/75 hover:text-foreground"
           >
             <Eye className="size-3.5" /> Show tips
           </button>
@@ -260,7 +260,7 @@ export function WebsitesPage() {
 
       <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 font-medium text-foreground/75" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -306,7 +306,7 @@ export function WebsitesPage() {
         ) : sites.length === 0 ? (
           <div className="flex flex-col items-center gap-1.5 px-6 py-14 text-center">
             <p className="font-medium">No websites yet</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-foreground/75">
               Click &quot;Add website&quot; above to get started.
             </p>
           </div>
@@ -344,23 +344,23 @@ export function WebsitesPage() {
                         >
                           {siteZones.length > 0 ? (
                             expanded ? (
-                              <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                              <ChevronDown className="size-3.5 shrink-0 font-medium text-foreground/75" />
                             ) : (
-                              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                              <ChevronRight className="size-3.5 shrink-0 font-medium text-foreground/75" />
                             )
                           ) : (
                             <span className="inline-block size-3.5 shrink-0" />
                           )}
                           {site.domain}
                           {siteZones.length > 0 ? (
-                            <span className="text-xs font-normal text-muted-foreground">
+                            <span className="text-xs font-normal font-medium text-foreground/75">
                               {siteZones.length} ad unit
                               {siteZones.length === 1 ? "" : "s"}
                             </span>
                           ) : null}
                         </button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-medium text-foreground/75">
                         <span className="flex items-center gap-1.5">
                           {site.category ?? "—"}
                           {site.adultAds ? (
@@ -439,7 +439,7 @@ export function WebsitesPage() {
                           >
                             <TableCell className="py-2 pl-9 text-sm">
                               {zone.zoneName}
-                              <span className="ml-2 text-xs text-muted-foreground">
+                              <span className="ml-2 text-xs font-medium text-foreground/75">
                                 {formatZoneLayoutLabel(zone.layoutType)}
                               </span>
                             </TableCell>

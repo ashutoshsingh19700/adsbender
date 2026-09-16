@@ -92,7 +92,7 @@ export function UsersPanel() {
         </div>
       ) : !loading && users.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No users match this filter.
           </CardContent>
         </Card>
@@ -116,7 +116,7 @@ export function UsersPanel() {
                       <TableCell className="font-medium">
                         {user.name}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-medium text-foreground/75">
                         {user.email}
                       </TableCell>
                       <TableCell>
@@ -125,7 +125,7 @@ export function UsersPanel() {
                       <TableCell className="text-right tabular-nums">
                         {formatCurrency(user.balance_usd)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
@@ -142,7 +142,7 @@ export function UsersPanel() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         {user.email}
                       </p>
                     </div>
@@ -152,7 +152,7 @@ export function UsersPanel() {
                     <span className="tabular-nums">
                       {formatCurrency(user.balance_usd)}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="font-medium text-foreground/75">
                       Joined {new Date(user.createdAt).toLocaleDateString()}
                     </span>
                   </div>

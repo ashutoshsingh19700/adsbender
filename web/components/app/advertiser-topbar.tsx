@@ -67,13 +67,13 @@ export function AdvertiserTopbar() {
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
       <div className="relative w-full max-w-sm">
-        <HIcon icon={Search01Icon} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <HIcon icon={Search01Icon} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 font-medium text-foreground/75" />
         <input
           type="search"
           placeholder="Search campaigns, stats, or help..."
-          className="h-9 w-full rounded-full border bg-muted/40 pl-9 pr-14 text-sm outline-none placeholder:text-muted-foreground focus:border-violet-300 focus:bg-background focus:ring-2 focus:ring-violet-100"
+          className="h-9 w-full rounded-full border bg-muted/40 pl-9 pr-14 text-sm outline-none placeholder:font-medium text-foreground/75 focus:border-violet-300 focus:bg-background focus:ring-2 focus:ring-violet-100"
         />
-        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border bg-background px-1.5 py-0.5 text-[10px] font-medium text-foreground/75">
           ⌘K
         </kbd>
       </div>
@@ -83,14 +83,14 @@ export function AdvertiserTopbar() {
           <div className="hidden items-stretch overflow-hidden rounded-full border bg-muted/40 text-xs font-medium md:flex">
             <div className="flex items-center gap-1.5 px-3 py-1.5">
               <HIcon icon={Wallet01Icon} className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-muted-foreground">Free</span>
+              <span className="font-medium text-foreground/75">Free</span>
               <span className="tabular-nums text-foreground">
                 {formatCurrency(wallet.availableBalance)}
               </span>
             </div>
             <div className="h-full w-px bg-border" />
             <div className="flex items-center gap-1.5 px-3 py-1.5">
-              <span className="text-muted-foreground">Reserved</span>
+              <span className="font-medium text-foreground/75">Reserved</span>
               <span className="tabular-nums text-foreground">
                 {formatCurrency(wallet.reservedBalance)}
               </span>
@@ -120,13 +120,13 @@ export function AdvertiserTopbar() {
               {user?.email ? (
                 <div className="border-b px-3 py-2">
                   <p className="truncate text-sm font-medium">{user.email}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role ?? "ADVERTISER"}</p>
+                  <p className="text-xs font-medium text-foreground/75">{user?.role ?? "ADVERTISER"}</p>
                 </div>
               ) : null}
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm font-medium text-foreground/75 hover:bg-muted hover:text-foreground"
               >
                 <HIcon icon={LogOutIcon} className="size-4" />
                 Log out

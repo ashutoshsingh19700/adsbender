@@ -367,8 +367,8 @@ export function AdvertiserWalletPage() {
             <WalletIcon className="size-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Wallet</h1>
+            <p className="font-medium text-foreground/75">
               Manage your advertiser balance, top-ups, and campaign spending.
             </p>
           </div>
@@ -382,7 +382,7 @@ export function AdvertiserWalletPage() {
             <p className="truncate font-medium">
               Power your campaigns with a seamless wallet
             </p>
-            <p className="truncate text-sm text-muted-foreground">
+            <p className="truncate text-sm font-medium text-foreground/75">
               Add funds and reach more people.
             </p>
           </div>
@@ -446,13 +446,13 @@ export function AdvertiserWalletPage() {
               <CardContent className="space-y-4">
                 {pendingOrder.gstAmountUsd ? (
                   <div className="space-y-1.5 rounded-xl border bg-muted/30 p-3 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
+                    <div className="flex justify-between font-medium text-foreground/75">
                       <span>Top-up amount</span>
                       <span className="tabular-nums">
                         {formatCurrency(pendingOrder.creditAmountUsd)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-muted-foreground">
+                    <div className="flex justify-between font-medium text-foreground/75">
                       <span>GST (18%)</span>
                       <span className="tabular-nums">
                         {formatCurrency(pendingOrder.gstAmountUsd)}
@@ -466,7 +466,7 @@ export function AdvertiserWalletPage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground/75">
                     Pay {formatCurrency(pendingOrder.payAmount)} with PayPal
                     to complete your top-up. Non-US accounts see a
                     local-currency estimate at checkout - the charge itself
@@ -558,7 +558,7 @@ export function AdvertiserWalletPage() {
                       <FormItem>
                         <FormControl>
                           <div className="flex items-stretch overflow-hidden rounded-lg border focus-within:ring-2 focus-within:ring-ring/50">
-                            <span className="flex items-center bg-muted/50 px-3 text-sm font-medium text-muted-foreground">
+                            <span className="flex items-center bg-muted/50 px-3 text-sm font-medium text-foreground/75">
                               $
                             </span>
                             <Input
@@ -577,13 +577,13 @@ export function AdvertiserWalletPage() {
                   />
                   {isIndianAccount && watchedAmount > 0 ? (
                     <div className="space-y-1.5 rounded-xl border bg-muted/30 p-3 text-sm">
-                      <div className="flex justify-between text-muted-foreground">
+                      <div className="flex justify-between font-medium text-foreground/75">
                         <span>Subtotal</span>
                         <span className="tabular-nums">
                           {formatCurrency(watchedAmount)}
                         </span>
                       </div>
-                      <div className="flex justify-between text-muted-foreground">
+                      <div className="flex justify-between font-medium text-foreground/75">
                         <span>GST (18%) - India</span>
                         <span className="tabular-nums">
                           {formatCurrency(gstPreview)}
@@ -595,7 +595,7 @@ export function AdvertiserWalletPage() {
                           {formatCurrency(totalPreview)}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs font-medium text-foreground/75">
                         Your wallet is still credited the full{" "}
                         {formatCurrency(watchedAmount)} - GST is an extra cost
                         on top, required for Indian accounts.
@@ -616,7 +616,7 @@ export function AdvertiserWalletPage() {
                         : "Pay with Razorpay"}
                     {!creatingOrder && <ArrowRight className="size-4" />}
                   </Button>
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-foreground/75">
                     <Lock className="size-3" />
                     Secure payment powered by{" "}
                     {gateway === "paypal" ? "PayPal" : "Razorpay"}
@@ -642,7 +642,7 @@ export function AdvertiserWalletPage() {
             </div>
             {/* Static range label - the summary endpoint isn't date-filtered
                 yet, so this isn't wired to a real filter. */}
-            <span className="hidden shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex">
+            <span className="hidden shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-foreground/75 sm:flex">
               <Calendar className="size-3.5" />
               Last 30 days
               <ChevronDown className="size-3.5" />
@@ -702,7 +702,7 @@ export function AdvertiserWalletPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         No campaigns yet - launch one to see spending here.
                       </p>
                     </TableCell>
@@ -711,7 +711,7 @@ export function AdvertiserWalletPage() {
               </TableBody>
             </Table>
             {summary?.campaignSpending.length ? (
-              <div className="flex items-center justify-between border-t pt-3 text-sm text-muted-foreground">
+              <div className="flex items-center justify-between border-t pt-3 text-sm font-medium text-foreground/75">
                 <span>Showing {summary.campaignSpending.length} campaigns</span>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -780,7 +780,7 @@ export function AdvertiserWalletPage() {
                   const reference = transaction.referenceId ?? transaction.id
                   return (
                     <TableRow key={transaction.id} className="hover:bg-muted/40">
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </TableCell>
                       <TableCell>
@@ -788,11 +788,11 @@ export function AdvertiserWalletPage() {
                           {transaction.description ??
                             TRANSACTION_LABELS[transaction.type]}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs font-medium text-foreground/75">
                           {TRANSACTION_LABELS[transaction.type]}
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm font-medium text-foreground/75">
                         {paymentMethodFor(transaction)}
                       </TableCell>
                       <TableCell
@@ -818,7 +818,7 @@ export function AdvertiserWalletPage() {
                         </Badge>
                       </TableCell>
                       <TableCell
-                        className="max-w-32 truncate font-mono text-xs text-muted-foreground"
+                        className="max-w-32 truncate font-mono text-xs font-medium text-foreground/75"
                         title={reference}
                       >
                         {reference}
@@ -831,10 +831,10 @@ export function AdvertiserWalletPage() {
                   <TableCell colSpan={6} className="h-40 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                        <FileText className="size-5 text-muted-foreground" />
+                        <FileText className="size-5 font-medium text-foreground/75" />
                       </div>
                       <p className="text-sm font-medium">No transactions yet</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         Your wallet activity will appear here once you add
                         funds or run campaigns.
                       </p>
@@ -875,8 +875,8 @@ function BalanceCard({
             <Icon className="size-4" />
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="text-sm font-medium text-foreground/75">{label}</p>
+            <p className="text-2xl font-bold tabular-nums text-foreground">
               {value !== undefined ? formatCurrency(value) : "-"}
             </p>
           </div>
@@ -943,7 +943,7 @@ function RowMenu() {
         className="flex size-7 cursor-pointer list-none items-center justify-center rounded-md hover:bg-muted [&::-webkit-details-marker]:hidden"
         aria-label="Campaign actions"
       >
-        <MoreVertical className="size-4 text-muted-foreground" />
+        <MoreVertical className="size-4 font-medium text-foreground/75" />
       </summary>
       <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
         <Link

@@ -67,7 +67,7 @@ export function PublisherSidebarNav({
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
               active && "sidebar-pill-gradient text-white hover:opacity-90"
             )}
           >
@@ -78,7 +78,7 @@ export function PublisherSidebarNav({
       })}
 
       {!collapsed ? (
-        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
+        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide font-medium text-foreground/75/60 uppercase">
           Support
         </p>
       ) : (
@@ -90,7 +90,7 @@ export function PublisherSidebarNav({
           href={link.href}
           onClick={onNavigate}
           title={collapsed ? link.label : undefined}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground"
         >
           <HIcon icon={link.icon} className="size-4 shrink-0" />
           {!collapsed ? link.label : null}
@@ -135,7 +135,7 @@ export function PublisherSidebar() {
           <p className="mt-2 text-sm font-semibold text-foreground">
             Grow your earnings
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-xs font-medium text-foreground/75">
             Add more zones, reach more advertisers.
           </p>
           <Button
@@ -150,7 +150,7 @@ export function PublisherSidebar() {
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="flex items-center gap-2 border-t px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-2 border-t px-4 py-3 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground"
       >
         {collapsed ? (
           <HIcon icon={ChevronsRightIcon} className="size-4 shrink-0" />

@@ -208,7 +208,7 @@ export function PricingPanel() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm font-medium text-foreground/75">
         Set what advertisers are charged for each ad format, per pricing
         model. Changes appear in the campaign wizard&apos;s &quot;Ad
         format&quot; step within a few seconds.
@@ -218,7 +218,7 @@ export function PricingPanel() {
         <CardContent className="space-y-3 pt-6">
           <div>
             <p className="text-sm font-medium">Platform fee</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-foreground/75">
               Cut kept from every dollar of ad spend before crediting the
               publisher (see Money Flow for a worked example). Defaults to
               20%.
@@ -237,7 +237,7 @@ export function PricingPanel() {
                 value={platformFeePercent}
                 onChange={(e) => setPlatformFeePercent(e.target.value)}
               />
-              <span className="text-sm text-muted-foreground">%</span>
+              <span className="text-sm font-medium text-foreground/75">%</span>
               <Button
                 size="sm"
                 onClick={handleSavePlatformFee}
@@ -255,7 +255,7 @@ export function PricingPanel() {
         <CardContent className="space-y-3 pt-6">
           <div>
             <p className="text-sm font-medium">Minimum advertiser balance</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-medium text-foreground/75">
               An advertiser must keep at least this much free (unreserved)
               in their wallet, on top of any campaign budget, to submit or
               have a campaign approved. This money is never itself spendable
@@ -266,7 +266,7 @@ export function PricingPanel() {
             <Skeleton className="h-10 w-48" />
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">$</span>
+              <span className="text-sm font-medium text-foreground/75">$</span>
               <Input
                 type="number"
                 min={0}

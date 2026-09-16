@@ -113,7 +113,7 @@ function PickerTile({
       <Icon className="size-5" />
       <span>{label}</span>
       {sublabel ? (
-        <span className="text-xs font-normal text-muted-foreground">
+        <span className="text-xs font-normal font-medium text-foreground/75">
           {sublabel}
         </span>
       ) : null}
@@ -234,7 +234,7 @@ function ZonePreview({ width, height }: { width: number; height: number }) {
 
   return (
     <div className="flex w-full flex-col items-center gap-2 rounded-lg border bg-muted/30 p-4 sm:w-40">
-      <p className="text-xs font-medium text-muted-foreground">Preview</p>
+      <p className="text-xs font-medium text-foreground/75">Preview</p>
       <div
         className="flex shrink-0 items-center justify-center rounded-md border-2 border-dashed border-violet-300 bg-violet-50 text-[10px] font-medium text-violet-500"
         style={{
@@ -244,7 +244,7 @@ function ZonePreview({ width, height }: { width: number; height: number }) {
       >
         AD
       </div>
-      <p className="text-xs tabular-nums text-muted-foreground">
+      <p className="text-xs tabular-nums font-medium text-foreground/75">
         {hasSize ? `${width} × ${height}px` : "Enter a size"}
       </p>
     </div>
@@ -292,7 +292,7 @@ function WizardSteps({
                       ? "bg-white/25 text-white"
                       : status === "done"
                         ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
-                        : "bg-muted text-muted-foreground"
+                        : "bg-muted font-medium text-foreground/75"
                   )}
                 >
                   {status === "done" ? (
@@ -307,7 +307,7 @@ function WizardSteps({
                       ? "text-white"
                       : status === "done"
                         ? "text-violet-600"
-                        : "text-muted-foreground"
+                        : "font-medium text-foreground/75"
                   }
                 >
                   {s.title}
@@ -315,7 +315,7 @@ function WizardSteps({
               </button>
             </li>
             {i < SETUP_STEPS.length - 1 ? (
-              <HIcon icon={ArrowRight01Icon} className="size-3.5 shrink-0 text-muted-foreground/50" />
+              <HIcon icon={ArrowRight01Icon} className="size-3.5 shrink-0 font-medium text-foreground/75/50" />
             ) : null}
           </React.Fragment>
         )
@@ -513,10 +513,10 @@ export function PublisherDashboard() {
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:px-6 lg:px-8">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           Publisher Portal
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-medium text-foreground/75">
           Verify your site ownership and create ad zones to embed on your
           pages.
         </p>
@@ -560,7 +560,7 @@ export function PublisherDashboard() {
 
                 <div className="space-y-2 rounded-md border bg-muted/30 p-3">
                   <p className="text-sm font-medium">Your verification code</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-medium text-foreground/75">
                     This is unique to your account. You&apos;ll paste it onto
                     your site in the next step.
                   </p>
@@ -588,7 +588,7 @@ export function PublisherDashboard() {
                       </Button>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-medium text-foreground/75">
                       Loading your code…
                     </p>
                   )}
@@ -607,14 +607,14 @@ export function PublisherDashboard() {
                   <HIcon
                     icon={ChevronDownIcon}
                     className={
-                      "size-4 text-muted-foreground transition-transform " +
+                      "size-4 font-medium text-foreground/75 transition-transform " +
                       (showGuide ? "rotate-180" : "")
                     }
                   />
                 </button>
                 {showGuide ? (
                   <>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-medium text-foreground/75">
                       Pick how your website is built for step-by-step
                       instructions.
                     </p>
@@ -628,7 +628,7 @@ export function PublisherDashboard() {
                       </TabsList>
                       {ADS_TXT_GUIDES.map((guide) => (
                         <TabsContent key={guide.value} value={guide.value}>
-                          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground marker:text-foreground">
+                          <ol className="list-decimal space-y-1.5 pl-5 text-sm font-medium text-foreground/75 marker:text-foreground">
                             {guide
                               .steps(defaultToken ?? "adnetwork-verify=…")
                               .map((step, i) => (
@@ -666,7 +666,7 @@ export function PublisherDashboard() {
               ) : (
                 <button
                   type="button"
-                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  className="text-xs font-medium text-foreground/75 underline underline-offset-2 hover:text-foreground"
                   onClick={() => setShowAdvanced(true)}
                 >
                   I want to use my own custom code instead
@@ -893,9 +893,9 @@ export function PublisherDashboard() {
         ) : (
           <Card>
             <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
-              <HIcon icon={SourceCodeIcon} className="size-6 text-muted-foreground" />
+              <HIcon icon={SourceCodeIcon} className="size-6 font-medium text-foreground/75" />
               <p className="font-medium">No ad zone yet</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-medium text-foreground/75">
                 Go back and create an ad zone to get its install snippet.
               </p>
             </CardContent>
@@ -907,8 +907,8 @@ export function PublisherDashboard() {
       ) : null}
 
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">My Ad Zones</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">My Ad Zones</h2>
+        <p className="font-medium text-foreground/75">
           Manage, edit, and inspect performance for every zone you&apos;ve
           created.
         </p>

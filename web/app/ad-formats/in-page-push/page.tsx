@@ -105,7 +105,7 @@ export default function InPagePushAdsPage() {
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               Native-Style Notifications That Earn Their Click
             </h1>
-            <p className="mt-5 max-w-md text-muted-foreground">
+            <p className="mt-5 max-w-md font-medium text-foreground/75">
               Run CPM, CPC, or CPA campaigns on In-Page Push traffic as an
               advertiser — or monetize every impression on your site as a
               publisher, without needing users to opt in first.
@@ -153,7 +153,7 @@ export default function InPagePushAdsPage() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               How do In-Page Push ads work?
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 font-medium text-foreground/75">
               In-Page Push places a native-style notification directly in the
               page content, which tends to make it more visible than a
               typical browser push message. It works across every GEO,
@@ -163,7 +163,7 @@ export default function InPagePushAdsPage() {
               <span className="font-medium text-violet-600">
                 For advertisers:
               </span>{" "}
-              <span className="text-muted-foreground">
+              <span className="font-medium text-foreground/75">
                 steady CPM, CPC, and CPA traffic with engagement that holds
                 up well across verticals.
               </span>
@@ -172,7 +172,7 @@ export default function InPagePushAdsPage() {
               <span className="font-medium text-violet-600">
                 For publishers:
               </span>{" "}
-              <span className="text-muted-foreground">
+              <span className="font-medium text-foreground/75">
                 an extra revenue layer that stacks cleanly alongside your
                 other ad formats, without the opt-in friction that increasingly
                 limits browser push notifications.
@@ -240,7 +240,7 @@ export default function InPagePushAdsPage() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try In-Page Push?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Whichever side of the network you&apos;re on, it takes minutes to
             get your first campaign or ad zone live.
           </p>

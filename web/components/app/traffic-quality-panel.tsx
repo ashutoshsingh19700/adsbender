@@ -109,7 +109,7 @@ export function TrafficQualityPanel({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="text-sm font-medium text-foreground/75">{description}</p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
@@ -142,7 +142,7 @@ export function TrafficQualityPanel({
           <div className="grid gap-1.5">
             <Label
               htmlFor="traffic-quality-start"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Start date
             </Label>
@@ -159,7 +159,7 @@ export function TrafficQualityPanel({
           <div className="grid gap-1.5">
             <Label
               htmlFor="traffic-quality-end"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               End date
             </Label>
@@ -208,7 +208,7 @@ export function TrafficQualityPanel({
               </BarChart>
             </ChartContainer>
           ) : (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="py-12 text-center text-sm font-medium text-foreground/75">
               No blocked or flagged traffic for this date range.
             </p>
           )}
@@ -240,11 +240,11 @@ export function TrafficQualityPanel({
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
                       <span className="font-semibold">
                         {reasonLabel(row.reason)}{" "}
-                        <span className="font-normal text-muted-foreground capitalize">
+                        <span className="font-normal font-medium text-foreground/75 capitalize">
                           · {row.stage}
                         </span>
                       </span>
-                      <span className="tabular-nums text-muted-foreground">
+                      <span className="tabular-nums font-medium text-foreground/75">
                         {row.blocked.toLocaleString()} blocked ·{" "}
                         {row.flagged.toLocaleString()} flagged
                       </span>
@@ -272,7 +272,7 @@ export function TrafficQualityPanel({
               })}
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm font-medium text-foreground/75">
               Nothing to report for this date range.
             </p>
           )}

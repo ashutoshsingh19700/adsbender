@@ -216,7 +216,7 @@ export function PopunderView() {
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               Turn Popunder Traffic Into Predictable Revenue
             </h1>
-            <p className="mt-5 max-w-md text-muted-foreground">
+            <p className="mt-5 max-w-md font-medium text-foreground/75">
               Run CPM or CPA Popunder campaigns backed by a constantly
               growing base of publisher inventory — or add a Popunder zone to
               your site in minutes and start collecting payouts.
@@ -294,7 +294,7 @@ export function PopunderView() {
                 <vertical.icon className="size-5" />
               </div>
               <h3 className="mt-4 font-medium">{vertical.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-sm font-medium text-foreground/75">
                 {vertical.description}
               </p>
             </div>
@@ -339,7 +339,7 @@ export function PopunderView() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try Popunder?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Whichever side of the network you&apos;re on, it takes minutes to get
             your first campaign or ad zone live.
           </p>

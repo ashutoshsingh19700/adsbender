@@ -165,7 +165,7 @@ export function RevenuePanel() {
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
           {periodMargin !== undefined ? (
-            <p className="ml-auto text-sm text-muted-foreground">
+            <p className="ml-auto text-sm font-medium text-foreground/75">
               Margin for this period:{" "}
               <span className="font-medium tabular-nums text-foreground">
                 {formatCurrency(periodMargin)}
@@ -214,7 +214,7 @@ export function RevenuePanel() {
               </LineChart>
             </ChartContainer>
           ) : (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="py-12 text-center text-sm font-medium text-foreground/75">
               No data for this date range.
             </p>
           )}

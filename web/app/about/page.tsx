@@ -71,10 +71,10 @@ export default function AboutPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             About AdsBender
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             One network, two sides of the same trade
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             AdsBender connects advertisers who need performance-driven
             traffic with publishers who need a reliable way to monetize
             their sites — through the same four ad formats, the same
@@ -94,7 +94,7 @@ export default function AboutPage() {
               Launch campaigns across Popunder, Social Bar, In-Page Push,
               and Interstitial traffic
             </h2>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm font-medium text-foreground/75">
               Pick a pricing model that matches how confident you are in the
               offer — CPM to test a new GEO or a complex conversion flow,
               CPC when clicks are the KPI, CPA when the flow is simple and
@@ -116,7 +116,7 @@ export default function AboutPage() {
             <h2 className="mt-3 text-xl font-semibold tracking-tight">
               Monetize traffic without disrupting the site experience
             </h2>
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm font-medium text-foreground/75">
               Add an ad zone in one of the four formats, wait for approval,
               and start collecting payouts — Social Bar and In-Page Push run
               alongside existing ad units without the opt-in friction that
@@ -136,7 +136,7 @@ export default function AboutPage() {
 
       {/* Principles */}
       <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           How AdsBender works
         </h2>
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -146,7 +146,7 @@ export default function AboutPage() {
                 <principle.icon className="size-5" />
               </div>
               <p className="mt-4 font-medium">{principle.title}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm font-medium text-foreground/75">
                 {principle.description}
               </p>
             </div>
@@ -157,10 +157,10 @@ export default function AboutPage() {
       {/* CTA band */}
       <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Questions before you start?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Reach out and the team will help you find the right ad format or
             pricing model for your traffic.
           </p>

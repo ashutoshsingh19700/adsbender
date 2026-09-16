@@ -115,7 +115,7 @@ export function NotificationsBell() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative rounded-full text-muted-foreground hover:text-foreground"
+        className="relative rounded-full font-medium text-foreground/75 hover:text-foreground"
         aria-label="Notifications"
         aria-expanded={open}
         onClick={handleOpen}
@@ -143,11 +143,11 @@ export function NotificationsBell() {
 
           <div className="max-h-96 overflow-y-auto">
             {!loaded ? (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <p className="px-3 py-6 text-center text-sm font-medium text-foreground/75">
                 Loading...
               </p>
             ) : notifications.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+              <p className="px-3 py-6 text-center text-sm font-medium text-foreground/75">
                 No notifications yet.
               </p>
             ) : (
@@ -166,10 +166,10 @@ export function NotificationsBell() {
                     )}
                     <span className="text-sm font-medium">{notification.title}</span>
                   </span>
-                  <span className="pl-3.5 text-sm text-muted-foreground">
+                  <span className="pl-3.5 text-sm font-medium text-foreground/75">
                     {notification.message}
                   </span>
-                  <span className="pl-3.5 text-xs text-muted-foreground">
+                  <span className="pl-3.5 text-xs font-medium text-foreground/75">
                     {timeAgo(notification.createdAt)}
                   </span>
                 </button>

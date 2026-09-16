@@ -172,7 +172,7 @@ export function AdZoneManager({
   if (!loading && zones.length === 0) {
     return (
       <Card>
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+        <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
           You haven&apos;t created any ad zones yet. Create one above to get
           an embeddable snippet.
         </CardContent>
@@ -200,10 +200,10 @@ export function AdZoneManager({
               {zones.map((zone) => (
                 <TableRow key={zone.id}>
                   <TableCell className="font-medium">{zone.zoneName}</TableCell>
-                  <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                  <TableCell className="whitespace-nowrap tabular-nums font-medium text-foreground/75">
                     {zone.width}×{zone.height}
                   </TableCell>
-                  <TableCell className="text-muted-foreground capitalize">
+                  <TableCell className="font-medium text-foreground/75 capitalize">
                     {adFormatLabel(zone.layoutType)}
                   </TableCell>
                   <TableCell>
@@ -211,7 +211,7 @@ export function AdZoneManager({
                       {zone.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                     {new Date(zone.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
@@ -240,13 +240,13 @@ export function AdZoneManager({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">{zone.zoneName}</p>
-                  <p className="text-sm text-muted-foreground capitalize">
+                  <p className="text-sm font-medium text-foreground/75 capitalize">
                     {adFormatLabel(zone.layoutType)} · {zone.width}×{zone.height}
                   </p>
                 </div>
                 <Badge variant={STATUS_BADGE[zone.status]}>{zone.status}</Badge>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Created {new Date(zone.createdAt).toLocaleDateString()}
               </p>
               <ZoneActions
@@ -626,7 +626,7 @@ export function ZoneSnippetDialog({
             className="font-mono text-xs"
           />
         )}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs font-medium text-foreground/75">
           {isNewsletter
             ? "This is static HTML, not a live tag — it's generated from whichever campaign is bidding highest right now, and includes a working open-tracking pixel and click link. Email clients block scripts, so it never re-fetches on open; regenerate this snippet before each send to pick up the current sponsor."
             : "Paste this directly in your page's normal, always-rendered content — not inside a modal, lazy-loaded component, or conditional render. On frameworks with server streaming (e.g. Next.js Suspense), placing it inside a boundary that never resolves into the live DOM will inject the ad invisibly."}
@@ -738,7 +738,7 @@ function ZonePerformanceDialog({
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs font-medium text-foreground/75">
           Showing {range.startDate} to {range.endDate}
         </p>
 
@@ -749,7 +749,7 @@ function ZonePerformanceDialog({
             ))}
           </div>
         ) : error && !data ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm font-medium text-foreground/75">
             {error}
           </p>
         ) : totals && hasRows ? (
@@ -766,7 +766,7 @@ function ZonePerformanceDialog({
             <MetricTile label="CTR" value={`${totals.ctr.toFixed(2)}%`} />
           </div>
         ) : (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm font-medium text-foreground/75">
             No performance data for this date range.
           </p>
         )}
@@ -778,8 +778,8 @@ function ZonePerformanceDialog({
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
+      <p className="text-xs font-medium text-foreground/75">{label}</p>
+      <p className="text-xl font-bold tabular-nums text-foreground">{value}</p>
     </div>
   )
 }

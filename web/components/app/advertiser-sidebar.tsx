@@ -104,7 +104,7 @@ export function AdvertiserSidebarNav({
               type="button"
               onClick={() => setOpen((o) => !o)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
                 item.children.some((c) => pathname === hrefPath(c.href)) &&
                   "bg-violet-50 text-violet-700"
               )}
@@ -153,7 +153,7 @@ export function AdvertiserSidebarNav({
                       href={child.href}
                       onClick={onNavigate}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                        "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
                         active && "bg-violet-50 font-medium text-violet-700"
                       )}
                     >
@@ -172,7 +172,7 @@ export function AdvertiserSidebarNav({
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground",
               pathname === hrefPath(item.href) &&
                 "sidebar-pill-gradient text-white hover:opacity-90"
             )}
@@ -184,7 +184,7 @@ export function AdvertiserSidebarNav({
       )}
 
       {!collapsed ? (
-        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground/60 uppercase">
+        <p className="mt-5 px-3 pb-1 text-xs font-semibold tracking-wide font-medium text-foreground/75/60 uppercase">
           Support
         </p>
       ) : (
@@ -196,7 +196,7 @@ export function AdvertiserSidebarNav({
           href={link.href}
           onClick={onNavigate}
           title={collapsed ? link.label : undefined}
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground"
         >
           <HIcon icon={link.icon} className="size-4 shrink-0" />
           {!collapsed ? link.label : null}
@@ -241,7 +241,7 @@ export function AdvertiserSidebar() {
           <p className="mt-2 text-sm font-semibold text-foreground">
             Upgrade your campaigns
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-xs font-medium text-foreground/75">
             Get more reach, better results.
           </p>
           <Button
@@ -256,7 +256,7 @@ export function AdvertiserSidebar() {
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="flex items-center gap-2 border-t px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-2 border-t px-4 py-3 text-sm font-medium text-foreground/75 transition-colors hover:bg-muted hover:text-foreground"
       >
         {collapsed ? (
           <HIcon icon={ChevronsRightIcon} className="size-4 shrink-0" />

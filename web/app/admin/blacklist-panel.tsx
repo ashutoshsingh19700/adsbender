@@ -102,7 +102,7 @@ export function BlacklistPanel() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm font-medium text-foreground/75">
         Every request from a blacklisted IP is rejected before an ad is
         served or a click is tracked - see{" "}
         <code className="text-xs">FraudDetectionService</code>.
@@ -166,10 +166,10 @@ export function BlacklistPanel() {
                           {entry.source}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-md truncate text-muted-foreground">
+                      <TableCell className="max-w-md truncate font-medium text-foreground/75">
                         {entry.reason}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="font-medium text-foreground/75">
                         {new Date(entry.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
@@ -188,7 +188,7 @@ export function BlacklistPanel() {
               </Table>
             </div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="py-8 text-center text-sm font-medium text-foreground/75">
               No IPs are currently blacklisted.
             </p>
           )}

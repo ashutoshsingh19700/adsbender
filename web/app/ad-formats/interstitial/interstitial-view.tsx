@@ -217,7 +217,7 @@ export function InterstitialView() {
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               Full-Screen Placements That Command Attention
             </h1>
-            <p className="mt-5 max-w-md text-muted-foreground">
+            <p className="mt-5 max-w-md font-medium text-foreground/75">
               Run CPM or CPA Interstitial campaigns timed to natural
               transition points — or add an Interstitial unit to your site
               and turn high-attention moments into revenue.
@@ -265,12 +265,12 @@ export function InterstitialView() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Timed to natural pauses in the experience
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 font-medium text-foreground/75">
               An Interstitial takes over the screen at a transition point —
               between app screens, page loads, or game levels — rather than
               interrupting active reading or play.
             </p>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 font-medium text-foreground/75">
               That timing is what makes it one of the more attention-grabbing
               formats available, especially on mobile.
             </p>
@@ -313,7 +313,7 @@ export function InterstitialView() {
                 <vertical.icon className="size-5" />
               </div>
               <h3 className="mt-4 font-medium">{vertical.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-sm font-medium text-foreground/75">
                 {vertical.description}
               </p>
             </div>
@@ -358,7 +358,7 @@ export function InterstitialView() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try Interstitial?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Whichever side of the network you&apos;re on, it takes minutes to
             get your first campaign or ad zone live.
           </p>

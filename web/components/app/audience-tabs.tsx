@@ -40,7 +40,7 @@ export function AudienceTabs({
               "rounded-full px-6 py-2 text-sm font-medium capitalize transition-colors",
               audience === key
                 ? "bg-neutral-900 text-white"
-                : "text-muted-foreground hover:text-foreground"
+                : "font-medium text-foreground/75 hover:text-foreground"
             )}
           >
             {key}
@@ -60,7 +60,7 @@ export function AudienceTabs({
               <card.icon className="size-5" />
             </div>
             <h3 className="mt-4 font-medium">{card.title}</h3>
-            <p className="mt-1.5 text-sm text-muted-foreground">
+            <p className="mt-1.5 text-sm font-medium text-foreground/75">
               {card.description}
             </p>
           </div>

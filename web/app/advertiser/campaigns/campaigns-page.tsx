@@ -36,7 +36,7 @@ export function CampaignsPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Campaigns</h1>
-            <p className="text-muted-foreground">
+            <p className="font-medium text-foreground/75">
               Manage your campaigns or submit a new one.
             </p>
           </div>

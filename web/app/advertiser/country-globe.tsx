@@ -227,7 +227,7 @@ export function CountryGlobe({
         </div>
         <div>
           <p className="text-xs font-semibold text-foreground">Reach worldwide</p>
-          <p className="text-[11px] text-muted-foreground">+195 countries</p>
+          <p className="text-[11px] font-medium text-foreground/75">+195 countries</p>
         </div>
       </div>
 

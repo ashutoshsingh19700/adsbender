@@ -181,7 +181,7 @@ export function HomeView() {
                   and lands signed-out visitors on the right role tab
                   immediately; next=/publisher carries them on to the
                   dashboard once they've signed in. */}
-              <p className="mt-4 text-sm text-muted-foreground">
+              <p className="mt-4 text-sm font-medium text-foreground/75">
                 Have a website or app instead?{" "}
                 <Link
                   href="/login?role=PUBLISHER&next=/publisher"
@@ -202,7 +202,7 @@ export function HomeView() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Choose a sign-up offer to jumpstart your first campaign
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 font-medium text-foreground/75">
               Select an offer that fits your monthly budget and sign up when
               ready. New advertisers receive ad credit after meeting the
               minimum spend requirement for the selected offer.
@@ -242,7 +242,7 @@ export function HomeView() {
                   <p className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
                     {offer.credit}
                   </p>
-                  <p className="mt-1 text-sm font-medium text-muted-foreground">
+                  <p className="mt-1 text-sm font-medium text-foreground/75">
                     in ad credit
                   </p>
                   <p className="mt-4 text-sm text-foreground/80">
@@ -257,7 +257,7 @@ export function HomeView() {
           <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row sm:text-left">
             <div>
               <p className="font-medium">How to claim your offer</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-medium text-foreground/75">
                 Sign up and complete payment setup to apply the offer to your
                 account.
               </p>

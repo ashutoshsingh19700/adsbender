@@ -150,10 +150,10 @@ export default function GlossaryPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             Glossary
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Ad tech terms, explained
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             The pricing models, ad formats, and metrics referenced across
             the site, defined in one place.
           </p>
@@ -166,7 +166,7 @@ export default function GlossaryPage() {
           {sortedTerms.map((item) => (
             <div key={item.term} className="p-5">
               <dt className="font-medium">{item.term}</dt>
-              <dd className="mt-2 text-sm text-muted-foreground">
+              <dd className="mt-2 text-sm font-medium text-foreground/75">
                 {item.definition}
               </dd>
               {item.linkHref && (

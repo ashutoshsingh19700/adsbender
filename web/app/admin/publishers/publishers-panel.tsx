@@ -81,7 +81,7 @@ export function PublishersPanel() {
   return (
     <div className="space-y-4">
       <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 font-medium text-foreground/75" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -98,7 +98,7 @@ export function PublishersPanel() {
         </div>
       ) : !loading && publishers.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No publishers match this search.
           </CardContent>
         </Card>
@@ -125,7 +125,7 @@ export function PublishersPanel() {
                   >
                     <TableCell>
                       <div className="font-medium">{p.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm font-medium text-foreground/75">
                         {p.email}
                       </div>
                     </TableCell>
@@ -141,7 +141,7 @@ export function PublishersPanel() {
                     <TableCell className="text-right tabular-nums">
                       {formatCurrency(p.pendingEarnings)}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                       {new Date(p.createdAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
@@ -261,7 +261,7 @@ function PublisherDetailSheet({
             <div className="space-y-2 px-2">
               <h3 className="text-sm font-semibold">Sites</h3>
               {detail.sites.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No sites registered yet.
                 </p>
               ) : (
@@ -309,7 +309,7 @@ function PublisherDetailSheet({
             <div className="space-y-2 px-2">
               <h3 className="text-sm font-semibold">Recent payouts</h3>
               {detail.payouts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No payouts requested yet.
                 </p>
               ) : (
@@ -333,7 +333,7 @@ function PublisherDetailSheet({
                               {p.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                             {new Date(p.requestedAt).toLocaleDateString()}
                           </TableCell>
                         </TableRow>
@@ -346,18 +346,18 @@ function PublisherDetailSheet({
 
             <div className="space-y-2 px-2 pb-4">
               <div className="flex items-center gap-2">
-                <Globe2 className="size-4 text-muted-foreground" />
+                <Globe2 className="size-4 font-medium text-foreground/75" />
                 <h3 className="text-sm font-semibold">
                   Audience by country (last 30 days)
                 </h3>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Derived from the visitor&apos;s IP address at ad-serve time
                 (geo-IP lookup) - the same signal that flags datacenter/proxy
                 traffic on the Traffic Quality tab.
               </p>
               {sortedCountries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No traffic in this window yet.
                 </p>
               ) : (

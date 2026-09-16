@@ -36,10 +36,10 @@ export default function ContactPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             Contact AdsBender
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Talk to the team
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             Whether you&apos;re setting up your first campaign, adding an ad
             zone, or just have a question, here&apos;s the fastest way to
             reach us.

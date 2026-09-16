@@ -45,15 +45,15 @@ export function AdminDashboard() {
   return (
     <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] space-y-6 px-4 sm:px-6 lg:px-8 py-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Admin Console
           {!isMaster ? (
-            <span className="ml-2 align-middle text-sm font-normal text-muted-foreground">
+            <span className="ml-2 align-middle text-sm font-normal font-medium text-foreground/75">
               ({SCOPE_LABEL[scope] ?? scope})
             </span>
           ) : null}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="font-medium text-foreground/75">
           {isPublisherAdmin
             ? "Manage publisher sites, payouts, and publisher-side traffic quality."
             : isAdvertiserAdmin

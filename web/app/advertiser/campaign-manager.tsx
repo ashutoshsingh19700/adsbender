@@ -288,7 +288,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
   if (!loading && campaigns.length === 0) {
     return (
       <Card>
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+        <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
           You haven&apos;t created any campaigns yet. Use the wizard above to
           submit your first one.
         </CardContent>
@@ -304,12 +304,12 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <div className="grid min-w-48 flex-1 gap-1.5">
             <Label
               htmlFor="campaign-filter-search"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Campaign
             </Label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 font-medium text-foreground/75" />
               <Input
                 id="campaign-filter-search"
                 placeholder="Search by name"
@@ -322,7 +322,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <div className="grid gap-1.5">
             <Label
               htmlFor="campaign-filter-status"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Status
             </Label>
@@ -348,7 +348,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <div className="grid gap-1.5">
             <Label
               htmlFor="campaign-filter-country"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Country
             </Label>
@@ -369,7 +369,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <div className="grid gap-1.5">
             <Label
               htmlFor="campaign-filter-from"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               From
             </Label>
@@ -384,7 +384,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
           <div className="grid gap-1.5">
             <Label
               htmlFor="campaign-filter-to"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               To
             </Label>
@@ -410,7 +410,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
 
       {filteredCampaigns.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No campaigns match these filters.
           </CardContent>
         </Card>
@@ -420,7 +420,7 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
       <Card className="hidden rounded-2xl border-none py-0 shadow-sm ring-1 ring-border sm:block">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase">
+            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:font-medium text-foreground/75 [&_th]:uppercase">
               <TableRow>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Status</TableHead>
@@ -499,25 +499,25 @@ export function CampaignManager({ refreshToken = 0 }: { refreshToken?: number })
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">Budget</p>
+                  <p className="text-xs font-medium text-foreground/75">Budget</p>
                   <p className="tabular-nums">
                     {formatCurrency(campaign.totalBudget)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Daily budget</p>
+                  <p className="text-xs font-medium text-foreground/75">Daily budget</p>
                   <p className="tabular-nums">
                     {formatCurrency(campaign.dailyBudget)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Max CPC</p>
+                  <p className="text-xs font-medium text-foreground/75">Max CPC</p>
                   <p className="tabular-nums">
                     {formatCurrency(campaign.maxCpc)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Spend</p>
+                  <p className="text-xs font-medium text-foreground/75">Spend</p>
                   <div className="tabular-nums">
                     <SpendCell
                       spend={spendById[campaign.id]}
@@ -651,7 +651,7 @@ function SpendCell({
     return <Skeleton className="ml-auto h-4 w-14" />
   }
   if (spend === "error") {
-    return <span className="text-muted-foreground">-</span>
+    return <span className="font-medium text-foreground/75">-</span>
   }
   const pct = budget > 0 ? Math.min(100, (spend.spendToDate / budget) * 100) : 0
   return (
@@ -1084,7 +1084,7 @@ function CampaignEditDialog({
                     disabled={uploading}
                     onChange={handleFileSelected}
                   />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground/75">
                     {uploading
                       ? "Uploading..."
                       : creativeType === "video"
@@ -1267,7 +1267,7 @@ function CampaignFinancialsDialog({
             ))}
           </div>
         ) : error ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm font-medium text-foreground/75">
             {error}
           </p>
         ) : (
@@ -1290,7 +1290,7 @@ function CampaignFinancialsDialog({
                   />
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No spend data available.
                 </p>
               )}
@@ -1336,7 +1336,7 @@ function CampaignFinancialsDialog({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No budget status available.
                 </p>
               )}
@@ -1445,7 +1445,7 @@ function CampaignPerformanceDialog({
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs font-medium text-foreground/75">
           Showing {range.startDate} to {range.endDate}
         </p>
 
@@ -1456,7 +1456,7 @@ function CampaignPerformanceDialog({
             ))}
           </div>
         ) : error && !data ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm font-medium text-foreground/75">
             {error}
           </p>
         ) : totals && hasRows ? (
@@ -1478,7 +1478,7 @@ function CampaignPerformanceDialog({
             />
           </div>
         ) : (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-6 text-center text-sm font-medium text-foreground/75">
             No performance data for this date range.
           </p>
         )}
@@ -1490,8 +1490,8 @@ function CampaignPerformanceDialog({
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
+      <p className="text-xs font-medium text-foreground/75">{label}</p>
+      <p className="text-xl font-bold tabular-nums text-foreground">{value}</p>
     </div>
   )
 }

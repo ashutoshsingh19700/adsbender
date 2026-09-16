@@ -32,11 +32,11 @@ export function StatCard({
     <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
       <CardContent className="flex items-start justify-between gap-3 py-5">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="text-sm font-medium text-foreground/75">{label}</p>
           {loading ? (
             <Skeleton className="mt-1.5 h-7 w-20" />
           ) : (
-            <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
           )}
           {hint ? (
             <p
@@ -44,7 +44,7 @@ export function StatCard({
                 "mt-1 text-xs font-medium",
                 tone === "positive" && "text-emerald-600",
                 tone === "warning" && "text-amber-600",
-                tone === "default" && "text-muted-foreground"
+                tone === "default" && "text-foreground/75"
               )}
             >
               {hint}

@@ -35,10 +35,10 @@ export default function ScheduleMeetingPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             Talk to AdsBender
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Schedule a meeting
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             Booking is coming soon. In the meantime, reach out and our team
             will find a time that works for you.
           </p>
@@ -47,7 +47,7 @@ export default function ScheduleMeetingPage() {
 
       {/* Placeholder booking panel */}
       <section className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed p-12 text-center text-muted-foreground">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed p-12 text-center font-medium text-foreground/75">
           <CalendarClock className="size-10 text-violet-500" />
           <p className="text-sm">
             A booking calendar will be embedded here.

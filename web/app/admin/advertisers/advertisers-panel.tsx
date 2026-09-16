@@ -74,7 +74,7 @@ export function AdvertisersPanel() {
   return (
     <div className="space-y-4">
       <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 font-medium text-foreground/75" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -91,7 +91,7 @@ export function AdvertisersPanel() {
         </div>
       ) : !loading && advertisers.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No advertisers match this search.
           </CardContent>
         </Card>
@@ -118,7 +118,7 @@ export function AdvertisersPanel() {
                   >
                     <TableCell>
                       <div className="font-medium">{a.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm font-medium text-foreground/75">
                         {a.email}
                       </div>
                     </TableCell>
@@ -134,7 +134,7 @@ export function AdvertisersPanel() {
                     <TableCell className="text-right tabular-nums">
                       {formatCurrency(a.balance_usd)}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                       {new Date(a.createdAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
@@ -258,7 +258,7 @@ function AdvertiserDetailSheet({
             <div className="space-y-2 px-2">
               <h3 className="text-sm font-semibold">Campaigns</h3>
               {detail.campaigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No campaigns yet.
                 </p>
               ) : (
@@ -297,18 +297,18 @@ function AdvertiserDetailSheet({
 
             <div className="space-y-2 px-2 pb-4">
               <div className="flex items-center gap-2">
-                <Globe2 className="size-4 text-muted-foreground" />
+                <Globe2 className="size-4 font-medium text-foreground/75" />
                 <h3 className="text-sm font-semibold">
                   Audience by country (last 30 days)
                 </h3>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Derived from the visitor&apos;s IP address at ad-serve time
                 (geo-IP lookup), same source used to enforce this
                 advertiser&apos;s campaign country targeting.
               </p>
               {sortedCountries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium text-foreground/75">
                   No delivery data in this window yet.
                 </p>
               ) : (

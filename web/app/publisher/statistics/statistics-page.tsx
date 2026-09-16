@@ -241,8 +241,8 @@ export function PublisherStatisticsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Statistics</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Statistics</h1>
+        <p className="font-medium text-foreground/75">
           Impressions, clicks, CTR, CPM, and revenue across your sites and ad
           zones.
         </p>
@@ -264,7 +264,7 @@ export function PublisherStatisticsPage() {
                     setRange((r) => ({ ...r, startDate: e.target.value }))
                   }
                 />
-                <span className="text-muted-foreground">-</span>
+                <span className="font-medium text-foreground/75">-</span>
                 <Input
                   id="stats-to"
                   type="date"
@@ -274,7 +274,7 @@ export function PublisherStatisticsPage() {
                     setRange((r) => ({ ...r, endDate: e.target.value }))
                   }
                 />
-                <span className="text-xs whitespace-nowrap text-muted-foreground">
+                <span className="text-xs whitespace-nowrap font-medium text-foreground/75">
                   (UTC)
                 </span>
               </div>
@@ -355,7 +355,7 @@ export function PublisherStatisticsPage() {
 
       {/* Group by */}
       <div className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Group by</p>
+        <p className="text-sm font-medium text-foreground/75">Group by</p>
         <div className="flex flex-wrap gap-1.5">
           {GROUP_BY_TABS.map((tab) => (
             <button
@@ -366,7 +366,7 @@ export function PublisherStatisticsPage() {
                 "rounded-md border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors " +
                 (groupBy === tab.value
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400"
-                  : "border-transparent bg-muted text-muted-foreground hover:text-foreground")
+                  : "border-transparent bg-muted font-medium text-foreground/75 hover:text-foreground")
               }
             >
               {tab.label}
@@ -376,7 +376,7 @@ export function PublisherStatisticsPage() {
             <span
               key={tab.label}
               title="Not available yet - the backend doesn't parse browser/OS out of the request user agent."
-              className="flex cursor-not-allowed items-center gap-1 rounded-md border border-transparent bg-muted px-3 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground/50 uppercase"
+              className="flex cursor-not-allowed items-center gap-1 rounded-md border border-transparent bg-muted px-3 py-1.5 text-xs font-semibold tracking-wide font-medium text-foreground/75/50 uppercase"
             >
               {tab.label}
               <Info className="size-3" />
@@ -421,7 +421,7 @@ export function PublisherStatisticsPage() {
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="py-10 text-center text-sm text-muted-foreground"
+                    className="py-10 text-center text-sm font-medium text-foreground/75"
                   >
                     No statistics for the selected filters.
                   </TableCell>
@@ -466,7 +466,7 @@ export function PublisherStatisticsPage() {
           </Table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-4 border-t px-4 py-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-4 border-t px-4 py-3 text-sm font-medium text-foreground/75">
           <div className="flex items-center gap-2">
             <span>Rows per page:</span>
             <Select
@@ -514,10 +514,10 @@ export function PublisherStatisticsPage() {
 
       <div className="space-y-3 pt-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">
+          <h2 className="text-lg font-bold tracking-tight text-foreground">
             Traffic Quality
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-foreground/75">
             Bot and click-fraud protection across your ad zones.
           </p>
         </div>

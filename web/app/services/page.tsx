@@ -108,10 +108,10 @@ export default function ServicesPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             AdsBender Services
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Four ad formats. Three pricing models. One dashboard.
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             Whether you&apos;re buying traffic or monetizing it, everything
             runs through the same network — pick a format below to see how
             it works.
@@ -121,10 +121,10 @@ export default function ServicesPage() {
 
       {/* Ad formats */}
       <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Ad formats
         </h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
+        <p className="mt-2 max-w-2xl font-medium text-foreground/75">
           Available on every pricing model below, with targeting by country,
           device, and traffic type.
         </p>
@@ -139,7 +139,7 @@ export default function ServicesPage() {
                 <service.icon className="size-5" />
               </div>
               <p className="mt-4 font-medium">{service.title}</p>
-              <p className="mt-2 flex-1 text-sm text-muted-foreground">
+              <p className="mt-2 flex-1 text-sm font-medium text-foreground/75">
                 {service.description}
               </p>
               {/* <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
@@ -155,7 +155,7 @@ export default function ServicesPage() {
 
       {/* Pricing + monetization */}
       <section className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Pricing &amp; monetization
         </h2>
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
@@ -169,7 +169,7 @@ export default function ServicesPage() {
                 <service.icon className="size-5" />
               </div>
               <p className="mt-4 text-lg font-semibold">{service.title}</p>
-              <p className="mt-2 flex-1 text-sm text-muted-foreground">
+              <p className="mt-2 flex-1 text-sm font-medium text-foreground/75">
                 {service.description}
               </p>
               {/* <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-violet-600">
@@ -184,10 +184,10 @@ export default function ServicesPage() {
       {/* CTA band */}
       <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Ready to get started?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Sign up as an advertiser to launch a campaign, or as a publisher
             to start monetizing your traffic.
           </p>

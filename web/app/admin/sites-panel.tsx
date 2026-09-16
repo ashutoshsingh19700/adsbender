@@ -146,7 +146,7 @@ export function SitesPanel() {
         </div>
       ) : !loading && sites.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No publisher sites match this filter.
           </CardContent>
         </Card>
@@ -172,7 +172,7 @@ export function SitesPanel() {
                       </TableCell>
                       <TableCell className="text-sm">
                         <div>{site.publisher.name}</div>
-                        <div className="text-muted-foreground">
+                        <div className="font-medium text-foreground/75">
                           {site.publisher.email}
                         </div>
                       </TableCell>
@@ -212,7 +212,7 @@ export function SitesPanel() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">{site.domain}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         {site.publisher.name} · {site.publisher.email}
                       </p>
                     </div>

@@ -13,14 +13,14 @@ export function BlogArticle({
   return (
     <div
       className={cn(
-        "max-w-2xl text-foreground/90",
-        "[&>p]:mt-4 [&>p]:leading-relaxed [&>p]:text-muted-foreground",
-        "[&>h2]:mt-12 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:tracking-tight [&>h2]:text-foreground",
-        "[&>h3]:mt-8 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:tracking-tight [&>h3]:text-foreground",
-        "[&>ul]:mt-4 [&>ul]:list-disc [&>ul]:space-y-2 [&>ul]:pl-5 [&>ul]:text-muted-foreground",
-        "[&>ol]:mt-4 [&>ol]:list-decimal [&>ol]:space-y-2 [&>ol]:pl-5 [&>ol]:text-muted-foreground",
-        "[&_strong]:font-semibold [&_strong]:text-foreground",
-        "[&>blockquote]:mt-6 [&>blockquote]:border-l-2 [&>blockquote]:border-violet-300 [&>blockquote]:pl-4 [&>blockquote]:text-foreground/80 [&>blockquote]:italic",
+        "max-w-3xl text-foreground",
+        "[&>p]:mt-4 [&>p]:font-medium [&>p]:leading-relaxed [&>p]:text-foreground/75",
+        "[&>h2]:mt-12 [&>h2]:text-2xl [&>h2]:font-extrabold [&>h2]:tracking-tight [&>h2]:text-foreground",
+        "[&>h3]:mt-8 [&>h3]:text-lg [&>h3]:font-bold [&>h3]:tracking-tight [&>h3]:text-foreground",
+        "[&>ul]:mt-4 [&>ul]:list-disc [&>ul]:space-y-2 [&>ul]:pl-5 [&>ul]:font-medium [&>ul]:text-foreground/75",
+        "[&>ol]:mt-4 [&>ol]:list-decimal [&>ol]:space-y-2 [&>ol]:pl-5 [&>ol]:font-medium [&>ol]:text-foreground/75",
+        "[&_strong]:font-bold [&_strong]:text-foreground",
+        "[&>blockquote]:mt-6 [&>blockquote]:border-l-2 [&>blockquote]:border-violet-300 [&>blockquote]:pl-4 [&>blockquote]:font-medium [&>blockquote]:text-foreground/85 [&>blockquote]:italic",
         className,
       )}
     >

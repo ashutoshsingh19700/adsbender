@@ -216,7 +216,7 @@ export function AddWebsiteDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-medium text-foreground/75">
                     Helps advertisers only target countries this site actually
                     reaches.
                   </p>
@@ -242,7 +242,7 @@ export function AddWebsiteDialog({
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between gap-4 pt-1.5">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-medium text-foreground/75">
                       Adult ads typically help to increase CPM and revenue.
                     </p>
                     <FormControl>

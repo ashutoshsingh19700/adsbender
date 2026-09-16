@@ -117,7 +117,7 @@ export function AdvertiseTargetDialog({
             <Label htmlFor="intake-landing-url">Landing URL</Label>
             {/* https:// is fixed - only the rest of the address is typed. */}
             <div className="flex items-stretch overflow-hidden rounded-md border border-input focus-within:ring-2 focus-within:ring-ring">
-              <span className="flex items-center border-r bg-muted px-3 text-sm text-muted-foreground">
+              <span className="flex items-center border-r bg-muted px-3 text-sm font-medium text-foreground/75">
                 https://
               </span>
               <input

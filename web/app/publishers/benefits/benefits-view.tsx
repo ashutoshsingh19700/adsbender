@@ -167,7 +167,7 @@ function AdFormatTabs() {
           <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
             {format.title}
           </h3>
-          <p className="mt-3 text-muted-foreground">{format.description}</p>
+          <p className="mt-3 font-medium text-foreground/75">{format.description}</p>
           <ul className="mt-5 space-y-2.5">
             {format.bullets.map((bullet) => (
               <li key={bullet} className="flex items-start gap-2.5 text-sm">
@@ -256,13 +256,13 @@ function PlatformAccordion() {
               </span>
               <ChevronDown
                 className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
+                  "size-4 shrink-0 font-medium text-foreground/75 transition-transform",
                   isOpen && "rotate-180 text-violet-600"
                 )}
               />
             </button>
             {isOpen && (
-              <p className="px-5 pb-5 text-sm text-muted-foreground sm:px-6">
+              <p className="px-5 pb-5 text-sm font-medium text-foreground/75 sm:px-6">
                 {feature.description}
               </p>
             )}
@@ -355,13 +355,13 @@ function Faq() {
               <span className="font-medium">{item.q}</span>
               <ChevronDown
                 className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
+                  "size-4 shrink-0 font-medium text-foreground/75 transition-transform",
                   isOpen && "rotate-180"
                 )}
               />
             </button>
             {isOpen && (
-              <p className="px-5 pb-4 text-sm text-muted-foreground">{item.a}</p>
+              <p className="px-5 pb-4 text-sm font-medium text-foreground/75">{item.a}</p>
             )}
           </div>
         )
@@ -416,7 +416,7 @@ export function BenefitsView() {
               <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 Grow Earnings With Safe and Profitable Ad Feed
               </h1>
-              <p className="mt-5 max-w-md text-muted-foreground">
+              <p className="mt-5 max-w-md font-medium text-foreground/75">
                 Maximize revenue with a monetization platform built for
                 publishers. Sell traffic and get fair, high CPM rates.
               </p>
@@ -522,7 +522,7 @@ export function BenefitsView() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Website monetization platform
             </h2>
-            <p className="mt-3 max-w-md text-muted-foreground">
+            <p className="mt-3 max-w-md font-medium text-foreground/75">
               Everything you need to go from a new site to a paid-out
               balance, in one dashboard.
             </p>
@@ -544,7 +544,7 @@ export function BenefitsView() {
                   </div>
                   <div>
                     <p className="text-xs font-medium">Add website</p>
-                    <p className="text-[11px] text-muted-foreground">example.com</p>
+                    <p className="text-[11px] font-medium text-foreground/75">example.com</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-lg bg-white/95 px-4 py-3 shadow-sm">
@@ -553,7 +553,7 @@ export function BenefitsView() {
                   </div>
                   <div>
                     <p className="text-xs font-medium">Create ad unit</p>
-                    <p className="text-[11px] text-muted-foreground">Popunder · Social Bar</p>
+                    <p className="text-[11px] font-medium text-foreground/75">Popunder · Social Bar</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5 rounded-lg bg-white/95 px-4 py-3 shadow-sm">
@@ -562,7 +562,7 @@ export function BenefitsView() {
                   </div>
                   <div>
                     <p className="text-xs font-medium">Track earnings</p>
-                    <p className="text-[11px] text-muted-foreground">Updated in real time</p>
+                    <p className="text-[11px] font-medium text-foreground/75">Updated in real time</p>
                   </div>
                 </div>
               </div>
@@ -586,7 +586,7 @@ export function BenefitsView() {
               </div>
               <div>
                 <h3 className="font-medium">{item.title}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">
+                <p className="mt-1.5 text-sm font-medium text-foreground/75">
                   {item.description}
                 </p>
               </div>
@@ -644,14 +644,14 @@ export function BenefitsView() {
                 href={`/blog/${post.slug}`}
                 className="group flex flex-col rounded-2xl border p-6 transition-colors hover:border-violet-300 hover:bg-violet-50/40"
               >
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-foreground/75">
                   <Clock className="size-3.5" />
                   {dateFormatter.format(new Date(post.publishedAt))}
                 </p>
                 <h3 className="mt-3 font-medium group-hover:text-violet-600">
                   {post.title}
                 </h3>
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                <p className="mt-2 line-clamp-2 text-sm font-medium text-foreground/75">
                   {post.description}
                 </p>
                 <span className="mt-4 flex items-center gap-1.5 text-sm font-medium text-violet-600">
@@ -683,7 +683,7 @@ export function BenefitsView() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to start monetizing?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Add your website and get your first ad unit live in minutes.
           </p>
           <Button

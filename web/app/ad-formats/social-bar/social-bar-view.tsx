@@ -214,7 +214,7 @@ export function SocialBarView() {
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
               A Toolbar That Doesn&apos;t Feel Like An Ad
             </h1>
-            <p className="mt-5 max-w-md text-muted-foreground">
+            <p className="mt-5 max-w-md font-medium text-foreground/75">
               Run CPM, CPC, or CPA campaigns through Social Bar&apos;s on-page
               toolbar — or add it to your site as a lightweight, non-intrusive
               way to monetize every visitor.
@@ -273,12 +273,12 @@ export function SocialBarView() {
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Built to blend into the page
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 font-medium text-foreground/75">
               Social Bar sits as a slim, interactive strip rather than
               covering the content, with subformats ranging from OS-style
               alerts to chat-style prompts.
             </p>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 font-medium text-foreground/75">
               Because it doesn&apos;t block the page, it tends to stay visible and
               interactive far longer than a full-screen or pop-up format.
             </p>
@@ -321,7 +321,7 @@ export function SocialBarView() {
                 <vertical.icon className="size-5" />
               </div>
               <h3 className="mt-4 font-medium">{vertical.title}</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">
+              <p className="mt-1.5 text-sm font-medium text-foreground/75">
                 {vertical.description}
               </p>
             </div>
@@ -366,7 +366,7 @@ export function SocialBarView() {
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Ready to try Social Bar?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Whichever side of the network you&apos;re on, it takes minutes to
             get your first campaign or ad zone live.
           </p>

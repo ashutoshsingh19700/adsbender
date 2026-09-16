@@ -74,10 +74,10 @@ export default function CaseStudiesPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             Case Studies
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Real campaigns, written up as they happen
           </h1>
-          <p className="mt-5 text-muted-foreground">
+          <p className="mt-5 font-medium text-foreground/75">
             This page is being built out with real advertiser write-ups —
             vertical, ad format, pricing model, and the actual result. The
             shapes below show what&apos;s coming; none of them are published
@@ -96,12 +96,12 @@ export default function CaseStudiesPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <p className="font-medium">{study.vertical}</p>
-                <Badge variant="outline" className="gap-1.5 text-muted-foreground">
+                <Badge variant="outline" className="gap-1.5 font-medium text-foreground/75">
                   <Clock className="size-3.5" />
                   Coming soon
                 </Badge>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">{study.goal}</p>
+              <p className="mt-3 text-sm font-medium text-foreground/75">{study.goal}</p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-md bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-600">
                   <MonitorSmartphone className="size-3.5" />
@@ -111,7 +111,7 @@ export default function CaseStudiesPage() {
                   <Wallet className="size-3.5" />
                   {study.pricingModel}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-foreground/75">
                   <TrendingUp className="size-3.5" />
                   Result pending
                 </span>
@@ -124,10 +124,10 @@ export default function CaseStudiesPage() {
       {/* CTA band */}
       <section className="border-t bg-violet-50/60">
         <div className="mx-auto flex max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] flex-col items-center gap-6 px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Want to be the next case study?
           </h2>
-          <p className="max-w-md text-muted-foreground">
+          <p className="max-w-md font-medium text-foreground/75">
             Launch a campaign today, or explore the ad formats and pricing
             models above to see which fits your vertical.
           </p>

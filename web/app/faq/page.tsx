@@ -126,7 +126,7 @@ export default function FaqPage() {
           <p className="text-sm font-semibold tracking-wide text-violet-500 uppercase">
             Frequently Asked Questions
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Answers for advertisers and publishers
           </h1>
         </div>
@@ -144,7 +144,7 @@ export default function FaqPage() {
                 {section.items.map((item) => (
                   <div key={item.question} className="p-5">
                     <p className="font-medium">{item.question}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm font-medium text-foreground/75">
                       {item.answer}
                     </p>
                     {item.linkHref && (

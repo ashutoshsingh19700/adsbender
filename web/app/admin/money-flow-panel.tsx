@@ -57,7 +57,7 @@ export function MoneyFlowPanel() {
 
   if (!data) {
     return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
+      <p className="py-12 text-center text-sm font-medium text-foreground/75">
         Could not load the revenue breakdown.
       </p>
     )
@@ -76,25 +76,25 @@ export function MoneyFlowPanel() {
         <CardContent>
           <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-4">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Advertiser is charged
               </p>
               <p className="text-lg font-semibold tabular-nums">
                 {formatCurrency(data.worked_example.advertiserCharged)}
               </p>
             </div>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+            <ArrowRight className="size-4 shrink-0 font-medium text-foreground/75" />
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Publisher is paid ({data.publisherSharePercent}%)
               </p>
               <p className="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(data.worked_example.publisherPaid)}
               </p>
             </div>
-            <span className="text-muted-foreground">+</span>
+            <span className="font-medium text-foreground/75">+</span>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-medium text-foreground/75">
                 Platform keeps ({data.platformFeePercent}%)
               </p>
               <p className="text-lg font-semibold tabular-nums">
@@ -102,7 +102,7 @@ export function MoneyFlowPanel() {
               </p>
             </div>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-xs font-medium text-foreground/75">
             Current platform fee: <strong>{data.platformFeeBps} bps</strong> (
             {data.platformFeePercent}%). Change it under Pricing →
             Platform fee.
@@ -121,7 +121,7 @@ export function MoneyFlowPanel() {
         </CardHeader>
         <CardContent>
           {data.recentEvents.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="py-12 text-center text-sm font-medium text-foreground/75">
               No billed events yet.
             </p>
           ) : (
@@ -141,7 +141,7 @@ export function MoneyFlowPanel() {
                 <TableBody>
                   {data.recentEvents.map((event, i) => (
                     <TableRow key={event.referenceId ?? i}>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(event.occurredAt).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-sm">

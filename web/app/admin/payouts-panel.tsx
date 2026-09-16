@@ -192,7 +192,7 @@ export function PayoutsPanel() {
         </div>
       ) : !loading && payouts.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <CardContent className="py-10 text-center text-sm font-medium text-foreground/75">
             No payouts match this filter.
           </CardContent>
         </Card>
@@ -215,7 +215,7 @@ export function PayoutsPanel() {
                     <TableRow key={payout.id}>
                       <TableCell className="text-sm">
                         <div>{payout.wallet.user.name}</div>
-                        <div className="text-muted-foreground">
+                        <div className="font-medium text-foreground/75">
                           {payout.wallet.user.email}
                         </div>
                       </TableCell>
@@ -227,7 +227,7 @@ export function PayoutsPanel() {
                           {payout.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-foreground/75">
                         {new Date(payout.requestedAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
@@ -252,7 +252,7 @@ export function PayoutsPanel() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium">{payout.wallet.user.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground/75">
                         {payout.wallet.user.email}
                       </p>
                     </div>
@@ -403,7 +403,7 @@ function PayoutActions({
   wrap?: boolean
 }) {
   if (TERMINAL.includes(payout.status)) {
-    return <span className="text-sm text-muted-foreground">-</span>
+    return <span className="text-sm font-medium text-foreground/75">-</span>
   }
 
   return (

@@ -93,7 +93,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex h-full flex-col gap-0.5 overflow-y-auto px-3 py-5">
-      <p className="px-2.5 pb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+      <p className="px-2.5 pb-2 text-xs font-semibold tracking-wide font-medium text-foreground/75 uppercase">
         Platform
       </p>
       {links.map((link) => {
@@ -110,7 +110,7 @@ export function AppSidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
               active
                 ? "bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "font-medium text-foreground/75 hover:bg-muted hover:text-foreground"
             )}
           >
             <Icon className="size-4 shrink-0" />

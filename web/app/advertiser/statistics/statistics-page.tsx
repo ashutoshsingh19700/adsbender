@@ -184,7 +184,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
       {!embedded ? (
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Statistics</h1>
-          <p className="text-muted-foreground">
+          <p className="font-medium text-foreground/75">
             Impressions, clicks, CTR, and spend per campaign for the selected
             date range.
           </p>
@@ -192,7 +192,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
       ) : (
         <div>
           <h2 className="text-lg font-bold tracking-tight">Statistics</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-foreground/75">
             Impressions, clicks, CTR, and spend per campaign for the selected
             date range.
           </p>
@@ -205,7 +205,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
           <div className="grid gap-1.5">
             <Label
               htmlFor="stats-from"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Date range
             </Label>
@@ -219,7 +219,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
                   setRange((r) => ({ ...r, startDate: e.target.value }))
                 }
               />
-              <span className="text-muted-foreground">-</span>
+              <span className="font-medium text-foreground/75">-</span>
               <Input
                 id="stats-to"
                 type="date"
@@ -234,7 +234,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
           <div className="grid gap-1.5">
             <Label
               htmlFor="stats-country"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Country
             </Label>
@@ -255,7 +255,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
           <div className="grid gap-1.5">
             <Label
               htmlFor="stats-status"
-              className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase"
+              className="text-[11px] font-bold tracking-wide font-medium text-foreground/75 uppercase"
             >
               Campaign status
             </Label>
@@ -320,7 +320,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
       <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase">
+            <TableHeader className="bg-muted/40 [&_th]:text-[11px] [&_th]:font-bold [&_th]:tracking-wide [&_th]:font-medium text-foreground/75 [&_th]:uppercase">
               <TableRow>
                 <TableHead>Campaign</TableHead>
                 <TableHead>Status</TableHead>
@@ -344,7 +344,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="py-10 text-center text-sm text-muted-foreground"
+                    className="py-10 text-center text-sm font-medium text-foreground/75"
                   >
                     It looks like you have no statistics. Please, check your
                     running campaigns or create a new one.
@@ -365,7 +365,7 @@ export function StatisticsPage({ embedded = false }: { embedded?: boolean } = {}
           <h2 className="text-lg font-bold tracking-tight">
             Traffic Quality
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-foreground/75">
             Clicks blocked or flagged as invalid traffic across your
             campaigns - you were never billed for these.
           </p>
@@ -403,7 +403,7 @@ function StatisticsRow({ row }: { row: Row }) {
         <TableCell>
           <CampaignStatusBadge status={campaign.status} />
         </TableCell>
-        <TableCell colSpan={5} className="text-center text-muted-foreground">
+        <TableCell colSpan={5} className="text-center font-medium text-foreground/75">
           -
         </TableCell>
       </TableRow>
@@ -456,7 +456,7 @@ function SummaryTile({
     <Card className="rounded-2xl border-none py-0 shadow-sm ring-1 ring-border">
       <CardContent className="flex items-start justify-between gap-3 py-5">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <p className="text-sm font-medium text-foreground/75">{label}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
         </div>
         <span

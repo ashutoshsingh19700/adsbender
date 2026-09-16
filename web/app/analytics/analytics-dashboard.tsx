@@ -92,8 +92,8 @@ export function AnalyticsDashboard() {
   return (
     <div className="mx-auto max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] space-y-6 px-4 sm:px-6 lg:px-8 py-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+        <p className="font-medium text-foreground/75">
           Impressions, clicks, spend, and payout over time.
         </p>
       </div>
@@ -209,7 +209,7 @@ export function AnalyticsDashboard() {
               </LineChart>
             </ChartContainer>
           ) : (
-            <p className="py-12 text-center text-sm text-muted-foreground">
+            <p className="py-12 text-center text-sm font-medium text-foreground/75">
               No data for this date range.
             </p>
           )}
@@ -258,7 +258,7 @@ export function AnalyticsDashboard() {
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="text-center text-sm text-muted-foreground"
+                    className="text-center text-sm font-medium text-foreground/75"
                   >
                     No rows for this date range.
                   </TableCell>
@@ -282,8 +282,8 @@ function SummaryTile({
   return (
     <Card>
       <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="text-sm font-medium text-foreground/75">{label}</p>
+        <p className="text-2xl font-bold tabular-nums text-foreground">{value}</p>
       </CardContent>
     </Card>
   )
