@@ -1482,15 +1482,15 @@ export function CampaignWizard({
                         <FormItem>
                           <FormLabel>Total budget (USD)</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
+                            <div className="flex h-8 items-center gap-1 rounded-lg border border-input bg-transparent pl-2.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                              <span className="pointer-events-none select-none text-sm font-medium leading-none text-foreground/75">
                                 $
                               </span>
                               <Input
                                 type="number"
                                 step="0.01"
                                 min={10}
-                                className="pl-6"
+                                className="h-full flex-1 rounded-none border-0 bg-transparent px-1.5 py-0 shadow-none outline-none focus-visible:border-0 focus-visible:ring-0"
                                 {...field}
                                 value={(field.value as number | string) ?? ""}
                               />
@@ -1510,14 +1510,14 @@ export function CampaignWizard({
                         <FormItem>
                           <FormLabel>Daily budget (USD)</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
+                            <div className="flex h-8 items-center gap-1 rounded-lg border border-input bg-transparent pl-2.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                              <span className="pointer-events-none select-none text-sm font-medium leading-none text-foreground/75">
                                 $
                               </span>
                               <Input
                                 type="number"
                                 step="0.01"
-                                className="pl-6"
+                                className="h-full flex-1 rounded-none border-0 bg-transparent px-1.5 py-0 shadow-none outline-none focus-visible:border-0 focus-visible:ring-0"
                                 {...field}
                                 value={(field.value as number | string) ?? ""}
                               />
@@ -1534,14 +1534,14 @@ export function CampaignWizard({
                         <FormItem>
                           <FormLabel>Max CPC (USD)</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
+                            <div className="flex h-8 items-center gap-1 rounded-lg border border-input bg-transparent pl-2.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                              <span className="pointer-events-none select-none text-sm font-medium leading-none text-foreground/75">
                                 $
                               </span>
                               <Input
                                 type="number"
                                 step="0.01"
-                                className="pl-6"
+                                className="h-full flex-1 rounded-none border-0 bg-transparent px-1.5 py-0 shadow-none outline-none focus-visible:border-0 focus-visible:ring-0"
                                 {...field}
                                 value={(field.value as number | string) ?? ""}
                               />
