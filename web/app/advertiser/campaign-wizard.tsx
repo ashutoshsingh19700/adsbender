@@ -1440,13 +1440,18 @@ export function CampaignWizard({
             {step === 3 ? (  /* Budget & schedule */
             <>
             <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-              <div className="border-b p-6 sm:p-7">
-                <h3 className="text-xl font-bold tracking-tight text-foreground">
-                  Budget settings
-                </h3>
-                <p className="mt-0.5 text-sm font-medium text-foreground/75">
-                  Set a budget that fits your goals.
-                </p>
+              <div className="flex items-start gap-3 border-b p-6 sm:p-7">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-600">
+                  <CircleDollarSign className="size-5" />
+                </span>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">
+                    Budget settings
+                  </h3>
+                  <p className="mt-0.5 text-sm font-medium text-foreground/75">
+                    Set a budget that fits your goals.
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-5 p-6 sm:p-7">
@@ -1475,7 +1480,7 @@ export function CampaignWizard({
                       name="totalBudget"
                       render={({ field }) => (
                         <FormItem>
-          <FormLabel>Total budget (USD)</FormLabel>
+                          <FormLabel>Total budget (USD)</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-foreground/75">
