@@ -47,7 +47,11 @@ import {
 } from "@/lib/api"
 import type { Campaign } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { AD_FORMAT_CATALOG, getAdFormat } from "@/lib/ad-formats"
+import {
+  AD_FORMAT_CATALOG,
+  getAdFormat,
+  type AdFormatDefinition,
+} from "@/lib/ad-formats"
 import { AdFormatDevicePreview } from "@/components/app/ad-format-device-preview"
 import {
   AdvertiseTargetDialog,
@@ -174,6 +178,17 @@ export function CampaignWizard({
   const [uploadSizeError, setUploadSizeError] = React.useState<string | null>(
     null
   )
+  // Set when an uploaded image's pixel dimensions don't exactly match the
+  // selected ad format's - blocks the upload until the advertiser either
+  // auto-fits the image, switches to a format the image already matches, or
+  // cancels. Cleared on creative-type switch or once resolved.
+  const [dimensionIssue, setDimensionIssue] = React.useState<{
+    file: File
+    actualWidth: number
+    actualHeight: number
+    expected: AdFormatDefinition
+    suggestedFormat: AdFormatDefinition | null
+  } | null>(null)
   const [showIntake, setShowIntake] = React.useState(true)
   const [advertiseTargets, setAdvertiseTargets] =
     React.useState<AdvertiseTarget[]>([])
@@ -417,25 +432,11 @@ export function CampaignWizard({
   const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
   const MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024
 
-  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = "" // allow re-selecting the same file later
-
-    if (!file) return
-
+  async function doUpload(file: File) {
     const isVideo = file.type.startsWith("video/")
-    const maxBytes = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_UPLOAD_BYTES
-    if (file.size > maxBytes) {
-      const message = `${isVideo ? "Video" : "Image"} is too large (max ${maxBytes / (1024 * 1024)} MB)`
-      setUploadSizeError(message)
-      toast.error(message)
-      return
-    }
-
-    setUploadSizeError(null)
     setUploading(true)
     try {
-      const { url } = await uploadCreativeFile(file)
+      const { url } = await uploadCreativeFile(file, adFormat)
       form.setValue("creativeUrl", url, {
         shouldValidate: true,
         shouldDirty: true,
@@ -445,6 +446,163 @@ export function CampaignWizard({
       toast.error(error instanceof ApiError ? error.message : "Upload failed")
     } finally {
       setUploading(false)
+    }
+  }
+
+  // Reads an image file's real pixel dimensions in the browser - no upload
+  // or decode library needed, just an <img> load.
+  function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
+        resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error("Could not read image dimensions"))
+      }
+      img.src = objectUrl
+    })
+  }
+
+  // Center-crops/scales the image to fill the target box exactly (a "cover"
+  // fit, like CSS object-fit: cover) so an off-size creative can still be
+  // used for the selected ad slot without the advertiser re-exporting it by
+  // hand. Always re-encodes as PNG - simplest common denominator, and PNG is
+  // already an allowed creative mime type.
+  function autoFitImage(file: File, targetWidth: number, targetHeight: number): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
+        const canvas = document.createElement("canvas")
+        canvas.width = targetWidth
+        canvas.height = targetHeight
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          reject(new Error("Canvas is not supported in this browser"))
+          return
+        }
+        const scale = Math.max(
+          targetWidth / img.naturalWidth,
+          targetHeight / img.naturalHeight
+        )
+        const drawWidth = img.naturalWidth * scale
+        const drawHeight = img.naturalHeight * scale
+        ctx.drawImage(
+          img,
+          (targetWidth - drawWidth) / 2,
+          (targetHeight - drawHeight) / 2,
+          drawWidth,
+          drawHeight
+        )
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Could not process image"))
+            return
+          }
+          const fittedName = file.name.replace(/\.\w+$/, "") + `-${targetWidth}x${targetHeight}.png`
+          resolve(new File([blob], fittedName, { type: "image/png" }))
+        }, "image/png")
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error("Could not read image"))
+      }
+      img.src = objectUrl
+    })
+  }
+
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = "" // allow re-selecting the same file later
+
+    if (!file) return
+
+    setDimensionIssue(null)
+    const isVideo = file.type.startsWith("video/")
+    const maxBytes = isVideo ? MAX_VIDEO_UPLOAD_BYTES : MAX_UPLOAD_BYTES
+    if (file.size > maxBytes) {
+      const message = `${isVideo ? "Video" : "Image"} is too large (max ${maxBytes / (1024 * 1024)} MB)`
+      setUploadSizeError(message)
+      toast.error(message)
+      return
+    }
+    setUploadSizeError(null)
+
+    // Every ad format has a fixed pixel size (see AD_FORMAT_CATALOG); the
+    // creative must match it exactly, or it'll be stretched/cropped/blank
+    // in whatever slot actually renders it. Only checked for still images -
+    // video dimension probing needs a heavier decode step this app doesn't
+    // otherwise depend on, so a mismatched video is left to the server-side
+    // eyeball check for now.
+    const expected = getAdFormat(adFormat)
+    if (!isVideo && expected) {
+      let dims: { width: number; height: number }
+      try {
+        dims = await readImageDimensions(file)
+      } catch {
+        // Can't read dimensions client-side (unsupported format, corrupt
+        // file, etc.) - don't block on our own limitation, let the server's
+        // check be the backstop.
+        await doUpload(file)
+        return
+      }
+
+      if (
+        dims.width !== expected.recommendedWidth ||
+        dims.height !== expected.recommendedHeight
+      ) {
+        const suggestedFormat =
+          AD_FORMAT_CATALOG.find(
+            (f) =>
+              f.recommendedWidth === dims.width &&
+              f.recommendedHeight === dims.height &&
+              f.value !== expected.value
+          ) ?? null
+        setDimensionIssue({
+          file,
+          actualWidth: dims.width,
+          actualHeight: dims.height,
+          expected,
+          suggestedFormat,
+        })
+        return
+      }
+    }
+
+    await doUpload(file)
+  }
+
+  function resolveDimensionIssueWithSuggestedFormat() {
+    if (!dimensionIssue?.suggestedFormat) return
+    const suggested = dimensionIssue.suggestedFormat
+    form.setValue("adFormat", suggested.value, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    setAdFormatCategory(suggested.category)
+    const file = dimensionIssue.file
+    setDimensionIssue(null)
+    void doUpload(file)
+  }
+
+  async function resolveDimensionIssueWithAutoFit() {
+    if (!dimensionIssue) return
+    const { file, expected } = dimensionIssue
+    try {
+      const fitted = await autoFitImage(
+        file,
+        expected.recommendedWidth,
+        expected.recommendedHeight
+      )
+      setDimensionIssue(null)
+      await doUpload(fitted)
+    } catch {
+      toast.error("Could not auto-fit this image - try cropping it yourself instead.")
     }
   }
 
@@ -746,11 +904,12 @@ export function CampaignWizard({
 
                     <div className="mt-5 flex flex-col gap-6 lg:flex-row">
                       <div className="flex flex-1 gap-4">
-                        {/* Category rail - one icon per ad-unit category; pick
-                            one to reveal its tiles alongside it. Replaces the
-                            old dropdown so every category is visible at a
-                            glance instead of hidden behind a click. */}
-                        <div className="flex shrink-0 flex-col gap-1.5">
+                        {/* Category rail - one row per ad-unit category, icon
+                            plus name; pick one to reveal its tiles alongside
+                            it. Replaces the old dropdown so every category is
+                            visible at a glance instead of hidden behind a
+                            click. */}
+                        <div className="flex w-48 shrink-0 flex-col gap-1.5">
                           {GROUPED_AD_FORMATS.map((group) => {
                             const Icon = CATEGORY_ICONS[group.category] ?? Layers
                             const active = group.category === adFormatCategory
@@ -758,18 +917,18 @@ export function CampaignWizard({
                               <button
                                 key={group.category}
                                 type="button"
-                                title={group.category}
                                 aria-label={group.category}
                                 aria-pressed={active}
                                 onClick={() => setAdFormatCategory(group.category)}
                                 className={cn(
-                                  "flex size-11 items-center justify-center rounded-xl border transition-colors sm:size-12",
+                                  "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
                                   active
-                                    ? "tile-select"
+                                    ? "tile-select font-semibold text-foreground"
                                     : "border-border font-medium text-foreground/75 tile-select-hover"
                                 )}
                               >
-                                <Icon className="size-5" />
+                                <Icon className="size-5 shrink-0" />
+                                <span className="truncate">{group.category}</span>
                               </button>
                             )
                           })}
@@ -986,6 +1145,51 @@ export function CampaignWizard({
                           </p>
                         ) : null}
                       </div>
+
+                      {dimensionIssue ? (
+                        <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+                          <p className="text-sm font-medium text-destructive">
+                            This image is {dimensionIssue.actualWidth}×
+                            {dimensionIssue.actualHeight}px, but{" "}
+                            {dimensionIssue.expected.label} needs exactly{" "}
+                            {dimensionIssue.expected.recommendedWidth}×
+                            {dimensionIssue.expected.recommendedHeight}px. Upload
+                            blocked so it doesn&apos;t render stretched or cropped.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={uploading}
+                              onClick={resolveDimensionIssueWithAutoFit}
+                            >
+                              Auto-fit to {dimensionIssue.expected.recommendedWidth}×
+                              {dimensionIssue.expected.recommendedHeight}
+                            </Button>
+                            {dimensionIssue.suggestedFormat ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={uploading}
+                                onClick={resolveDimensionIssueWithSuggestedFormat}
+                              >
+                                Switch to {dimensionIssue.suggestedFormat.label}
+                              </Button>
+                            ) : null}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={uploading}
+                              onClick={() => setDimensionIssue(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
 
                       <FormField
                         control={form.control}

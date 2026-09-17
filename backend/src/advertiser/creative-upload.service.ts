@@ -5,8 +5,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { imageSize } from 'image-size';
 
 import { SupabaseService } from '../supabase/supabase.service';
+import { AD_FORMAT_DIMENSIONS } from '../common/ad-formats';
 
 // Advertisers only ever paste a URL into `creativeUrl` (see
 // CreateCampaignDto) - this is what lets them upload the file itself
@@ -43,6 +45,7 @@ export class CreativeUploadService {
   async uploadCreative(
     advertiserId: string,
     file: Express.Multer.File | undefined,
+    adFormat?: string,
   ): Promise<{ url: string }> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -61,6 +64,29 @@ export class CreativeUploadService {
       throw new BadRequestException(
         `File is too large (max ${Math.floor(maxBytes / (1024 * 1024))} MB)`,
       );
+    }
+
+    // Backstop behind the same check in campaign-wizard.tsx, which normally
+    // catches this before the file ever gets here - this only fires if that
+    // client-side check was bypassed (e.g. calling this endpoint directly).
+    // Video isn't checked: it would need a decode step this service doesn't
+    // otherwise carry, so a mismatched video still uploads.
+    if (!isVideo && adFormat) {
+      const expected = AD_FORMAT_DIMENSIONS[adFormat];
+      if (expected) {
+        let actual: { width: number; height: number };
+        try {
+          actual = imageSize(file.buffer);
+        } catch {
+          throw new BadRequestException('Could not read image dimensions');
+        }
+
+        if (actual.width !== expected.width || actual.height !== expected.height) {
+          throw new BadRequestException(
+            `Image is ${actual.width}×${actual.height}px, but "${adFormat}" requires exactly ${expected.width}×${expected.height}px.`,
+          );
+        }
+      }
     }
 
     await this.ensureBucketExists();

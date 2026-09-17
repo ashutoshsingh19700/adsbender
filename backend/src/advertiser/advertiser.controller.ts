@@ -64,8 +64,9 @@ export class AdvertiserController {
   uploadCreative(
     @Req() req: AuthenticatedRequest,
     @UploadedFile() file?: Express.Multer.File,
+    @Body('adFormat') adFormat?: string,
   ) {
-    return this.creativeUploadService.uploadCreative(req.user.id, file);
+    return this.creativeUploadService.uploadCreative(req.user.id, file, adFormat);
   }
 
   @Get('me')

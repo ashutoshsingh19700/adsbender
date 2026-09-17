@@ -447,9 +447,16 @@ export type CreateCampaignInput = {
 // Uploads the creative file itself and returns a public URL — use the
 // result to fill CreateCampaignInput.creativeUrl instead of requiring the
 // advertiser to host the image elsewhere first.
-export function uploadCreativeFile(file: File) {
+export function uploadCreativeFile(file: File, adFormat?: string) {
   const formData = new FormData()
   formData.append("file", file)
+  // Lets the backend re-check the image's exact pixel dimensions against
+  // this format server-side (see CreativeUploadService) - a backstop behind
+  // the client-side dimension check in campaign-wizard.tsx, since that check
+  // can be bypassed by calling this endpoint directly.
+  if (adFormat) {
+    formData.append("adFormat", adFormat)
+  }
 
   return apiFetch<{ url: string }>("/api/v1/advertiser/creatives/upload", {
     method: "POST",
