@@ -17,7 +17,16 @@ import { CpmBillingService } from './cpm-billing.service';
 export const MESSAGE_BROKER_CONSUMER = Symbol('MESSAGE_BROKER_CONSUMER');
 export const ANALYTICS_EVENT_STORE = Symbol('ANALYTICS_EVENT_STORE');
 export const CLICKHOUSE_INGESTION_BATCH_SIZE = 2_000;
-export const CLICKHOUSE_INGESTION_BLOCK_MS = 1_000;
+// Each idle XREAD BLOCK call is billed as one Redis command by Upstash
+// regardless of how long it blocks, so this interval directly controls
+// idle-polling command volume: at 1s, 3 workers idling 24/7 burn ~260k
+// commands/day on their own (most of the 500k/month free-tier quota). At
+// 60s that drops to ~4.3k/day (~130k/month), leaving headroom for real
+// traffic. A live event still wakes XREAD immediately regardless of this
+// value - it only bounds the worst-case idle gap.
+export const CLICKHOUSE_INGESTION_BLOCK_MS = Number(
+  process.env.CLICKHOUSE_INGESTION_BLOCK_MS ?? 60_000,
+);
 
 // Also the only consumer of adengine:events:impressions (same hard-XDEL
 // reasoning as ClickHouseClickIngestionWorkerService's comment on the
