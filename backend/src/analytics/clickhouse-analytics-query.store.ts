@@ -367,6 +367,12 @@ export class ClickHouseAnalyticsQueryStore
       response = await fetch(url, {
         method: 'POST',
         headers,
+        // ClickHouse Cloud rejects a bodyless POST with 411 Length Required
+        // (no Content-Length/Transfer-Encoding header) - the query itself
+        // already travels via the `query` URL param above, so this body is
+        // always empty, but it still has to be present for fetch to set
+        // Content-Length.
+        body: '',
         signal: AbortSignal.timeout(10_000),
       });
     } catch (error) {
