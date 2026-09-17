@@ -570,6 +570,11 @@ export class AdvertiserService {
   // This check can't be the source of truth on its own because balance_usd
   // isn't touched until approval, so nothing stops an advertiser submitting
   // several campaigns against the same unreserved balance in the meantime.
+  //
+  // minAdvertiserBalanceUsd is the wallet balance needed to launch, not an
+  // extra floor kept aside on top of the campaign's own budget - so the
+  // requirement is balance >= max(totalBudget, minBalance), not
+  // balance - totalBudget >= minBalance.
   private async assertMinimumFreeBalance(
     advertiserId: string,
     totalBudget: number,
@@ -586,13 +591,12 @@ export class AdvertiserService {
       throw new NotFoundException('Advertiser not found');
     }
 
-    const freeAfterThisCampaign = new Prisma.Decimal(user.balance_usd).minus(
-      totalBudget,
-    );
+    const required = Prisma.Decimal.max(minBalance, totalBudget);
+    const balance = new Prisma.Decimal(user.balance_usd);
 
-    if (freeAfterThisCampaign.lessThan(minBalance)) {
+    if (balance.lessThan(required)) {
       throw new BadRequestException(
-        `INSUFFICIENT_FREE_BALANCE: keep at least $${minBalance.toString()} free in your wallet in addition to this campaign's budget`,
+        `INSUFFICIENT_FREE_BALANCE: keep at least $${required.toString()} free in your wallet to launch this campaign`,
       );
     }
   }

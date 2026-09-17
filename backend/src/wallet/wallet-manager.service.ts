@@ -320,18 +320,15 @@ export class WalletManager {
       `;
       const available = new Prisma.Decimal(freshUser.balance_usd);
 
-      if (available.lessThan(amount)) {
-        throw new ConflictException('INSUFFICIENT_AVAILABLE_BALANCE');
-      }
-
       // The advertiser-wide floor (PlatformSetting.minAdvertiserBalanceUsd,
-      // default $10) must survive this reservation too - it's never itself
-      // spendable/reservable by any campaign. This is the one place actual
-      // money moves out of `balance_usd` for a campaign, so it's the real
-      // enforcement point (AdvertiserService.createCampaign only does an
-      // early, best-effort check at submission time for UX).
-      if (available.minus(amount).lessThan(minBalance)) {
-        throw new ConflictException('BELOW_MINIMUM_RESERVE');
+      // default $10) is the wallet balance needed to launch, not an extra
+      // amount kept aside on top of the campaign's own budget. This is the
+      // one place actual money moves out of `balance_usd` for a campaign,
+      // so it's the real enforcement point (AdvertiserService.createCampaign
+      // only does an early, best-effort check at submission time for UX).
+      const required = Prisma.Decimal.max(minBalance, amount);
+      if (available.lessThan(required)) {
+        throw new ConflictException('INSUFFICIENT_AVAILABLE_BALANCE');
       }
 
       await this.recordTransaction(tx, {
