@@ -143,6 +143,23 @@ export class CreativeUploadService {
         this.logger.error(`Could not create "${CREATIVES_BUCKET}" bucket: ${error.message}`);
         throw new InternalServerErrorException('Creative storage is not available');
       }
+    } else if (existing.file_size_limit !== MAX_VIDEO_CREATIVE_UPLOAD_BYTES) {
+      // Bucket pre-dates video creative support (or was created with the
+      // old 5 MB image-only limit) - Supabase enforces this limit
+      // server-side regardless of the app-level check above, so a bucket
+      // stuck on the old limit silently rejects every video upload.
+      const { error } = await this.supabaseService.admin.storage.updateBucket(
+        CREATIVES_BUCKET,
+        {
+          public: true,
+          fileSizeLimit: MAX_VIDEO_CREATIVE_UPLOAD_BYTES,
+        },
+      );
+
+      if (error) {
+        this.logger.error(`Could not update "${CREATIVES_BUCKET}" bucket limit: ${error.message}`);
+        throw new InternalServerErrorException('Creative storage is not available');
+      }
     }
 
     this.bucketReady = true;
