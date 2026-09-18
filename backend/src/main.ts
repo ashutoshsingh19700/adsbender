@@ -92,7 +92,7 @@ function runPrimary() {
     forkWorker(index);
   });
 
-  // Docker/Kubernetes/Railway send SIGTERM to this primary process only on
+  // Docker/Kubernetes/Render send SIGTERM to this primary process only on
   // deploy/scale-down - without forwarding it, workers get hard-killed by
   // the orchestrator's own grace-period timeout instead of running their
   // graceful shutdown (app.enableShutdownHooks() below: PrismaService
