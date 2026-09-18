@@ -245,9 +245,21 @@ export function googleAuth(input: {
   })
 }
 
-// Clears the auth cookie via this app's own route handler (see
-// app/api/logout/route.ts) — the backend itself has no logout endpoint.
+// Revokes the session on the backend/Supabase side first (so the token
+// can't be replayed after logout - see AuthController.logout), then clears
+// the cookie via this app's own route handler (see app/api/logout/route.ts)
+// as a same-hostname fallback that always succeeds even if the backend call
+// fails (network hiccup, already-expired token) - a stuck "still logged in"
+// browser is worse than a session that stays revoked-but-cookied briefly.
 export async function logout() {
+  try {
+    await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    })
+  } catch {
+    // Backend unreachable - still clear the local cookie below.
+  }
   await fetch("/api/logout", { method: "POST", credentials: "include" })
 }
 
@@ -276,6 +288,9 @@ export type CreateAdZoneInput = {
   // Ties the zone to one of the publisher's sites so it can be nested under
   // that site on the Websites page - optional, same as on the backend DTO.
   siteId?: string
+  // Restricts this zone to serving only campaigns tagged with one of these
+  // categories - optional/empty means no restriction.
+  allowedCategories?: string[]
 }
 
 export function createAdZone(input: CreateAdZoneInput) {
@@ -436,6 +451,7 @@ export type CreateCampaignInput = {
   destinationUrl?: string
   notes?: string
   adFormat?: CampaignAdFormat
+  category?: string
   pricingModel?: CampaignPricingModel
   countryPricing?: Record<string, number>
   locations?: CampaignLocation[]

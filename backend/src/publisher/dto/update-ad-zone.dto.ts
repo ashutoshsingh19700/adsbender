@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
+import { AD_CATEGORIES } from '../../common/ad-categories';
 import { ZONE_LAYOUT_TYPES } from '../../common/ad-formats';
 
 // Same fields as CreateAdZoneDto, but all optional since this is a partial
@@ -33,4 +35,9 @@ export class UpdateAdZoneDto {
   @IsOptional()
   @IsIn(ZONE_LAYOUT_TYPES)
   layoutType?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsIn(AD_CATEGORIES, { each: true })
+  allowedCategories?: string[];
 }

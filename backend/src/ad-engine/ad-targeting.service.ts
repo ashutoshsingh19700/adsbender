@@ -57,7 +57,12 @@ export class AdTargetingService {
 
     const campaigns = await this.campaignCacheStore.getActiveCampaigns();
     const eligible = campaigns.filter((campaign) =>
-      this.isEligible(campaign, request, zone.layoutType),
+      this.isEligible(
+        campaign,
+        request,
+        zone.layoutType,
+        zone.allowedCategories,
+      ),
     );
     const underCap = await this.filterUnderFrequencyCap(
       eligible,
@@ -108,23 +113,22 @@ export class AdTargetingService {
     return eligible.filter((_campaign, index) => !cappedFlags[index]);
   }
 
-  // Second-price (Vickrey) auction: the highest bidder always wins, but is
-  // only charged the runner-up's bid (never their own, if a runner-up
-  // exists) - not a weighted lottery. This is the standard mechanism real
-  // ad exchanges use; it also happens to make truthful bidding an
-  // advertiser's best strategy (bidding your actual value, rather than
-  // shading it down to guess what you'll be charged, can never cost you
-  // more than bidding your real value would).
+  // Second-price (Vickrey) clearing rule with a bid-WEIGHTED winner draw:
+  // every eligible campaign gets a shot at winning proportional to its bid
+  // (a campaign bidding 2x another wins roughly 2x as often), rather than
+  // the single highest bidder always winning outright. This is what gives a
+  // publisher's zone actual rotation among the campaigns competing for it -
+  // e.g. every eligible campaign in an allowed category (see
+  // AdZone.allowedCategories/isEligible) gets served over time instead of
+  // one campaign permanently crowding the others out - while still letting
+  // a higher bid buy more impression share, and still charging only the
+  // second-highest bid (never the winner's own, if a runner-up exists) once
+  // a winner is drawn, so overpaying relative to the actual competition is
+  // never rewarded.
   //
-  // "Rotation" across campaigns still happens in practice - just from
-  // per-visitor frequency capping (see filterUnderFrequencyCap above)
-  // taking the current top bidder out of contention for a visitor once
-  // they've seen it enough, budgets running out, and different visitors
-  // matching different eligible sets - not from injecting randomness into
-  // who wins a single auction. The only randomness left here is breaking
-  // an exact tie between two-or-more equal top bids, which is fair (each
-  // gets an equal shot) rather than arbitrary (whoever happened to come
-  // first in the cache's iteration order).
+  // Frequency capping (see filterUnderFrequencyCap above) and budget/balance
+  // checks (see isEligible) still run before this draw, so a maxed-out or
+  // broke campaign can't win regardless of its bid.
   private runSecondPriceAuction(
     eligible: ParsedCampaignCacheRecord[],
   ): ParsedCampaignCacheRecord | null {
@@ -136,12 +140,7 @@ export class AdTargetingService {
       campaign,
       unitBid: this.effectiveUnitBid(campaign),
     }));
-    const topUnitBid = Math.max(...bids.map((entry) => entry.unitBid));
-    const topTier = bids.filter((entry) => entry.unitBid === topUnitBid);
-    const winnerEntry =
-      topTier.length === 1
-        ? topTier[0]
-        : topTier[Math.floor(this.rollRandom() * topTier.length)];
+    const winnerEntry = this.drawWeightedWinner(bids);
 
     const runnerUpUnitBid = bids
       .filter((entry) => entry.campaign.id !== winnerEntry.campaign.id)
@@ -210,15 +209,50 @@ export class AdTargetingService {
   }
 
   // Isolated behind a method (rather than calling Math.random() inline) so
-  // tests can stub the draw and make tie-breaking deterministic.
+  // tests can stub the draw and make it deterministic.
   protected rollRandom(): number {
     return Math.random();
+  }
+
+  // Bid-weighted random draw over a cumulative-weight line: each entry's
+  // slice of [0, totalBid) is proportional to its own bid, then one
+  // rollRandom() pick lands in exactly one slice. A higher bid gets a wider
+  // slice (wins more often) without ever being a guaranteed win the way
+  // "highest bid wins" was - that's what makes this an actual rotation
+  // rather than one campaign permanently owning the zone. When every bid is
+  // 0 (shouldn't normally happen - isEligible already requires balance >
+  // bid - but guards against a division by zero) falls back to a plain
+  // uniform draw so every eligible campaign still gets an equal shot.
+  private drawWeightedWinner(
+    bids: { campaign: ParsedCampaignCacheRecord; unitBid: number }[],
+  ): { campaign: ParsedCampaignCacheRecord; unitBid: number } {
+    const totalBid = bids.reduce((sum, entry) => sum + entry.unitBid, 0);
+
+    if (totalBid <= 0) {
+      return bids[Math.floor(this.rollRandom() * bids.length)];
+    }
+
+    const target = this.rollRandom() * totalBid;
+    let cumulative = 0;
+
+    for (const entry of bids) {
+      cumulative += entry.unitBid;
+      if (target < cumulative) {
+        return entry;
+      }
+    }
+
+    // Floating-point rounding can leave `target` a hair above the final
+    // cumulative sum - fall back to the last entry rather than returning
+    // undefined.
+    return bids[bids.length - 1];
   }
 
   private isEligible(
     campaign: ParsedCampaignCacheRecord,
     request: TargetingRequest,
     zoneLayoutType: string,
+    zoneAllowedCategories: string[],
   ) {
     if (campaign.status !== 'ACTIVE') {
       return false;
@@ -235,6 +269,20 @@ export class AdTargetingService {
       campaign.adFormat &&
       zoneLayoutType &&
       campaign.adFormat !== zoneLayoutType
+    ) {
+      return false;
+    }
+
+    // A zone restricted to specific categories (see AdZone.allowedCategories)
+    // only serves campaigns tagged with one of them. A campaign with no
+    // category set stays wildcard-eligible everywhere (predates this
+    // feature, or the advertiser simply left it unset) - same reasoning as
+    // the adFormat wildcard above. An unrestricted zone (empty
+    // allowedCategories) never filters on category at all.
+    if (
+      zoneAllowedCategories.length > 0 &&
+      campaign.category &&
+      !zoneAllowedCategories.includes(campaign.category)
     ) {
       return false;
     }

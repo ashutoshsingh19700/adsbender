@@ -19,6 +19,7 @@ import {
   CLICKHOUSE_INGESTION_BLOCK_MS,
   MESSAGE_BROKER_CONSUMER,
 } from './clickhouse-ingestion-worker.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 // This is also the only consumer of adengine:events:clicks, and the only
 // one that ever can be: RedisStreamMessageBrokerConsumer.acknowledge does a
@@ -47,7 +48,12 @@ export class ClickHouseClickIngestionWorkerService
     private readonly adBillingService: AdBillingService,
   ) {}
 
+  // See cluster-worker.ts / clickhouse-ingestion-worker.service.ts's own
+  // comment - only the designated singleton worker may read this stream.
   onModuleInit() {
+    if (!isSingletonWorker()) {
+      return;
+    }
     this.running = true;
     void this.runLoop();
   }

@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { AD_CATEGORIES } from "@/lib/ad-categories"
 import {
   AD_FORMAT_CATALOG,
   AD_FORMAT_CATEGORIES,
@@ -177,6 +178,16 @@ export const GROUPED_AD_FORMATS = [
   })).filter((group) => group.formats.length > 0),
 ]
 
+// Content category this campaign's creative belongs to - matched against a
+// publisher zone's allowedCategories at serve time (see
+// AdTargetingService.isEligible on the backend). Optional - leaving it unset
+// keeps the campaign wildcard-eligible for every zone regardless of that
+// zone's category restriction.
+export const AD_CATEGORY_OPTIONS = AD_CATEGORIES.map((category) => ({
+  value: category,
+  label: category,
+}))
+
 export const PRICING_MODELS = ["CPM", "CPA", "CPC"] as const
 
 export const START_MODES = [
@@ -224,6 +235,7 @@ export const campaignSchema = z
 
     // --- Adsterra-style setup fields - see schema.prisma / CreateCampaignDto ---
     adFormat: z.enum(AD_FORMAT_VALUES).optional(),
+    category: z.enum(AD_CATEGORIES).optional(),
     pricingModel: z.enum(["CPM", "CPA", "CPC"]).default("CPM"),
     countryPricing: z.record(z.string(), z.coerce.number()).optional(),
     locations: z

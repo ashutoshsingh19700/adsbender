@@ -164,11 +164,10 @@ describe('AdBillingService', () => {
     expect(walletManager.creditPublisherEarning).not.toHaveBeenCalled();
   });
 
-  describe('billCpmBatch', () => {
-    it('charges the advertiser the full CPM rate and credits the publisher their post-fee share', async () => {
-      await service.billCpmBatch(
+  describe('billCpmAdvertiserBatch', () => {
+    it('charges the advertiser the full CPM rate and never touches the publisher wallet', async () => {
+      await service.billCpmAdvertiserBatch(
         'campaign-1',
-        'publisher-1',
         2, // $2 CPM
         'cpm:campaign-1:batch:1',
       );
@@ -179,32 +178,46 @@ describe('AdBillingService', () => {
         'cpm:campaign-1:batch:1',
         expect.stringContaining('CPM'),
       );
-      const [publisherId, publisherAmount] =
-        walletManager.creditPublisherEarning.mock.calls[0];
-      expect(publisherId).toBe('publisher-1');
-      expect(publisherAmount.toString()).toBe('1.6'); // 80% of $2
+      expect(walletManager.creditPublisherEarning).not.toHaveBeenCalled();
     });
 
-    it('treats a duplicate CPM batch charge as already-billed and skips the publisher credit', async () => {
+    it('treats a duplicate CPM batch charge as already-billed without throwing', async () => {
       walletManager.recordCampaignSpend.mockRejectedValue(
         new ConflictException('DUPLICATE_TRANSACTION'),
       );
 
       await expect(
-        service.billCpmBatch('campaign-1', 'publisher-1', 2, 'cpm:campaign-1:batch:1'),
+        service.billCpmAdvertiserBatch('campaign-1', 2, 'cpm:campaign-1:batch:1'),
       ).resolves.toBeUndefined();
-      expect(walletManager.creditPublisherEarning).not.toHaveBeenCalled();
     });
 
-    it('does not credit the publisher when the CPM batch charge fails for a real reason', async () => {
+    it('swallows a non-duplicate CPM batch charge failure (logged for manual reconciliation) without throwing', async () => {
       walletManager.recordCampaignSpend.mockRejectedValue(
         new ConflictException('CAMPAIGN_NOT_ACTIVE'),
       );
 
       await expect(
-        service.billCpmBatch('campaign-1', 'publisher-1', 2, 'cpm:campaign-1:batch:1'),
+        service.billCpmAdvertiserBatch('campaign-1', 2, 'cpm:campaign-1:batch:1'),
       ).resolves.toBeUndefined();
-      expect(walletManager.creditPublisherEarning).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('creditPublisherShare (CPM publisher batch, called directly by CpmBillingService)', () => {
+    it('credits the publisher their post-fee share of the CPM rate', async () => {
+      await service.creditPublisherShare(
+        'publisher-1',
+        2, // $2 CPM
+        'cpm:campaign-1:unique-batch:1',
+        'CPM billing (1000 unique impressions)',
+      );
+
+      const [publisherId, publisherAmount, options] =
+        walletManager.creditPublisherEarning.mock.calls[0];
+      expect(publisherId).toBe('publisher-1');
+      expect(publisherAmount.toString()).toBe('1.6'); // 80% of $2
+      expect(options).toEqual(
+        expect.objectContaining({ referenceId: 'cpm:campaign-1:unique-batch:1' }),
+      );
     });
   });
 

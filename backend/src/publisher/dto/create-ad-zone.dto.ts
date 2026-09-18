@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
+import { AD_CATEGORIES } from '../../common/ad-categories';
 import { ZONE_LAYOUT_TYPES } from '../../common/ad-formats';
 
 export class CreateAdZoneDto {
@@ -39,4 +41,12 @@ export class CreateAdZoneDto {
   // and the zone would never serve anything.
   @IsIn(ZONE_LAYOUT_TYPES)
   layoutType: string;
+
+  // Restricts this zone to serving only campaigns whose category is in this
+  // list - see AdTargetingService.isEligible. Optional/empty means no
+  // restriction (any category can serve here).
+  @IsOptional()
+  @IsArray()
+  @IsIn(AD_CATEGORIES, { each: true })
+  allowedCategories?: string[];
 }

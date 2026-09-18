@@ -180,6 +180,7 @@ export class PublisherService {
         width: dto.width,
         height: dto.height,
         layoutType: dto.layoutType,
+        allowedCategories: dto.allowedCategories ?? [],
       },
     });
 

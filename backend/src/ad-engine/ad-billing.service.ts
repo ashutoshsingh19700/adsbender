@@ -19,7 +19,13 @@ import type { ClickEvent } from './ad-event.types';
 // The advertiser is always charged the FULL cost; the publisher is credited
 // only their share after the platform's cut (see PlatformSettingsService) -
 // the difference is the platform's revenue, same as
-// AdminService.getRevenueSummary already assumes.
+// AdminService.getRevenueSummary already assumes. For CPM specifically, the
+// advertiser's batches (billCpmAdvertiserBatch) and the publisher's batches
+// (creditPublisherShare, called from CpmBillingService) run on independent
+// counters: the advertiser is charged for every raw impression served, but
+// the publisher is only credited for impressions PublisherImpressionDedupService
+// counted as unique (one per IP per 24h per site) - so the platform also
+// keeps the publisher's share of any batch made of repeat views.
 @Injectable()
 export class AdBillingService {
   private readonly logger = new Logger(AdBillingService.name);
@@ -86,22 +92,35 @@ export class AdBillingService {
     );
   }
 
-  // Called by CpmBillingService once every 1000 impressions of a CPM-priced
-  // campaign - `maxCpm` is charged as a single lump sum (never per-impression
-  // - see the module comment above and CpmBillingService for why).
-  async billCpmBatch(
+  // Called by CpmBillingService once every 1000 RAW impressions of a
+  // CPM-priced campaign - `maxCpm` is charged as a single lump sum (never
+  // per-impression - see the module comment above and CpmBillingService for
+  // why). Advertiser-only, deliberately: every impression the campaign
+  // actually serves counts toward this batch, even a same-visitor repeat
+  // view on a different page - see billCpmPublisherShare below for the
+  // publisher's own (deduped) side of the same impression stream, which
+  // CpmBillingService bills separately and on its own batch cadence.
+  async billCpmAdvertiserBatch(
     campaignId: string,
-    publisherId: string,
     maxCpm: number,
     referenceId: string,
   ): Promise<void> {
-    await this.chargeCampaignAndCreditPublisher(
-      campaignId,
-      publisherId,
-      maxCpm,
-      referenceId,
-      'CPM billing (1000 impressions)',
-    );
+    try {
+      await this.walletManager.recordCampaignSpend(
+        campaignId,
+        maxCpm,
+        referenceId,
+        'CPM billing (1000 impressions)',
+      );
+    } catch (error) {
+      if (this.isDuplicateTransaction(error)) {
+        return;
+      }
+
+      this.logger.warn(
+        `Advertiser spend failed for ${referenceId} (campaign ${campaignId}): ${this.describe(error)}`,
+      );
+    }
   }
 
   // Called by ConversionTrackingService once a postback confirms a real
@@ -123,9 +142,11 @@ export class AdBillingService {
     );
   }
 
-  // Shared by billCpmBatch and billConversion - both charge the advertiser
-  // one lump sum (as opposed to billClick's per-click charge) then credit
-  // the publisher their post-fee share of it.
+  // Only billConversion uses this now - CPM's advertiser charge
+  // (billCpmAdvertiserBatch) and publisher credit (creditPublisherShare) run
+  // independently, so it no longer routes through here. Charges one lump
+  // sum (as opposed to billClick's per-click charge) then credits the
+  // publisher their post-fee share of it.
   private async chargeCampaignAndCreditPublisher(
     campaignId: string,
     publisherId: string,
@@ -154,9 +175,11 @@ export class AdBillingService {
     await this.creditPublisherShare(publisherId, amount, referenceId, description);
   }
 
-  // Shared by billClick and CpmBillingService.billImpressionBatch - both
-  // charge the advertiser the full amount above, then credit the publisher
-  // only their share after the platform cut. Never throws, matching
+  // Called by billClick/chargeCampaignAndCreditPublisher right after
+  // charging the advertiser, and by CpmBillingService directly (not through
+  // chargeCampaignAndCreditPublisher) once every 1000 UNIQUE impressions -
+  // see billCpmAdvertiserBatch above for why CPM's advertiser charge and
+  // publisher credit are no longer the same call. Never throws, matching
   // billClick's own contract: a credit failure here is logged for manual
   // reconciliation rather than propagated, since the advertiser has already
   // been charged by the time this runs.

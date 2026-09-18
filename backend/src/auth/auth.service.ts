@@ -398,6 +398,34 @@ export class AuthService {
     });
   }
 
+  // Revokes the session on Supabase's side (not just the local cookie) so a
+  // token that leaked somewhere else (proxy/access log, browser history,
+  // malware, a shared machine) stops working the moment the user logs out,
+  // rather than staying valid until its natural ~1h expiry. Best-effort: if
+  // Supabase's revoke call fails, we still clear the cookie below so the
+  // user isn't stuck "logged in" client-side over a transient upstream
+  // error - the cache eviction plus cookie clearing already stop this
+  // browser from using it either way.
+  async logout(token: string, response: Response): Promise<void> {
+    try {
+      await this.supabase.admin.auth.admin.signOut(token, 'global');
+    } catch (error) {
+      this.logger.warn(
+        `Failed to revoke Supabase session on logout: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    response.cookie('token', '', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 0,
+    });
+  }
+
   // Shared by login/verifyPhoneOtp/googleAuth - see login() for why
   // sameSite/secure are tied to NODE_ENV.
   private setSessionCookie(

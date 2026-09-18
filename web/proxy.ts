@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PROTECTED_PREFIXES = ["/publisher", "/advertiser", "/analytics"]
+const PROTECTED_PREFIXES = ["/publisher", "/advertiser", "/analytics", "/admin"]
 
 // Coarse gate: only checks that the httpOnly `token` cookie is present
 // (Next.js can read httpOnly cookies server-side even though client JS
@@ -30,5 +30,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/publisher/:path*", "/advertiser/:path*", "/analytics/:path*"],
+  matcher: [
+    "/publisher/:path*",
+    "/advertiser/:path*",
+    "/analytics/:path*",
+    "/admin/:path*",
+  ],
 }

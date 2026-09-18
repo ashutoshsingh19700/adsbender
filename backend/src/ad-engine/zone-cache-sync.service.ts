@@ -8,6 +8,7 @@ import {
 
 import type { ZoneCacheStore } from './zone-cache.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 export const ZONE_CACHE_STORE = Symbol('ZONE_CACHE_STORE');
 export const ZONE_CACHE_SYNC_INTERVAL_MS = 30_000;
@@ -35,7 +36,10 @@ export class ZoneCacheSyncService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.ZONE_CACHE_SYNC_ENABLED === 'false') {
+    if (
+      process.env.ZONE_CACHE_SYNC_ENABLED === 'false' ||
+      !isSingletonWorker()
+    ) {
       return;
     }
 
@@ -67,7 +71,13 @@ export class ZoneCacheSyncService implements OnModuleInit, OnModuleDestroy {
   async syncActiveZones() {
     const zones = await this.prisma.adZone.findMany({
       where: { status: 'ACTIVE' },
-      select: { id: true, layoutType: true },
+      select: {
+        id: true,
+        layoutType: true,
+        publisherId: true,
+        siteId: true,
+        allowedCategories: true,
+      },
     });
     const snapshot = JSON.stringify(
       [...zones].sort((a, b) => a.id.localeCompare(b.id)),

@@ -10,6 +10,7 @@ import type {
   CampaignCacheStore,
 } from './campaign-cache.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 export const CAMPAIGN_CACHE_STORE = Symbol('CAMPAIGN_CACHE_STORE');
 export const CAMPAIGN_CACHE_SYNC_INTERVAL_MS = 30_000;
@@ -33,7 +34,10 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    if (process.env.CAMPAIGN_CACHE_SYNC_ENABLED === 'false') {
+    if (
+      process.env.CAMPAIGN_CACHE_SYNC_ENABLED === 'false' ||
+      !isSingletonWorker()
+    ) {
       return;
     }
 
@@ -98,6 +102,7 @@ export class CampaignCacheSyncService implements OnModuleInit, OnModuleDestroy {
           c."creativeHtml",
           c."destinationUrl",
           c."adFormat"::text AS "adFormat",
+          c."category",
           c."frequencyCapImpressions",
           c."frequencyCapWindowSeconds",
           u.balance_usd AS "advertiserBalanceUsd"

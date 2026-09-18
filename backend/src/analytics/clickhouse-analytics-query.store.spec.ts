@@ -74,6 +74,41 @@ describe('ClickHouseAnalyticsQueryStore', () => {
     expect(query).toContain(`campaign_id = '${campaignId}'`);
   });
 
+  it('dedupes impressions/spend to unique-publisher-impression rows when scoped by zoneId (publisher-facing)', async () => {
+    const zoneId = '11111111-1111-1111-1111-111111111111';
+
+    await store.getDailyMetrics({
+      startDate: '2026-07-20',
+      endDate: '2026-07-21',
+      zoneId,
+      platformFeeBps: 2000,
+    });
+
+    const url = new URL(fetchSpy.mock.calls[0][0] as string);
+    const query = url.searchParams.get('query') ?? '';
+
+    expect(query).toContain('countIf(is_unique_publisher_impression = 1)');
+    expect(query).toContain('sumIf(cost, is_unique_publisher_impression = 1)');
+  });
+
+  it('does NOT dedupe impressions/spend when scoped by campaignId (advertiser-facing) - every view counts', async () => {
+    const campaignId = '11111111-1111-1111-1111-111111111111';
+
+    await store.getDailyMetrics({
+      startDate: '2026-07-20',
+      endDate: '2026-07-21',
+      campaignId,
+      platformFeeBps: 2000,
+    });
+
+    const url = new URL(fetchSpy.mock.calls[0][0] as string);
+    const query = url.searchParams.get('query') ?? '';
+
+    expect(query).not.toContain('is_unique_publisher_impression');
+    expect(query).toContain('count()');
+    expect(query).toContain('sum(cost)');
+  });
+
   it('rejects a non-UUID campaignId instead of building unsafe SQL', async () => {
     await expect(
       store.getDailyMetrics({
@@ -145,5 +180,45 @@ describe('ClickHouseAnalyticsQueryStore', () => {
     expect(query).toContain(
       "ifNull(daily_impressions.spend, 0) + ifNull(daily_clicks.spend, 0) AS spend",
     );
+  });
+
+  describe('getGroupedMetrics', () => {
+    beforeEach(() => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        text: jest.fn().mockResolvedValue(''),
+      } as any);
+    });
+
+    it('dedupes impressions/spend when scoped by zoneIds (publisher-facing)', async () => {
+      await store.getGroupedMetrics({
+        startDate: '2026-07-20',
+        endDate: '2026-07-21',
+        zoneIds: ['11111111-1111-1111-1111-111111111111'],
+        groupBy: 'date',
+        platformFeeBps: 2000,
+      });
+
+      const url = new URL(fetchSpy.mock.calls[0][0] as string);
+      const query = url.searchParams.get('query') ?? '';
+
+      expect(query).toContain('countIf(is_unique_publisher_impression = 1)');
+      expect(query).toContain('sumIf(cost, is_unique_publisher_impression = 1)');
+    });
+
+    it('does NOT dedupe impressions/spend when scoped by campaignIds (advertiser-facing)', async () => {
+      await store.getGroupedMetrics({
+        startDate: '2026-07-20',
+        endDate: '2026-07-21',
+        campaignIds: ['11111111-1111-1111-1111-111111111111'],
+        groupBy: 'date',
+        platformFeeBps: 2000,
+      });
+
+      const url = new URL(fetchSpy.mock.calls[0][0] as string);
+      const query = url.searchParams.get('query') ?? '';
+
+      expect(query).not.toContain('is_unique_publisher_impression');
+    });
   });
 });

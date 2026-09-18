@@ -8,6 +8,7 @@ import {
 
 import type { BlacklistCacheStore } from './blacklist-cache.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 export const BLACKLIST_CACHE_STORE = Symbol('BLACKLIST_CACHE_STORE');
 export const BLACKLIST_CACHE_SYNC_INTERVAL_MS = 30_000;
@@ -36,7 +37,10 @@ export class BlacklistCacheSyncService implements OnModuleInit, OnModuleDestroy 
   ) {}
 
   onModuleInit() {
-    if (process.env.BLACKLIST_CACHE_SYNC_ENABLED === 'false') {
+    if (
+      process.env.BLACKLIST_CACHE_SYNC_ENABLED === 'false' ||
+      !isSingletonWorker()
+    ) {
       return;
     }
 

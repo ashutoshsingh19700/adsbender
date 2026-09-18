@@ -106,6 +106,10 @@ export class ClickHouseAnalyticsQueryStore
       params.zoneId ? `AND zone_id = '${params.zoneId}'` : '',
     ].join(' ');
 
+    const impressionMetricsExpr = this.impressionMetricsExpr(
+      this.isPublisherScoped(Boolean(params.zoneId), Boolean(params.campaignId)),
+    );
+
     // Publisher's share of every dollar of spend, from the live
     // platformFeeBps (see PlatformSettingsService) - e.g. 8000/10000 = 0.8
     // at the 20% default fee. platformFeeBps is a validated 0-10000 integer
@@ -138,8 +142,8 @@ export class ClickHouseAnalyticsQueryStore
         (
           SELECT
             toDate(event_time) AS date,
-            count() AS impressions,
-            round(sum(cost), 4) AS spend
+            ${impressionMetricsExpr.count} AS impressions,
+            round(${impressionMetricsExpr.spend}, 4) AS spend
           FROM ${this.options.database}.impressions
           WHERE event_time >= parseDateTimeBestEffort('${params.startDate}')
             AND event_time < parseDateTimeBestEffort('${params.endDate}') + INTERVAL 1 DAY
@@ -218,6 +222,12 @@ export class ClickHouseAnalyticsQueryStore
     ].join(' ');
 
     const publisherShareRate = (10_000 - params.platformFeeBps) / 10_000;
+    const impressionMetricsExpr = this.impressionMetricsExpr(
+      this.isPublisherScoped(
+        Boolean(params.zoneIds),
+        Boolean(params.campaignIds),
+      ),
+    );
 
     const sql = `
       SELECT
@@ -238,8 +248,8 @@ export class ClickHouseAnalyticsQueryStore
         (
           SELECT
             ${groupExpr} AS group_key,
-            count() AS impressions,
-            round(sum(cost), 4) AS spend
+            ${impressionMetricsExpr.count} AS impressions,
+            round(${impressionMetricsExpr.spend}, 4) AS spend
           FROM ${this.options.database}.impressions
           WHERE event_time >= parseDateTimeBestEffort('${params.startDate}')
             AND event_time < parseDateTimeBestEffort('${params.endDate}') + INTERVAL 1 DAY
@@ -342,6 +352,38 @@ export class ClickHouseAnalyticsQueryStore
           count: Number(row.count),
         };
       });
+  }
+
+  // A publisher-scoped call (zoneId/zoneIds, never campaignId/campaignIds -
+  // see the doc comments on DailyMetricsParams/GroupedMetricsParams, which
+  // document this as the caller contract PublisherService/AdvertiserService/
+  // AdminService all follow) gets the DEDUPED impression count/spend (one
+  // impression per IP per 24h per site - see
+  // ImpressionEvent.uniquePublisherImpression); an advertiser-scoped call
+  // gets the raw, un-deduped count - every ad view bills/counts on the
+  // advertiser side regardless of repeat views. A call with neither filter
+  // (shouldn't happen for these two methods per that same contract) falls
+  // back to raw, matching the pre-dedup behavior rather than silently
+  // changing an unscoped caller's numbers.
+  private isPublisherScoped(hasZoneScope: boolean, hasCampaignScope: boolean) {
+    return hasZoneScope && !hasCampaignScope;
+  }
+
+  // `spend` (and the `payout` derived from it) must be summed over the same
+  // rows `impressions` counted, or a publisher's displayed payout would be
+  // computed against impressions they were never actually credited for.
+  private impressionMetricsExpr(dedupeToPublisherUnique: boolean): {
+    count: string;
+    spend: string;
+  } {
+    if (!dedupeToPublisherUnique) {
+      return { count: 'count()', spend: 'sum(cost)' };
+    }
+
+    return {
+      count: 'countIf(is_unique_publisher_impression = 1)',
+      spend: 'sumIf(cost, is_unique_publisher_impression = 1)',
+    };
   }
 
   private async query(sql: string) {

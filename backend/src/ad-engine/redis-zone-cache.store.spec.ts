@@ -19,8 +19,20 @@ describe('RedisZoneCacheStore', () => {
     commandSpy.mockResolvedValue('OK');
 
     await store.replaceActiveZoneIds([
-      { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
-      { id: 'zone-2', layoutType: 'POPUP' },
+      {
+        id: 'zone-1',
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
+        publisherId: 'publisher-1',
+        siteId: 'site-1',
+        allowedCategories: ['Technology'],
+      },
+      {
+        id: 'zone-2',
+        layoutType: 'POPUP',
+        publisherId: 'publisher-2',
+        siteId: null,
+        allowedCategories: [],
+      },
     ]);
 
     expect(commandSpy).toHaveBeenCalledTimes(1);
@@ -28,21 +40,42 @@ describe('RedisZoneCacheStore', () => {
       'SET',
       ACTIVE_ZONES_KEY,
       JSON.stringify([
-        { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
-        { id: 'zone-2', layoutType: 'POPUP' },
+        {
+          id: 'zone-1',
+          layoutType: 'MEDIUM_RECTANGLE_300X250',
+          publisherId: 'publisher-1',
+          siteId: 'site-1',
+          allowedCategories: ['Technology'],
+        },
+        {
+          id: 'zone-2',
+          layoutType: 'POPUP',
+          publisherId: 'publisher-2',
+          siteId: null,
+          allowedCategories: [],
+        },
       ]),
     ]);
   });
 
-  it('returns the layoutType for an active zone in a single command', async () => {
+  it('returns the layoutType/publisherId/siteId/allowedCategories for an active zone in a single command', async () => {
     commandSpy.mockResolvedValue(
       JSON.stringify([
-        { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
+        {
+          id: 'zone-1',
+          layoutType: 'MEDIUM_RECTANGLE_300X250',
+          publisherId: 'publisher-1',
+          siteId: 'site-1',
+          allowedCategories: ['Technology'],
+        },
       ]),
     );
 
     await expect(store.getActiveZone('zone-1')).resolves.toEqual({
       layoutType: 'MEDIUM_RECTANGLE_300X250',
+      publisherId: 'publisher-1',
+      siteId: 'site-1',
+      allowedCategories: ['Technology'],
     });
     expect(commandSpy).toHaveBeenCalledTimes(1);
     expect(commandSpy).toHaveBeenCalledWith(['GET', ACTIVE_ZONES_KEY]);
@@ -50,7 +83,9 @@ describe('RedisZoneCacheStore', () => {
 
   it('reports no zone (paused, deleted, or never real) when it is not in the cached list', async () => {
     commandSpy.mockResolvedValue(
-      JSON.stringify([{ id: 'zone-1', layoutType: 'POPUP' }]),
+      JSON.stringify([
+        { id: 'zone-1', layoutType: 'POPUP', publisherId: 'publisher-1', siteId: null },
+      ]),
     );
 
     await expect(store.getActiveZone('not-a-real-zone')).resolves.toBeNull();

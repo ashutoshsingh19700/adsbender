@@ -21,15 +21,17 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
 import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import { GoogleAuthDto } from './dto/google-auth.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtAuthGuard, extractToken } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles/roles.guard';
 import { Roles } from './decorators/roles.decorator';
+import type { Request } from 'express';
 
 @Controller('api/v1/auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly turnstile: TurnstileService,
+    private readonly jwtAuthGuard: JwtAuthGuard,
   ) {}
 
   // Tighter than the global default (see ThrottlerModule.forRoot in
@@ -110,6 +112,24 @@ export class AuthController {
         'Security check failed - please try again.',
       );
     }
+  }
+
+  // Actually revokes the session on Supabase's side and evicts it from
+  // JwtAuthGuard's cache, then clears the cookie - see AuthService.logout.
+  // Requires a valid token (JwtAuthGuard) so there's something to revoke;
+  // an already-signed-out caller has nothing to log out of.
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const token = extractToken(req);
+    if (token) {
+      this.jwtAuthGuard.invalidateToken(token);
+      await this.authService.logout(token, response);
+    }
+    return { message: 'Logged out' };
   }
 
   @UseGuards(JwtAuthGuard)

@@ -70,6 +70,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -87,6 +88,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
+  AD_CATEGORY_OPTIONS,
   AD_FORMATS,
   ALL_DEVICE_VALUES,
   ALL_OS_VALUES,
@@ -982,6 +984,39 @@ export function CampaignWizard({
                   </FormItem>
                 )
               }}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ad category (optional)</FormLabel>
+                  <FormDescription>
+                    Some publisher zones only accept ads from specific
+                    categories. Setting one here lets this campaign compete
+                    for those zones too.
+                  </FormDescription>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full sm:w-72">
+                        <SelectValue placeholder="Any category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {AD_CATEGORY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <div>

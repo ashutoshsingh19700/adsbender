@@ -112,6 +112,7 @@ export class AdvertiserService {
         frequencyCapWindowSeconds: dto.frequencyCapWindowSeconds,
         status: CampaignStatus.PENDING_REVIEW,
         adFormat: dto.adFormat,
+        category: dto.category,
         pricingModel: dto.pricingModel,
         countryPricing: dto.countryPricing as Prisma.InputJsonValue | undefined,
         locations: dto.locations as unknown as

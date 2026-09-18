@@ -18,6 +18,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import { AD_CATEGORIES } from '../../common/ad-categories';
 import { AD_FORMATS } from '../../common/ad-formats';
 
 const PRICING_MODELS = ['CPM', 'CPA', 'CPC'] as const;
@@ -155,6 +156,12 @@ export class UpdateCampaignDto {
   @IsOptional()
   @IsIn(AD_FORMATS)
   adFormat?: (typeof AD_FORMATS)[number];
+
+  // See CreateCampaignDto - content category, matched against a serving
+  // zone's allowedCategories.
+  @IsOptional()
+  @IsIn(AD_CATEGORIES)
+  category?: (typeof AD_CATEGORIES)[number];
 
   @IsOptional()
   @IsIn(PRICING_MODELS)

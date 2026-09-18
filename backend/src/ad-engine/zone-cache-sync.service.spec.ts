@@ -39,8 +39,18 @@ describe('ZoneCacheSyncService', () => {
 
   it('loads ACTIVE zone ids and layout types into the Redis cache store', async () => {
     prismaService.adZone.findMany.mockResolvedValue([
-      { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
-      { id: 'zone-2', layoutType: 'POPUP' },
+      {
+        id: 'zone-1',
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
+        publisherId: 'publisher-1',
+        siteId: 'site-1',
+      },
+      {
+        id: 'zone-2',
+        layoutType: 'POPUP',
+        publisherId: 'publisher-2',
+        siteId: null,
+      },
     ]);
 
     await expect(service.syncActiveZones()).resolves.toEqual({
@@ -49,11 +59,27 @@ describe('ZoneCacheSyncService', () => {
 
     expect(prismaService.adZone.findMany).toHaveBeenCalledWith({
       where: { status: 'ACTIVE' },
-      select: { id: true, layoutType: true },
+      select: {
+        id: true,
+        layoutType: true,
+        publisherId: true,
+        siteId: true,
+        allowedCategories: true,
+      },
     });
     expect(zoneCacheStore.replaceActiveZoneIds).toHaveBeenCalledWith([
-      { id: 'zone-1', layoutType: 'MEDIUM_RECTANGLE_300X250' },
-      { id: 'zone-2', layoutType: 'POPUP' },
+      {
+        id: 'zone-1',
+        layoutType: 'MEDIUM_RECTANGLE_300X250',
+        publisherId: 'publisher-1',
+        siteId: 'site-1',
+      },
+      {
+        id: 'zone-2',
+        layoutType: 'POPUP',
+        publisherId: 'publisher-2',
+        siteId: null,
+      },
     ]);
   });
 

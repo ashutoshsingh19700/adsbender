@@ -8,7 +8,9 @@ import { ConversionTrackingService } from './conversion-tracking.service';
 import { DeviceDetectorService } from './device-detector.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
+import { PublisherImpressionDedupService } from './publisher-impression-dedup.service';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
+import { ZONE_CACHE_STORE } from './zone-cache-sync.service';
 
 describe('AdEngineController', () => {
   let controller: AdEngineController;
@@ -29,8 +31,15 @@ describe('AdEngineController', () => {
     evaluateClickRequest: jest.fn(),
     recordHoneypotHit: jest.fn(),
   };
+  const publisherImpressionDedupService = {
+    isUniqueImpression: jest.fn(),
+  };
   const siteAutoVerificationService = {
     verifyFromRequestHeader: jest.fn(),
+  };
+  const zoneCacheStore = {
+    replaceActiveZoneIds: jest.fn(),
+    getActiveZone: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -45,6 +54,13 @@ describe('AdEngineController', () => {
     conversionTrackingService.recordConversion.mockResolvedValue({
       recorded: true,
     });
+    zoneCacheStore.getActiveZone.mockResolvedValue({
+      layoutType: '',
+      publisherId: 'publisher-1',
+      siteId: 'site-1',
+      allowedCategories: [],
+    });
+    publisherImpressionDedupService.isUniqueImpression.mockResolvedValue(true);
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdEngineController],
@@ -66,8 +82,16 @@ describe('AdEngineController', () => {
           useValue: fraudDetectionService,
         },
         {
+          provide: PublisherImpressionDedupService,
+          useValue: publisherImpressionDedupService,
+        },
+        {
           provide: SiteAutoVerificationService,
           useValue: siteAutoVerificationService,
+        },
+        {
+          provide: ZONE_CACHE_STORE,
+          useValue: zoneCacheStore,
         },
         ClickIntegrityService,
         DeviceDetectorService,
@@ -156,6 +180,80 @@ describe('AdEngineController', () => {
           path: '/article',
         }),
       }),
+    );
+  });
+
+  it('tags the impression as a unique publisher impression using the served zone\'s site scope', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-high',
+      advertiserId: 'advertiser-1',
+      campaignName: 'US Mobile High Bid',
+      maxCpc: 2.5,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>US Mobile High Bid creative</div>',
+    });
+    zoneCacheStore.getActiveZone.mockResolvedValue({
+      layoutType: '',
+      publisherId: 'publisher-9',
+      siteId: 'site-9',
+      allowedCategories: [],
+    });
+    publisherImpressionDedupService.isUniqueImpression.mockResolvedValue(true);
+
+    await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(publisherImpressionDedupService.isUniqueImpression).toHaveBeenCalledWith(
+      { layoutType: '', publisherId: 'publisher-9', siteId: 'site-9', allowedCategories: [] },
+      '127.0.0.1',
+    );
+    expect(adEventProducerService.publishImpression).toHaveBeenCalledWith(
+      expect.objectContaining({ uniquePublisherImpression: true }),
+    );
+  });
+
+  it('marks a repeat-view impression as not unique for the publisher when dedup says so', async () => {
+    adTargetingService.selectCampaign.mockResolvedValue({
+      id: 'campaign-high',
+      advertiserId: 'advertiser-1',
+      campaignName: 'US Mobile High Bid',
+      maxCpc: 2.5,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>US Mobile High Bid creative</div>',
+    });
+    publisherImpressionDedupService.isUniqueImpression.mockResolvedValue(false);
+
+    await controller.serve(
+      '42',
+      'https://publisher.test',
+      '/article',
+      '1366',
+      '768',
+      '1',
+      '',
+      'Mozilla/5.0',
+      'US',
+      'https://publisher.test/article',
+      'https://publisher.test',
+      '127.0.0.1',
+    );
+
+    expect(adEventProducerService.publishImpression).toHaveBeenCalledWith(
+      expect.objectContaining({ uniquePublisherImpression: false }),
     );
   });
 

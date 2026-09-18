@@ -75,6 +75,10 @@ export type Campaign = {
   // Adsterra-style setup fields - stored but not yet enforced by ad
   // serving (see backend's AdvertiserService / schema.prisma comments).
   adFormat: CampaignAdFormat | null
+  // Content category this campaign's creative belongs to - matched against a
+  // publisher zone's allowedCategories at serve time (see AD_CATEGORIES in
+  // lib/ad-categories.ts).
+  category: string | null
   pricingModel: CampaignPricingModel
   countryPricing: Record<string, number> | null
   locations: CampaignLocation[] | null
@@ -150,6 +154,11 @@ export type AdZone = {
   width: number
   height: number
   layoutType: string
+  // Restricts this zone to serving only campaigns tagged with one of these
+  // categories (see AD_CATEGORIES in lib/ad-categories.ts) - empty means no
+  // restriction. Optional so a zone loaded before this field existed still
+  // type-checks.
+  allowedCategories?: string[]
   status: AdZoneStatus
   createdAt: string
   updatedAt: string

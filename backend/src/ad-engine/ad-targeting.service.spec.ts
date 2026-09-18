@@ -23,7 +23,7 @@ describe('AdTargetingService', () => {
       // Defaults to an active zone with no particular format so the
       // existing campaign-targeting tests below don't each need to know
       // about zone lookups or format matching.
-      getActiveZone: jest.fn().mockResolvedValue({ layoutType: '' }),
+      getActiveZone: jest.fn().mockResolvedValue({ layoutType: '', publisherId: 'publisher-1', siteId: null, allowedCategories: [] }),
     };
     visitorFrequencyCapService = {
       // Defaults to "nothing is capped" so existing rotation/targeting
@@ -106,6 +106,12 @@ describe('AdTargetingService', () => {
       },
     ]);
 
+    // The winner draw is bid-weighted, not strictly highest-bid-wins (see
+    // the "second-price auction" describe block below for that mechanic in
+    // isolation) - pin the draw so this test only asserts the
+    // country/device filtering, not the draw's randomness.
+    jest.spyOn(service as any, 'rollRandom').mockReturnValue(0.99);
+
     const result = await service.selectCampaign({
       zoneId: '42',
       country: 'US',
@@ -113,10 +119,7 @@ describe('AdTargetingService', () => {
       visitorId: 'visitor-1',
     });
 
-    // campaign-desktop must never be selectable for a mobile request, and
-    // between the two that ARE eligible for mobile, the higher bidder
-    // (campaign-high, $2 vs $0.5) always wins - see the auction tests below
-    // for the pricing mechanics.
+    // campaign-desktop must never be selectable for a mobile request.
     expect(result?.id).toBe('campaign-high');
   });
 
@@ -366,6 +369,10 @@ describe('AdTargetingService', () => {
     } as const;
 
     it('the highest bidder wins but pays only the runner-up bid, not their own', async () => {
+      // Pin the weighted draw to land in the high bidder's slice - see the
+      // "bid-weighted rotation" describe block below for the draw's actual
+      // distribution behavior.
+      jest.spyOn(service as any, 'rollRandom').mockReturnValue(0.99);
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           id: 'campaign-low',
@@ -478,6 +485,9 @@ describe('AdTargetingService', () => {
     });
 
     it('clears a CPM winner against a CPC runner-up, converting the clearing price back into maxCpm', async () => {
+      // Pin the weighted draw to the higher (CPC) bidder's slice - see the
+      // pricing-comparison comment below for why that's the CPC campaign.
+      jest.spyOn(service as any, 'rollRandom').mockReturnValue(0);
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           id: 'campaign-cpc',
@@ -525,6 +535,7 @@ describe('AdTargetingService', () => {
     });
 
     it('preserves every other field on the winning campaign untouched by the clearing price', async () => {
+      jest.spyOn(service as any, 'rollRandom').mockReturnValue(0.99);
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           id: 'campaign-low',
@@ -574,6 +585,7 @@ describe('AdTargetingService', () => {
     });
 
     it('never returns an unbillable fractional-cent clearing price for a CPM winner', async () => {
+      jest.spyOn(service as any, 'rollRandom').mockReturnValue(0);
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           id: 'campaign-cpm-winner',
@@ -642,7 +654,7 @@ describe('AdTargetingService', () => {
     };
 
     it('never serves a campaign whose adFormat does not match the zone layoutType', async () => {
-      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP', publisherId: 'publisher-1', siteId: null, allowedCategories: [] });
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           ...baseCampaign,
@@ -656,7 +668,7 @@ describe('AdTargetingService', () => {
     });
 
     it('serves a campaign whose adFormat matches the zone layoutType exactly', async () => {
-      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP', publisherId: 'publisher-1', siteId: null, allowedCategories: [] });
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           ...baseCampaign,
@@ -672,7 +684,7 @@ describe('AdTargetingService', () => {
     });
 
     it('treats a campaign with no adFormat as wildcard-eligible for any zone', async () => {
-      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP' });
+      zoneCacheStore.getActiveZone.mockResolvedValue({ layoutType: 'POPUP', publisherId: 'publisher-1', siteId: null, allowedCategories: [] });
       campaignCacheStore.getActiveCampaigns.mockResolvedValue([
         {
           ...baseCampaign,
@@ -685,6 +697,159 @@ describe('AdTargetingService', () => {
       const result = await service.selectCampaign(request);
 
       expect(result?.id).toBe('campaign-legacy');
+    });
+  });
+
+  describe('category matching', () => {
+    const request = {
+      zoneId: 'zone-sidebar',
+      country: 'US',
+      device: 'desktop',
+      visitorId: 'visitor-1',
+    } as const;
+    const baseCampaign = {
+      advertiserId: 'advertiser-1',
+      campaignName: 'Test Campaign',
+      totalBudget: 100,
+      dailyBudget: 10,
+      maxCpc: 1,
+      targetCountries: [] as string[],
+      targetDevices: [] as string[],
+      status: 'ACTIVE',
+      advertiserBalanceUsd: 10,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>ad</div>',
+    };
+
+    it('never serves a campaign whose category is not in the zone\'s allowedCategories', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: ['Technology'],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-sports', category: 'Sports' },
+      ]);
+
+      await expect(service.selectCampaign(request)).resolves.toBeNull();
+    });
+
+    it('serves a campaign whose category is in the zone\'s allowedCategories', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: ['Technology', 'Sports'],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-tech', category: 'Technology' },
+      ]);
+
+      const result = await service.selectCampaign(request);
+
+      expect(result?.id).toBe('campaign-tech');
+    });
+
+    it('treats a campaign with no category as wildcard-eligible for a restricted zone', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: ['Technology'],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-legacy', category: null },
+      ]);
+
+      const result = await service.selectCampaign(request);
+
+      expect(result?.id).toBe('campaign-legacy');
+    });
+
+    it('imposes no category restriction when the zone has none configured', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: [],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-any', category: 'Adult' },
+      ]);
+
+      const result = await service.selectCampaign(request);
+
+      expect(result?.id).toBe('campaign-any');
+    });
+  });
+
+  describe('bid-weighted rotation', () => {
+    const request = {
+      zoneId: 'zone-rotation',
+      country: 'US',
+      device: 'desktop',
+      visitorId: '',
+    } as const;
+    const baseCampaign = {
+      advertiserId: 'advertiser-1',
+      campaignName: 'Test Campaign',
+      totalBudget: 100,
+      dailyBudget: 10,
+      targetCountries: [] as string[],
+      targetDevices: [] as string[],
+      status: 'ACTIVE',
+      advertiserBalanceUsd: 100,
+      creativeType: 'html',
+      creativeUrl: null,
+      creativeHtml: '<div>ad</div>',
+    };
+
+    it('gives every eligible campaign of equal bid a real chance to win, not just the first one', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: [],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-a', maxCpc: 1 },
+        { ...baseCampaign, id: 'campaign-b', maxCpc: 1 },
+      ]);
+      const rollSpy = jest.spyOn(service as any, 'rollRandom');
+
+      rollSpy.mockReturnValue(0);
+      expect((await service.selectCampaign(request))?.id).toBe('campaign-a');
+
+      rollSpy.mockReturnValue(0.99);
+      expect((await service.selectCampaign(request))?.id).toBe('campaign-b');
+    });
+
+    it('gives a higher bidder a proportionally wider slice of the draw than a lower bidder', async () => {
+      zoneCacheStore.getActiveZone.mockResolvedValue({
+        layoutType: '',
+        publisherId: 'publisher-1',
+        siteId: null,
+        allowedCategories: [],
+      });
+      campaignCacheStore.getActiveCampaigns.mockResolvedValue([
+        { ...baseCampaign, id: 'campaign-low', maxCpc: 1 },
+        { ...baseCampaign, id: 'campaign-high', maxCpc: 3 },
+      ]);
+      const rollSpy = jest.spyOn(service as any, 'rollRandom');
+
+      // Total bid is 4: campaign-low occupies [0, 1), campaign-high [1, 4) -
+      // a 25%/75% split proportional to their 1:3 bid ratio, not a 50/50 or
+      // guaranteed-highest-bid-wins split.
+      rollSpy.mockReturnValue(0.2); // target 0.8 - still within campaign-low's slice
+      expect((await service.selectCampaign(request))?.id).toBe('campaign-low');
+
+      rollSpy.mockReturnValue(0.3); // target 1.2 - now within campaign-high's slice
+      expect((await service.selectCampaign(request))?.id).toBe('campaign-high');
+
+      rollSpy.mockReturnValue(0.9); // target 3.6 - deep in campaign-high's slice
+      expect((await service.selectCampaign(request))?.id).toBe('campaign-high');
     });
   });
 });

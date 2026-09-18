@@ -17,12 +17,18 @@ describe('AuthController', () => {
   const turnstileService = {
     verify: jest.fn().mockResolvedValue(true),
   };
+  const jwtAuthGuard = {
+    invalidateToken: jest.fn(),
+  };
 
   beforeEach(async () => {
     // Tests call controller methods directly rather than through HTTP, so
     // the guards never actually run - these stubs exist only so Nest can
     // resolve @UseGuards(JwtAuthGuard, RolesGuard) at module-compile time
     // without needing a real SupabaseService/UsersService/DB connection.
+    // JwtAuthGuard is also a real constructor dependency of AuthController
+    // now (logout() calls jwtAuthGuard.invalidateToken directly), separate
+    // from its use as a guard.
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
@@ -33,6 +39,10 @@ describe('AuthController', () => {
         {
           provide: TurnstileService,
           useValue: turnstileService,
+        },
+        {
+          provide: JwtAuthGuard,
+          useValue: jwtAuthGuard,
         },
       ],
     })

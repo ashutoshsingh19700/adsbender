@@ -32,11 +32,18 @@ describe('ClickHouseAnalyticsEventStore', () => {
     const secondQuery = new URL(
       fetchSpy.mock.calls[1][0] as string,
     ).searchParams.get('query');
+    const thirdQuery = new URL(
+      fetchSpy.mock.calls[2][0] as string,
+    ).searchParams.get('query');
 
     expect(firstQuery).toContain(
       'CREATE TABLE IF NOT EXISTS analytics.impressions',
     );
     expect(secondQuery).toContain(
+      'ALTER TABLE analytics.impressions',
+    );
+    expect(secondQuery).toContain('is_unique_publisher_impression');
+    expect(thirdQuery).toContain(
       'CREATE TABLE IF NOT EXISTS analytics.clicks',
     );
   });
@@ -58,6 +65,7 @@ describe('ClickHouseAnalyticsEventStore', () => {
           ipAddress: '127.0.0.1',
           userAgent: 'Mozilla/5.0 Mobile',
         },
+        uniquePublisherImpression: true,
       },
     ]);
 
@@ -79,7 +87,36 @@ describe('ClickHouseAnalyticsEventStore', () => {
       device: 'mobile',
       ip_address: '127.0.0.1',
       user_agent: 'Mozilla/5.0 Mobile',
+      is_unique_publisher_impression: 1,
     });
+  });
+
+  it('records a repeat-view impression as not unique for the publisher', async () => {
+    await store.insertImpressions([
+      {
+        type: 'impression',
+        zone: '42',
+        campaign: 'campaign-1',
+        advertiser: 'advertiser-1',
+        cost: 0.001,
+        time: 1719274200,
+        request: {
+          origin: 'https://publisher.test',
+          path: '/article',
+          country: 'US',
+          device: 'mobile',
+          ipAddress: '127.0.0.1',
+          userAgent: 'Mozilla/5.0 Mobile',
+        },
+        uniquePublisherImpression: false,
+      },
+    ]);
+
+    const body = fetchSpy.mock.calls[0][1]?.body as string;
+
+    expect(JSON.parse(body)).toEqual(
+      expect.objectContaining({ is_unique_publisher_impression: 0 }),
+    );
   });
 
   it('bulk inserts click events using JSONEachRow', async () => {

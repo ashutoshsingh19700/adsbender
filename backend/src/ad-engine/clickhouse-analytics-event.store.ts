@@ -37,10 +37,22 @@ export class ClickHouseAnalyticsEventStore implements AnalyticsEventStore {
         country Nullable(String),
         device String,
         ip_address String,
-        user_agent String
+        user_agent String,
+        is_unique_publisher_impression UInt8 DEFAULT 1
       )
       ENGINE = MergeTree
       ORDER BY (event_time, campaign_id, zone_id)
+    `);
+
+    // A table created before this column existed won't pick it up from the
+    // CREATE TABLE IF NOT EXISTS above (that's a no-op once the table
+    // already exists) - add it explicitly, defaulting historical rows to 1
+    // (counted as a unique publisher impression) so existing dashboards'
+    // impression counts don't silently drop to 0 for old data. See
+    // ClickHouseAnalyticsQueryStore for where this column is read.
+    await this.query(`
+      ALTER TABLE ${this.options.database}.impressions
+      ADD COLUMN IF NOT EXISTS is_unique_publisher_impression UInt8 DEFAULT 1
     `);
 
     await this.query(`
@@ -103,6 +115,7 @@ export class ClickHouseAnalyticsEventStore implements AnalyticsEventStore {
           device: event.request.device,
           ip_address: event.request.ipAddress,
           user_agent: event.request.userAgent,
+          is_unique_publisher_impression: event.uniquePublisherImpression ? 1 : 0,
         }),
       )
       .join('\n');

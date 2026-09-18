@@ -23,6 +23,14 @@ export type ImpressionEvent = {
   // once the running count crosses a multiple of 1000. Undefined for a
   // regular CPC campaign, which isn't billed on impressions at all.
   maxCpm?: number;
+  // Whether this is the FIRST impression from this IP against this
+  // publisher's site in the current 24h window (see
+  // PublisherImpressionDedupService) - the advertiser side of this event
+  // (`cost`/`maxCpm` above) always counts every impression regardless of
+  // this flag; only the publisher's own impression count/CPM payout
+  // (CpmBillingService.recordImpression) and publisher-scoped dashboards
+  // (ClickHouseAnalyticsQueryStore) are gated on it.
+  uniquePublisherImpression: boolean;
 };
 
 export type ClickEvent = {

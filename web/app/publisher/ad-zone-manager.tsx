@@ -28,6 +28,7 @@ import {
 import type { AdZone, AdZoneStatus, AnalyticsResponse } from "@/lib/types"
 import { defaultDateRange } from "@/lib/utils"
 import {
+  AD_CATEGORY_OPTIONS,
   GROUPED_LAYOUT_TYPES,
   zoneSchema,
   type ZoneFormOutput,
@@ -48,6 +49,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -405,6 +407,7 @@ function ZoneEditDialog({
       width: 300,
       height: 250,
       layoutType: "banner",
+      allowedCategories: [],
     },
   })
 
@@ -415,6 +418,7 @@ function ZoneEditDialog({
         width: zone.width,
         height: zone.height,
         layoutType: zone.layoutType,
+        allowedCategories: zone.allowedCategories ?? [],
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -524,6 +528,51 @@ function ZoneEditDialog({
               )}
             />
             <AdFormatDevicePreview format={getAdFormat(form.watch("layoutType"))} />
+            <FormField
+              control={form.control}
+              name="allowedCategories"
+              render={({ field }) => (
+                <FormItem className="space-y-2">
+                  <FormLabel>Allowed ad categories (optional)</FormLabel>
+                  <p className="text-muted-foreground text-xs">
+                    Leave all unchecked to accept ads from any category. Check
+                    one or more to restrict this zone to only rotate ads from
+                    those categories.
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                    {AD_CATEGORY_OPTIONS.map((option) => {
+                      const selected = field.value ?? []
+                      const checked = selected.includes(option.value)
+                      return (
+                        <label
+                          key={option.value}
+                          className="flex items-center gap-2"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(next) => {
+                                field.onChange(
+                                  next
+                                    ? [...selected, option.value]
+                                    : selected.filter(
+                                        (v) => v !== option.value
+                                      )
+                                )
+                              }}
+                            />
+                          </FormControl>
+                          <span className="text-sm font-normal">
+                            {option.label}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button
                 type="button"

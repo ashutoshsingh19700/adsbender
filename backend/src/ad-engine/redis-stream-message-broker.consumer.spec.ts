@@ -32,6 +32,7 @@ describe('RedisStreamMessageBrokerConsumer', () => {
         ipAddress: '127.0.0.1',
         userAgent: 'Mozilla/5.0 Mobile',
       },
+      uniquePublisherImpression: true,
     };
 
     commandSpy.mockResolvedValue([

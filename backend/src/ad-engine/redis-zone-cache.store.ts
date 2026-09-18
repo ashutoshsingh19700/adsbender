@@ -43,7 +43,14 @@ export class RedisZoneCacheStore implements ZoneCacheStore, OnModuleDestroy {
       const zones = JSON.parse(raw) as CacheableZone[];
       const zone = zones.find((candidate) => candidate.id === zoneId);
 
-      return zone ? { layoutType: zone.layoutType } : null;
+      return zone
+        ? {
+            layoutType: zone.layoutType,
+            publisherId: zone.publisherId,
+            siteId: zone.siteId,
+            allowedCategories: zone.allowedCategories ?? [],
+          }
+        : null;
     } catch (error) {
       this.logger.warn(
         `Redis unavailable for zone cache lookup on "${zoneId}" - reporting not found: ${(error as Error).message}`,

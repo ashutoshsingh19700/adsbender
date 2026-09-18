@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { AD_CATEGORIES } from "@/lib/ad-categories"
 import {
   AD_FORMAT_CATALOG,
   AD_FORMAT_CATEGORIES,
@@ -49,11 +50,22 @@ export const GROUPED_LAYOUT_TYPES = [
   })).filter((group) => group.formats.length > 0),
 ]
 
+// Options for the zone form's "Allowed ad categories" multi-select - leaving
+// this empty means the zone accepts any category (see
+// AdTargetingService.isEligible on the backend).
+export const AD_CATEGORY_OPTIONS = AD_CATEGORIES.map((category) => ({
+  value: category,
+  label: category,
+}))
+
 export const zoneSchema = z.object({
   zoneName: z.string().min(2, "Zone name must be at least 2 characters"),
   width: z.coerce.number().int().min(1).max(4000),
   height: z.coerce.number().int().min(1).max(4000),
   layoutType: z.string().min(2, "Choose a layout type"),
+  // Optional - restricts this zone to serving only campaigns tagged with one
+  // of these categories. Empty/omitted means no restriction.
+  allowedCategories: z.array(z.string()).default([]),
 })
 
 export type ZoneFormInput = z.input<typeof zoneSchema>

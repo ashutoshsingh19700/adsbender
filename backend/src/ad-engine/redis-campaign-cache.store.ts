@@ -82,6 +82,7 @@ export class RedisCampaignCacheStore
       creativeHtml: campaign.creativeHtml,
       destinationUrl: campaign.destinationUrl ?? null,
       adFormat: campaign.adFormat ?? null,
+      category: campaign.category ?? null,
       frequencyCapImpressions: campaign.frequencyCapImpressions ?? null,
       frequencyCapWindowSeconds: campaign.frequencyCapWindowSeconds ?? null,
     };

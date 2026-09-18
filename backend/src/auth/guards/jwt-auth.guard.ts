@@ -79,6 +79,15 @@ export class JwtAuthGuard implements CanActivate {
     return data.user.id;
   }
 
+  // Called on logout so a revoked token stops working immediately instead
+  // of remaining valid against this guard for up to TOKEN_CACHE_TTL_MS after
+  // Supabase itself has revoked the session - without this, "logout" only
+  // cleared the browser cookie while the token (if it had leaked - a proxy
+  // log, a browser history entry, malware) stayed live for up to 30s more.
+  invalidateToken(token: string): void {
+    this.tokenCache.delete(token);
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const token = extractToken(request);

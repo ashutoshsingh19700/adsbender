@@ -18,6 +18,7 @@ import {
   CLICKHOUSE_INGESTION_BLOCK_MS,
   MESSAGE_BROKER_CONSUMER,
 } from './clickhouse-ingestion-worker.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 // Same one-consumer-per-channel constraint as the impression/click workers
 // (RedisStreamMessageBrokerConsumer.acknowledge does a hard XDEL - see the
@@ -41,7 +42,12 @@ export class ClickHouseTrafficIngestionWorkerService
     private readonly analyticsEventStore: AnalyticsEventStore,
   ) {}
 
+  // See cluster-worker.ts / clickhouse-ingestion-worker.service.ts's own
+  // comment - only the designated singleton worker may read this stream.
   onModuleInit() {
+    if (!isSingletonWorker()) {
+      return;
+    }
     this.running = true;
     void this.runLoop();
   }

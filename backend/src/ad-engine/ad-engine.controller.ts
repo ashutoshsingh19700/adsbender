@@ -6,6 +6,7 @@ import {
   Get,
   Headers,
   HttpStatus,
+  Inject,
   Ip,
   Query,
   Res,
@@ -21,7 +22,10 @@ import { DeviceDetectorService } from './device-detector.service';
 import type { FraudDecision } from './fraud-detection.service';
 import { FraudDetectionService } from './fraud-detection.service';
 import { GeoIpService } from './geo-ip.service';
+import { PublisherImpressionDedupService } from './publisher-impression-dedup.service';
 import { SiteAutoVerificationService } from './site-auto-verification.service';
+import { ZONE_CACHE_STORE } from './zone-cache-sync.service';
+import type { ZoneCacheStore } from './zone-cache.types';
 import { adServerPublicOrigin } from '../config/env';
 import { renderFamilyForFormat } from '../common/ad-formats';
 
@@ -40,7 +44,10 @@ export class AdEngineController {
     private readonly deviceDetectorService: DeviceDetectorService,
     private readonly fraudDetectionService: FraudDetectionService,
     private readonly geoIpService: GeoIpService,
+    private readonly publisherImpressionDedupService: PublisherImpressionDedupService,
     private readonly siteAutoVerificationService: SiteAutoVerificationService,
+    @Inject(ZONE_CACHE_STORE)
+    private readonly zoneCacheStore: ZoneCacheStore,
   ) {}
 
   @Get('serve')
@@ -104,6 +111,22 @@ export class AdEngineController {
     if (selectedCampaign) {
       const isCpmCampaign = this.isCpmCampaign(selectedCampaign);
 
+      // Re-reads the same Redis-cached zone record AdTargetingService just
+      // used to select this campaign (a cheap single GET against an
+      // already-warm JSON blob - see RedisZoneCacheStore) rather than
+      // threading zone data through selectCampaign's return value, so the
+      // targeting/auction logic stays untouched by this. Missing zone data
+      // (shouldn't happen - selectedCampaign only exists because the zone
+      // was just found active) fails open to "unique" rather than silently
+      // dropping the publisher's impression count.
+      const zone = await this.zoneCacheStore.getActiveZone(zoneId);
+      const uniquePublisherImpression = zone
+        ? await this.publisherImpressionDedupService.isUniqueImpression(
+            zone,
+            ipAddress,
+          )
+        : true;
+
       this.adEventProducerService.publishImpression({
         type: 'impression',
         zone: zoneId,
@@ -123,6 +146,7 @@ export class AdEngineController {
           userAgent,
         },
         maxCpm: isCpmCampaign ? (selectedCampaign.maxCpm as number) : undefined,
+        uniquePublisherImpression,
       });
     }
 
@@ -553,6 +577,11 @@ export class AdEngineController {
           Number.isFinite(numericMaxCpm) && numericMaxCpm > 0
             ? numericMaxCpm
             : undefined,
+        // Newsletter opens aren't "roaming multiple pages of a website" -
+        // there's no site/page to dedup across here, just one open per send
+        // - so every open counts as its own impression for the publisher
+        // too, same as it always has.
+        uniquePublisherImpression: true,
         request: {
           origin: '',
           path: '',

@@ -13,6 +13,7 @@ import type {
   MessageBrokerConsumer,
 } from './ad-event.types';
 import { CpmBillingService } from './cpm-billing.service';
+import { isSingletonWorker } from '../common/cluster-worker';
 
 export const MESSAGE_BROKER_CONSUMER = Symbol('MESSAGE_BROKER_CONSUMER');
 export const ANALYTICS_EVENT_STORE = Symbol('ANALYTICS_EVENT_STORE');
@@ -51,7 +52,14 @@ export class ClickHouseIngestionWorkerService
     private readonly cpmBillingService: CpmBillingService,
   ) {}
 
+  // See cluster-worker.ts - this is the only allowed reader of
+  // adengine:events:impressions (plain XREAD, no consumer group), so under
+  // cluster mode only the designated singleton worker actually runs the
+  // loop; every other worker's instance of this service stays inert.
   onModuleInit() {
+    if (!isSingletonWorker()) {
+      return;
+    }
     this.running = true;
     void this.runLoop();
   }

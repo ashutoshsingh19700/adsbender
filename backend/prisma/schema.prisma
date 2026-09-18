@@ -401,6 +401,13 @@ model Campaign {
   // so existing rows and the ad-serving path (AdEngineController) are
   // unaffected - none of these are read there yet.
   adFormat        CampaignAdFormat?
+  // Content category this campaign's creative belongs to (e.g. "Technology",
+  // "Sports") - drawn from the same shared vocabulary as PublisherSite.category
+  // (see AD_CATEGORIES in common/ad-categories.ts). Free text, not enforced
+  // against a DB enum, same reasoning as PublisherSite.category. Optional/null
+  // means "no category" and stays wildcard-eligible for every zone regardless
+  // of that zone's allowedCategories - see AdTargetingService.isEligible.
+  category        String?
   pricingModel    CampaignPricingModel @default(CPM)
   // Per-country bid override: { "US": 1.2, "IN": 0.4, ... }. Optional -
   // falls back to maxCpc when a country has no override.
@@ -477,6 +484,12 @@ model AdZone {
   height Int
 
   layoutType String
+  // Restricts this zone to serving only campaigns whose Campaign.category is
+  // in this list (see AD_CATEGORIES in common/ad-categories.ts). Empty means
+  // no restriction - same "empty means wildcard" convention already used by
+  // Campaign.targetCountries/targetDevices - so existing zones created before
+  // this field existed keep serving exactly as before.
+  allowedCategories String[] @default([])
   status     AdZoneStatus @default(ACTIVE)
 
   createdAt DateTime @default(now())
